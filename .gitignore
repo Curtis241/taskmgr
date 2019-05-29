@@ -1,0 +1,9 @@
+
+/build/
+/dist/
+/taskmgr.egg-info/
+/venv3/
+/taskmgr/lib/token.pickle
+/taskmgr/__pycache__/
+tests/__pycache__/
+taskmgr/lib/__pycache__/

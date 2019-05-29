@@ -8,7 +8,14 @@ coverage==4.5.1
 Sphinx==1.8.1
 twine==1.12.1
 pytest==3.8.2
+pluggy==0.7.1
 pytest-runner==4.2
 
 click==7.0
 colorama==0.4.1
+pyyaml==3.12
+prettytable==0.7.2
+
+google-api-python-client==1.7.8
+google-auth-httplib2==0.0.3
+google-auth-oauthlib==0.3.0
