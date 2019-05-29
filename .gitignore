@@ -7,3 +7,4 @@
 /taskmgr/__pycache__/
 tests/__pycache__/
 taskmgr/lib/__pycache__/
+/taskmgr/lib/credentials.json
