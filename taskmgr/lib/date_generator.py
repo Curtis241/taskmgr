@@ -1,6 +1,7 @@
 import calendar
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
+
 from taskmgr.lib.variables import CommonVariables
 
 
@@ -31,28 +32,45 @@ class DueDate(object):
     def to_dict(self):
         return {"date_string": self.__date_string, "completed": self.__completed}
 
+    def from_dict(self, due_date_dict):
+        if "date_string" in due_date_dict:
+            self.__date_string = due_date_dict["date_string"]
+
+        if "completed" in due_date_dict:
+            self.__completed = due_date_dict["completed"]
+
+        return self
+
 
 class Day:
     def __init__(self, dt):
         assert type(dt) is datetime
+        self.dt = dt
         self.day = dt.day
         self.month = dt.month
         self.year = dt.year
+        self.timestamp = dt.timestamp()
         self.weekday_number = dt.weekday()
         self.week = self.get_week(self.day, self.weekday_number, self.month, self.year)
 
     def to_date_list(self):
         return [self.to_date_string()]
 
+    def to_date_expression(self):
+        return f"{self.month} {self.day}"
+
     def to_date_string(self):
         month = Day.pad(self.month)
         day = Day.pad(self.day)
-        return "{}-{}-{}".format(self.year, month, day)
+        return f"{self.year}-{month}-{day}"
+
+    def to_date_time_string(self):
+        return datetime.strftime(self.dt, CommonVariables.date_time_format)
 
     def to_date_time(self):
         month = self.pad(self.month)
         day = self.pad(self.day)
-        return datetime.strptime("{}-{}-{}".format(self.year, month, day), CommonVariables.date_format)
+        return datetime.strptime(f"{self.year}-{month}-{day}", CommonVariables.date_format)
 
     @staticmethod
     def pad(value):
@@ -118,8 +136,9 @@ class Calendar:
         """
         if len(due_date_list) != 0:
             due_date = Calendar.get_closest_due_date(due_date_list, current_day)
-            if due_date.date_string == current_day.to_date_string():
-                return True
+            if due_date is not None:
+                if due_date.date_string == current_day.to_date_string():
+                    return True
 
         return False
 
@@ -364,6 +383,9 @@ class Handler(ABC):
     @abstractmethod
     def parse_expression(self, parser): pass
 
+    @abstractmethod
+    def validate(self, expression): pass
+
 
 class DayOfWeekHandler(Handler):
 
@@ -372,7 +394,7 @@ class DayOfWeekHandler(Handler):
         self.expression_list = ['su', 'm', 'tu', 'w', 'th', 'f', 'sa']
 
     def handle(self, parser):
-        if parser.expression in self.expression_list:
+        if self.validate(parser.expression):
             self.parse_expression(parser)
         else:
             super(DayOfWeekHandler, self).handle(parser)
@@ -383,6 +405,9 @@ class DayOfWeekHandler(Handler):
         calendar_day = parser.calendar.get_next_day(parser.today, weekday_number)
         parser.date_list = calendar_day.to_date_list()
 
+    def validate(self, expression):
+        return expression in self.expression_list
+
 
 class NormalLanguageDateHandler(Handler):
 
@@ -391,7 +416,7 @@ class NormalLanguageDateHandler(Handler):
         self.expression_list = ["today", "tomorrow", "next week", "next month"]
 
     def handle(self, parser):
-        if parser.expression in self.expression_list:
+        if self.validate(parser.expression):
             self.parse_expression(parser)
         else:
             super(NormalLanguageDateHandler, self).handle(parser)
@@ -417,6 +442,9 @@ class NormalLanguageDateHandler(Handler):
             today.month = today.month + 1
             parser.date_list = parser.calendar.get_first_day(today, 1)
 
+    def validate(self, expression):
+        return expression in self.expression_list
+
 
 class RecurringDateHandler(Handler):
 
@@ -427,7 +455,7 @@ class RecurringDateHandler(Handler):
         self.week_abbrev_list = ['su', 'm', 'tu', 'w', 'th', 'f', 'sa']
 
     def handle(self, parser):
-        if parser.expression in self.expression_list:
+        if self.validate(parser.expression):
             self.parse_expression(parser)
         else:
             super(RecurringDateHandler, self).handle(parser)
@@ -448,6 +476,9 @@ class RecurringDateHandler(Handler):
                 parser.date_list = parser.calendar.get_week_days(parser.today, weekday_number,
                                                                  CommonVariables.recurring_month_limit)
 
+    def validate(self, expression):
+        return expression in self.expression_list
+
 
 class ShortDateHandler(Handler):
 
@@ -456,8 +487,7 @@ class ShortDateHandler(Handler):
         self.expression_list = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
 
     def handle(self, parser):
-        expression = str(parser.expression).lower().split(" ")
-        if expression[0] in self.expression_list:
+        if self.validate(parser.expression):
             self.parse_expression(parser)
         else:
             super(ShortDateHandler, self).handle(parser)
@@ -472,8 +502,40 @@ class ShortDateHandler(Handler):
                 day.day = int(expression[1])
                 parser.date_list = day.to_date_list()
 
+    def validate(self, expression):
+        fragments = str(expression).lower().split(" ")
+        if len(fragments) == 2:
+            month_exists = fragments[0] in self.expression_list
+            day_number_exists = str(fragments[1]).isdigit()
+            return month_exists is True and day_number_exists is True
+        else:
+            return False
+
+
+class EmptyDateHandler(Handler):
+
+    def __init__(self):
+        super().__init__()
+        self.expression_list = ['empty']
+
+    def handle(self, parser):
+        if self.validate(parser.expression):
+            self.parse_expression(parser)
+        else:
+            super(EmptyDateHandler, self).handle(parser)
+
+    def parse_expression(self, parser):
+        parser.date_list = []
+
+    def validate(self, expression):
+        return expression in self.expression_list
+
 
 class ErrorHandler(Handler):
+
+    def validate(self, expression):
+        pass
+
     def parse_expression(self, parser):
         pass
 
@@ -485,16 +547,12 @@ class DateGenerator(object):
 
     def __init__(self):
         self.__current_day = None
-        self.expression_list = []
         self.handler_1 = DayOfWeekHandler()
         self.handler_2 = NormalLanguageDateHandler()
         self.handler_3 = RecurringDateHandler()
         self.handler_4 = ShortDateHandler()
-
-        self.expression_list.extend(self.handler_1.expression_list)
-        self.expression_list.extend(self.handler_2.expression_list)
-        self.expression_list.extend(self.handler_3.expression_list)
-        self.expression_list.extend(self.handler_4.expression_list)
+        self.handler_5 = EmptyDateHandler()
+        self.handler_list = [self.handler_1, self.handler_2, self.handler_3, self.handler_4, self.handler_5]
 
     @property
     def current_day(self):
@@ -515,7 +573,8 @@ class DateGenerator(object):
         self.handler_1.next_handler = self.handler_2
         self.handler_2.next_handler = self.handler_3
         self.handler_3.next_handler = self.handler_4
-        self.handler_4.next_handler = ErrorHandler()
+        self.handler_4.next_handler = self.handler_5
+        self.handler_5.next_handler = ErrorHandler()
         self.handler_1.handle(parser)
 
         due_date_list = list()
@@ -527,5 +586,10 @@ class DateGenerator(object):
 
         return due_date_list
 
-    def get_expressions(self):
-        return self.expression_list
+    def validate_input(self, date_expression):
+
+        for handler in self.handler_list:
+            if handler.validate(date_expression):
+                return True
+
+        return False

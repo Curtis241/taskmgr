@@ -3,6 +3,7 @@ include CONTRIBUTING.rst
 include HISTORY.rst
 include LICENSE
 include README.rst
+include taskmgr/lib/credentials.json
 
 recursive-include tests * lib *
 recursive-exclude * __pycache__

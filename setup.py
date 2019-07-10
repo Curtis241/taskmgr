@@ -11,7 +11,8 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = ['click>=6.0', 'pyyaml>=3.12', 'colorama>=0.4.1', 'prettytable>=0.7.2']
+requirements = ['click>=6.0', 'pyyaml>=3.12', 'colorama>=0.4.1', 'prettytable>=0.7.2', 'requests>=2.22.0',
+                'google-api-python-client==1.7.8', 'google-auth-httplib2==0.0.3', 'google-auth-oauthlib==0.3.0']
 setup_requirements = ['pytest-runner', ]
 test_requirements = ['pytest', ]
 

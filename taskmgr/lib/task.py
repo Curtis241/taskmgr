@@ -1,3 +1,6 @@
+import textwrap
+import uuid
+
 from taskmgr.lib.date_generator import DateGenerator, DueDate
 from taskmgr.lib.variables import CommonVariables
 
@@ -5,19 +8,25 @@ from taskmgr.lib.variables import CommonVariables
 class Task(object):
 
     def __init__(self, text, date_generator=None):
-        self.__index = 0
+        self.__id = str()
+        self.__key = str()
+        self.__external_id = str()
         self.__text = text
-        self.__label = "@all"
+        self.__label = CommonVariables.default_label
         self.__deleted = False
         self.__priority = 1
-        self.__project = "inbox"
-        self.__due_dates = list()
-        self.__date_expression = CommonVariables.default_date_expression
+        self.__project = CommonVariables.default_project_name
+        self.__last_updated = None
 
         if date_generator is None:
             self.date_generator = DateGenerator()
         else:
             self.date_generator = date_generator
+
+        self.__id = uuid.uuid4().hex
+        self.__key = str(self.__id)[-3:]
+        self.__date_expression = CommonVariables.default_date_expression
+        self.__due_dates = self.date_generator.get_due_dates(CommonVariables.default_date_expression)
 
     @property
     def date_expression(self):
@@ -34,9 +43,6 @@ class Task(object):
 
     @property
     def due_dates(self):
-        if len(self.__due_dates) == 0 and \
-                self.__date_expression == CommonVariables.default_date_expression:
-            self.__due_dates = self.date_generator.get_due_dates(CommonVariables.default_date_expression)
         return self.__due_dates
 
     @due_dates.setter
@@ -46,20 +52,24 @@ class Task(object):
             assert type(due_date_list[0]) is DueDate
         self.__due_dates = due_date_list
 
-    def complete_due_date(self):
+    def complete(self):
         if len(self.__due_dates) > 0:
             due_date_list = [due_date for due_date in self.__due_dates if not due_date.completed]
             if len(due_date_list) >= 1:
                 due_date_list[0].completed = True
 
-    def is_completed(self):
-        completed_tasks = len(list(filter(lambda d: d.completed is True, self.__due_dates)))
-        total_tasks = len(self.__due_dates)
-        return completed_tasks == total_tasks
+    def is_completed(self) -> bool:
+        completed_tasks: int = len(list(filter(lambda d: d.completed is True, self.__due_dates)))
+        total_tasks: int = len(self.__due_dates)
+        if completed_tasks == 0 and total_tasks == 0:
+            return False
+        else:
+            return completed_tasks == total_tasks
 
     def get_task_status(self):
         until_string = str()
         date_string = str()
+        text = textwrap.shorten(self.text, CommonVariables.default_text_field_length, placeholder="...")
 
         # If there is only 1 due_date then get the last object
         if len(self.due_dates) == 1:
@@ -67,7 +77,6 @@ class Task(object):
             date_string = due_date.date_string
 
         elif len(self.due_dates) > 1:
-            # filter(lambda t: getattr(t, sort_type) == value, self.get_list())
             due_date_list = list(filter(lambda d: d.completed is False, self.__due_dates))
 
             # If there are completed due_dates; then get the first .
@@ -75,7 +84,31 @@ class Task(object):
                 date_string = due_date_list[0].date_string
                 until_string = due_date_list[-1].date_string
 
-        return [self.index, self.is_completed(), self.text, self.project, self.label, date_string, until_string]
+        return [self.key, self.is_completed(), text, self.project, self.label, date_string, until_string]
+
+    @property
+    def id(self):
+        return self.__id
+
+    @id.setter
+    def id(self, id):
+        self.__id = id
+
+    @property
+    def key(self):
+        return self.__key
+
+    @key.setter
+    def key(self, key):
+        self.__key = str(key)
+
+    @property
+    def external_id(self):
+        return self.__external_id
+
+    @external_id.setter
+    def external_id(self, external_id):
+        self.__external_id = external_id
 
     @property
     def project(self):
@@ -85,14 +118,6 @@ class Task(object):
     def project(self, project):
         if len(str(project)) > 0 and project is not None:
             self.__project = project
-
-    @property
-    def index(self):
-        return self.__index
-
-    @index.setter
-    def index(self, index):
-        self.__index = int(index)
 
     @property
     def text(self):
@@ -110,19 +135,14 @@ class Task(object):
     @label.setter
     def label(self, label):
         if label is not None:
-            assert type(label) is str
-            if str(label).startswith("@"):
-                self.__label = label
-            else:
-                if len(str(label)) > 0:
-                    self.__label = "@{}".format(label)
+            self.__label = label
 
     @property
-    def delete(self):
+    def deleted(self):
         return self.__deleted
 
-    @delete.setter
-    def delete(self, deleted):
+    @deleted.setter
+    def deleted(self, deleted):
         assert type(deleted) is bool
         self.__deleted = deleted
 
@@ -135,8 +155,19 @@ class Task(object):
         assert type(priority) is int
         self.__priority = priority
 
+    @property
+    def last_updated(self):
+        return self.__last_updated
+
+    @last_updated.setter
+    def last_updated(self, last_updated):
+        assert type(last_updated) is str
+        self.__last_updated = last_updated
+
     def __iter__(self):
-        yield 'index', self.__index
+        yield 'id', self.__id
+        yield 'external_id', self.external_id
+        yield 'key', self.__key
         yield 'text', self.__text
         yield 'label', self.__label
         yield 'deleted', self.__deleted
@@ -144,3 +175,4 @@ class Task(object):
         yield 'project', self.__project
         yield 'date_expression', self.__date_expression
         yield 'due_dates', [due_date.to_dict() for due_date in self.due_dates]
+        yield 'last_updated', self.__last_updated

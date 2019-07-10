@@ -43,6 +43,18 @@ class MockTasksService(TasksService):
              'updated': '2019-05-16T04:07:15.000Z',
              'position': '00000000000000000003', 'status': 'needsAction'}]}
 
+        self.empty_tasks = {'kind': 'tasks#tasks', 'etag': '"84_7Cubo3y98GMV9bE3zQclHxhc/LTE4NTgxOTE5OQ"', 'items': []}
+
+        self.__return_empty_tasks = False
+
+    @property
+    def return_empty_tasks(self):
+        return self.__return_empty_tasks
+
+    @return_empty_tasks.setter
+    def return_empty_tasks(self, enable):
+        self.__return_empty_tasks = enable
+
     def list_tasklist(self):
         return self.tasklist
 
@@ -61,7 +73,10 @@ class MockTasksService(TasksService):
                 'updated': '2019-05-25T06:12:12.000Z'}
 
     def list_tasks(self, tasklist_id):
-        return self.tasks
+        if self.return_empty_tasks:
+            return self.empty_tasks
+        else:
+            return self.tasks
 
     def insert_task(self, tasklist_id, task):
         return self.task

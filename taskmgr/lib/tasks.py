@@ -1,10 +1,23 @@
 from copy import deepcopy
+from datetime import datetime
 
 from taskmgr.lib.date_generator import Calendar, Day, DueDate, Today
+from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.task import Task
 
 
+class TaskKeyError(IndexError):
+    logger = AppLogger("task_key_error").get_logger()
+    msg = "task.key cannot be found"
+
+    def __init__(self):
+        super().__init__(self.msg)
+        self.logger.error(self.msg)
+
+
 class SortType:
+    Complete = 'complete'
+    Incomplete = "incomplete"
     Label = "label"
     Project = "project"
     DueDate = "due_date"
@@ -14,7 +27,15 @@ class SortType:
         return value in SortType.__dict__.values()
 
 
+class TaskItem:
+
+    def __init__(self, index, task):
+        self.index = index
+        self.task = task
+
+
 class Tasks(object):
+    logger = AppLogger("tasks").get_logger()
 
     def __init__(self):
         self.__tasks = list()
@@ -22,87 +43,136 @@ class Tasks(object):
 
     def add(self, task):
         assert type(task) is Task
-        task.index = len(self.__tasks) + 1
+        task.last_updated = self.get_date_time_string()
+        self.logger.debug(f"added {dict(task)}")
         self.__tasks.append(task)
+        return task
 
-    def get_task_by_index(self, task_index):
-        task_list = [task for task in self.__tasks if task.index == task_index]
-        if len(task_list) == 1:
-            return task_list[0]
-        return []
+    def get_task(self, func) -> TaskItem:
+        for index, task in enumerate(self.__tasks):
+            if func(task) is not None:
+                self.logger.debug(f"Retrieved task by index: {index}, text: {task.text}")
+                return TaskItem(index, task)
 
-    def get_task_by_name(self, task_name):
-        task_list = [task for task in self.__tasks if task.text == task_name]
-        if len(task_list) == 1:
-            return task_list[0]
-        return []
+    def get_task_by_key(self, key) -> TaskItem:
+        assert type(key) is str
+        return self.get_task(lambda task: task if task.key == key else None)
 
-    def get_list(self):
-        return [task for task in self.__tasks if not task.delete]
+    def get_task_by_external_id(self, external_id) -> TaskItem:
+        assert type(external_id) is str
+        return self.get_task(lambda task: task if task.external_id == external_id else None)
+
+    def get_task_by_id(self, task_id) -> TaskItem:
+        assert type(task_id) is str
+        return self.get_task(lambda task: task if task.id == task_id else None)
+
+    def get_task_by_name(self, task_name) -> TaskItem:
+        assert type(task_name) is str
+        return self.get_task(lambda task: task if task.text == task_name else None)
 
     def get_list_by_type(self, sort_type, value):
         assert SortType.contains(sort_type)
         assert type(value) == str
-        return list(filter(lambda t: getattr(t, sort_type) == value, self.get_list()))
+        return list(filter(lambda t: getattr(t, sort_type) == value, self.get_filtered_list()))
 
-    def delete(self, task_index):
-        assert type(task_index) is int
-        for task in self.__tasks:
-            if task.index == task_index:
-                task.delete = True
+    def get_list(self):
+        return self.__tasks
 
-    def complete(self, task_index):
-        assert type(task_index) is int
-        task = self.get_task_by_index(task_index)
-        task.complete_due_date()
-        return task
+    def get_filtered_list(self):
+        return [task for task in self.__tasks if not task.deleted]
 
-    def edit(self, task_index, text, label, project, date_expression):
-        task = deepcopy(self.get_task_by_index(task_index))
-        task.text = text
-        task.label = label
-        task.project = project
-        task.date_expression = date_expression
-        self.__tasks[(task_index -1)] = task
-        return task
+    def delete(self, key) -> Task:
+        assert type(key) is str
 
-    def reschedule(self, today):
+        item = self.get_task_by_key(key)
+        if item.task is not None:
+            self.logger.debug(f"Deleting {dict(item.task)}")
+            item.task.last_updated = self.get_date_time_string()
+            item.task.deleted = True
+            return item.task
+        else:
+            raise TaskKeyError()
+
+    def complete(self, key) -> Task:
+        assert type(key) is str
+
+        item = self.get_task_by_key(key)
+        if item.task is not None:
+            item.task.last_updated = self.get_date_time_string()
+            item.task.complete()
+            return item.task
+        else:
+            raise TaskKeyError()
+
+    def replace(self, task) -> Task:
+        assert type(task) is Task
+
+        self.logger.debug(f"Attempting to replace task {dict(task)}")
+        item = TaskItem(0, None)
+        if type(task.external_id) is str and len(task.external_id) > 0:
+            item = deepcopy(self.get_task_by_external_id(task.external_id))
+        elif type(task.id) is str and len(task.id) > 0:
+            item = deepcopy(self.get_task_by_id(task.id))
+
+        if item.task is not None:
+            item.task.id = item.task.id
+            item.task.key = item.task.key
+            item.task.deleted = False
+            item.task.last_updated = self.get_date_time_string()
+            self.__tasks[item.index] = item.task
+            return item.task
+        else:
+            msg = "task.external_id or task.id is required"
+            self.logger.error(msg)
+            raise AttributeError(msg)
+
+    def edit(self, key, text, label, project, date_expression) -> Task:
+        item = deepcopy(self.get_task_by_key(key))
+        if item.task is not None:
+            item.task.text = text
+            item.task.label = label
+            item.task.project = project
+            item.task.date_expression = date_expression
+            item.task.last_updated = self.get_date_time_string()
+            self.__tasks[item.index] = item.task
+            return item.task
+        else:
+            raise TaskKeyError()
+
+    def reschedule(self, today) -> None:
         assert type(today) is Today or Day
-        for task in self.get_list():
+        for task in self.get_filtered_list():
             for due_date in task.due_dates:
                 if self.calendar.is_past(due_date, today) and due_date.completed is False:
+                    task.last_updated = self.get_date_time_string()
                     due_date.date_string = today.to_date_string()
 
     def clear(self):
         self.__tasks = []
 
     def to_dict(self):
-        return [dict(task) for task in self.get_list()]
+        return [dict(task) for task in self.get_filtered_list()]
 
     def sort(self, sort_type):
         assert SortType.contains(sort_type)
-        return [t for t in sorted(self.get_list(), key=lambda t: getattr(t, sort_type))]
+        return [t for t in sorted(self.get_filtered_list(), key=lambda t: getattr(t, sort_type))]
 
     def unique(self, sort_type):
         assert SortType.contains(sort_type)
-        return set([getattr(t, sort_type) for t in self.get_list()])
+        return set([getattr(t, sort_type) for t in self.get_filtered_list()])
 
     def from_dict(self, tasks_dict_list):
+        assert type(tasks_dict_list) is list
+
         for task_dict in tasks_dict_list:
-            task = Task(task_dict["text"])
-            task.delete = task_dict["deleted"]
-            task.index = task_dict["index"]
-            task.label = task_dict["label"]
-            task.project = task_dict["project"]
-            task.priority = task_dict["priority"]
-            task.date_expression = task_dict["date_expression"]
+            task = Task(getattr(task_dict, "text", str()))
+            for key, value in task_dict.items():
+                if type(value) is list:
+                    task.due_dates = [DueDate().from_dict(due_date_dict) for due_date_dict in value]
+                else:
+                    setattr(task, key, value)
+            self.__tasks.append(task)
 
-            due_date_list = list()
-            for due_date_dict in task_dict["due_dates"]:
-                d = DueDate()
-                d.date_string = due_date_dict["date_string"]
-                d.completed = due_date_dict["completed"]
-                due_date_list.append(d)
-
-            task.due_dates = due_date_list
-            self.add(task)
+    @staticmethod
+    def get_date_time_string() -> str:
+        return Day(datetime.now()).to_date_time_string()

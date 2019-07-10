@@ -47,7 +47,8 @@ class TestDateGenerator(unittest.TestCase):
         self.calendar = Calendar()
         self.date_generator = DateGenerator()
 
-    def tearDown(self): pass
+    def tearDown(self):
+        pass
 
     def test_pad_number(self):
         current_date_time = datetime.strptime('2019-03-12', CommonVariables.date_format)
@@ -175,6 +176,21 @@ class TestDateGenerator(unittest.TestCase):
     def test_short_date(self):
         due_date_list = self.date_generator.get_due_dates("apr 14")
         self.assertTrue(self.get_first_date_string(due_date_list) == '2019-04-14')
+
+    def test_validate_input(self):
+        self.assertTrue(self.date_generator.validate_input("every weekday"))
+        self.assertTrue(self.date_generator.validate_input("every tu"))
+        self.assertTrue(self.date_generator.validate_input("m"))
+        self.assertTrue(self.date_generator.validate_input("today"))
+        self.assertFalse(self.date_generator.validate_input("every"))
+        self.assertFalse(self.date_generator.validate_input("24"))
+        self.assertFalse(self.date_generator.validate_input("monday"))
+        self.assertTrue(self.date_generator.validate_input("apr 21"))
+        self.assertFalse(self.date_generator.validate_input("apr"))
+
+    def test_empty_date_handler(self):
+        due_date_list = self.date_generator.get_due_dates("empty")
+        self.assertListEqual(due_date_list, [])
 
 
 if __name__ == "__main__":
