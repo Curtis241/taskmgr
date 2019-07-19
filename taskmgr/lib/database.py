@@ -4,109 +4,101 @@ from abc import ABC, abstractmethod
 
 
 import yaml
+import ujson
 
 from taskmgr.lib.logger import AppLogger
-from taskmgr.lib.tasks import Tasks
 from taskmgr.lib.variables import CommonVariables
 
 
 class Database(ABC):
+    logger = AppLogger("database").get_logger()
 
     def __init__(self):
-        self.current_dir = pathlib.Path(__file__).parent
+        self.db_name = "tasks_db"
 
-    @staticmethod
-    def make_db_path(file_name):
+    def make_db_path(self, file_name):
         resources_dir = CommonVariables.resources_dir
-        path = f"{resources_dir}/{file_name}.yaml"
+        ext = self.get_ext()
+        path = f"{resources_dir}/{file_name}.{ext}"
         os.makedirs(resources_dir, 0o777, exist_ok=True)
         return path
-
-    @abstractmethod
-    def get_db_path(self): pass
-
-    @abstractmethod
-    def save(self, obj): pass
-
-    @abstractmethod
-    def retrieve(self): pass
-
-    @abstractmethod
-    def exists(self): pass
-
-    @abstractmethod
-    def remove(self): pass
-
-
-class FileDatabase(Database):
-    logger = AppLogger("file_database").get_logger()
-
-    def __init__(self, db_name="tasks_db"):
-        super().__init__()
-        self.tasks = Tasks()
-        self.db_name = db_name
 
     def get_db_path(self):
         return self.make_db_path(self.db_name)
 
-    def save(self, obj):
-        with open(self.get_db_path(), 'w') as outfile:
-            self.logger.debug("Saved database")
-            tasks_dict = obj.to_dict()
-            yaml.dump(tasks_dict, outfile, default_flow_style=False)
+    @abstractmethod
+    def save(self, obj_list):
+        pass
 
+    @abstractmethod
     def retrieve(self):
+        pass
 
+    @abstractmethod
+    def get_ext(self):
+        pass
+
+    def exists(self):
+        return os.path.exists(self.get_db_path())
+
+    def remove(self):
+        path = self.get_db_path()
+        try:
+            os.remove(path)
+        except Exception as ex:
+            self.logger.error(f"Cannot remove database file {path}")
+
+
+class JsonFileDatabase(Database):
+    logger = AppLogger("json_file_database").get_logger()
+
+    def __init__(self, db_name=None):
+        super().__init__()
+        if db_name is not None:
+            self.db_name = db_name
+
+    def save(self, obj_list):
+        assert type(obj_list) is list
         if not self.exists():
             self.make_db_path(self.db_name)
-
-        if self.exists():
-            self.logger.debug("Retrieved database")
-            with open(self.get_db_path(), 'r') as infile:
-                tasks_dict = yaml.load(infile)
-                self.tasks.from_dict(tasks_dict)
-                return self.tasks
-        else:
-            return self.tasks
-
-    def exists(self):
-        return os.path.exists(self.get_db_path())
-
-    def remove(self):
-        try:
-            os.remove(self.get_db_path())
-        except:
-            pass
-
-
-class SyncDatabase(Database):
-
-    def __init__(self):
-        super().__init__()
-        self.sync_list = SyncList()
-
-    def get_db_path(self):
-        return self.make_db_path("sync_db")
-
-    def save(self, obj):
         with open(self.get_db_path(), 'w') as outfile:
-            sync_dict = obj.to_dict()
-            yaml.dump(sync_dict, outfile, default_flow_style=False)
+            self.logger.debug("Saved json database")
+            ujson.dump(obj_list, outfile)
 
     def retrieve(self):
-        if self.exists():
-            with open(self.get_db_path(), 'r') as infile:
-                sync_dict = yaml.load(infile)
-                self.sync_list.from_dict(sync_dict)
-                return self.sync_list
+        if not self.exists():
+            self.make_db_path(self.db_name)
         else:
-            return self.sync_list
+            self.logger.debug("Retrieved json database")
+            with open(self.get_db_path(), 'r') as infile:
+                return ujson.load(infile)
 
-    def exists(self):
-        return os.path.exists(self.get_db_path())
+    def get_ext(self):
+        return "json"
 
-    def remove(self):
-        try:
-            os.remove(self.get_db_path())
-        except:
-            pass
+
+class YamlFileDatabase(Database):
+    logger = AppLogger("yaml_file_database").get_logger()
+
+    def __init__(self, db_name=None):
+        super().__init__()
+
+        if db_name is not None:
+            self.db_name = db_name
+
+    def save(self, obj_list):
+        assert type(obj_list) is list
+        with open(self.get_db_path(), 'w') as outfile:
+            self.logger.debug("Saved yaml database")
+            yaml.dump(obj_list, outfile, default_flow_style=False)
+
+    def retrieve(self):
+        if not self.exists():
+            self.make_db_path(self.db_name)
+        else:
+            self.logger.debug("Retrieved yaml database")
+            with open(self.get_db_path(), 'r') as infile:
+                return yaml.load(infile)
+
+    def get_ext(self):
+        return "yaml"

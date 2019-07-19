@@ -3,11 +3,11 @@ from datetime import datetime
 
 from prettytable import PrettyTable
 
-from taskmgr.lib.date_generator import Calendar, Today, Day, DueDate
+from taskmgr.lib.date_generator import Calendar, Today, Day, DueDate, DateGenerator
 from taskmgr.lib.google_tasks_api import TasksListAPI, TasksAPI, GTask, GTaskList
 from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.task import Task
-from taskmgr.lib.tasks import SortType
+from taskmgr.lib.tasks import SortType, Tasks
 from taskmgr.lib.variables import CommonVariables
 
 
@@ -68,9 +68,9 @@ class ImportObject:
 class SyncClient(object):
     logger = AppLogger("sync_client").get_logger()
 
-    def __init__(self, service, database):
-        self.db = database
-        self.tasks = self.db.retrieve()
+    def __init__(self, service, tasks):
+
+        self.tasks = tasks
         self.google_tasks_service = service
         self.tasks_list_api = TasksListAPI(self.google_tasks_service)
 
@@ -123,7 +123,10 @@ class SyncClient(object):
                     if existing_gtask is None:
                         tasks_api.insert(gtask)
                     else:
-                        tasks_api.update(gtask)
+                        if existing_gtask.deleted:
+                            tasks_api.delete(existing_gtask.title)
+                        else:
+                            tasks_api.update(gtask)
 
             else:
                 self.logger.debug("Cannot insert tasklist because title is null")
@@ -179,33 +182,104 @@ class SyncClient(object):
                     import_results.append(ImportObject(task, ImportObject.SKIPPED))
                     self.logger.debug(f"Skipping task {task.text} because it is already deleted")
 
-        self.db.save(self.tasks)
         return import_results
 
     def sync(self):
-        self.logger.info("Starting import")
+        start_datetime = datetime.now()
+        self.logger.info(f"Starting import")
         import_task_list = self.pull_tasks_from_service()
         self.logger.info(f"Retrieved {len(import_task_list)} tasks from service")
         import_results = self.import_tasks(import_task_list)
         self.logger.info(f"Import summary: {import_results.get_summary()}")
-        self.logger.info("Import complete")
+        self.logger.info(f"Import complete")
 
-        self.logger.info("Starting export")
+        self.logger.info(f"Starting export")
         export_task_list = self.tasks.get_list()
         self.logger.info(f"Preparing {len(export_task_list)} tasks for export")
         gtasks_list = self.export_tasks(export_task_list)
         if gtasks_list is not None:
             self.logger.info(f"Exporting tasks to service")
             self.push_tasks_to_service(gtasks_list)
-        self.logger.info("Export complete")
+
+        end_datetime = datetime.now()
+        duration = (end_datetime - start_datetime).total_seconds()
+        self.logger.info(f"Export complete: (Duration: {duration})")
 
 
-class CliClient(object):
+class Client:
+    logger = AppLogger("client").get_logger()
 
+    def __init__(self):
+        self.tasks = Tasks()
+        self.date_generator = DateGenerator()
+
+    def add_task(self, text, label, project, date_expression):
+
+        if self.date_generator.validate_input(date_expression):
+            task = Task(text)
+            task.label = label
+            task.project = project
+            task.date_expression = date_expression
+            self.tasks.add(task)
+            return task
+        else:
+            self.display_invalid_due_date_error(date_expression)
+            return None
+
+    def get_filtered_list(self):
+        return [task for task in self.tasks.get_list() if not task.deleted]
+
+    def delete_task(self, keys):
+        assert type(keys) is tuple
+        for key in keys:
+            if self.tasks.get_task_by_key(key) is not None:
+                self.tasks.delete(key)
+            else:
+                self.display_invalid_key_error(key)
+
+    def edit_task(self, **kwargs):
+        key = kwargs.get("key")
+        date_expression = kwargs.get("due_date")
+
+        if self.tasks.get_task_by_key(key) is None:
+            self.display_invalid_key_error(key)
+            return None
+
+        if self.date_generator.validate_input(date_expression):
+            self.display_invalid_due_date_error(date_expression)
+            return None
+
+        return self.tasks.edit(key, kwargs.get("text"), kwargs.get("label"), kwargs.get("project"),
+                               date_expression)
+
+    def complete_task(self, **kwargs):
+        key = kwargs.get("key")
+        if self.tasks.get_task_by_key(key) is None:
+            self.display_invalid_key_error(key)
+            return None
+
+        self.tasks.complete(key)
+
+    def reschedule_tasks(self, today=Today()):
+        self.tasks.reschedule(today)
+
+    def remove_all_tasks(self):
+        self.tasks.clear()
+
+    def display_invalid_key_error(self, key):
+        self.logger.info(f"Provided key {key} is invalid")
+
+    def display_invalid_due_date_error(self, date_expression):
+        self.logger.info(f"Provided due date {date_expression} is invalid")
+
+
+class CliClient(Client):
     logger = AppLogger("cli_client").get_logger()
 
-    def __init__(self, database):
+    def __init__(self):
+        super().__init__()
         self.calendar = Calendar()
+        self.rows = list()
 
         self.table = PrettyTable(["Id", "Done", "Text", "Project", "Label", "Due Date", "Until"])
         self.table.align["Id"] = "l"
@@ -216,123 +290,96 @@ class CliClient(object):
         self.table.align["Due Date"] = "l"
         self.table.align["Until"] = "l"
 
-        self.db = database
-        self.tasks = self.db.retrieve()
-
         self.views = [{"action": "group", "sort_type": SortType.Label, "func": self.__group_by_label},
                       {"action": "group", "sort_type": None, "func": self.__display_all_tasks},
                       {"action": "group", "sort_type": SortType.Project, "func": self.__group_by_project},
                       {"action": "filter", "sort_type": SortType.DueDate, "func": self.__filter_by_date},
-                      {"action": "filter", "sort_type": SortType.Incomplete, "func": self.__filter_by_incomplete_status},
-                      {"action": "filter", "sort_type": SortType.Complete, "func": self.__filter_by_complete_status}]
+                      {"action": "filter", "sort_type": SortType.Incomplete,
+                       "func": self.__filter_by_incomplete_status},
+                      {"action": "filter", "sort_type": SortType.Complete, "func": self.__filter_by_complete_status},
+                      {"action": "filter", "sort_type": SortType.Label, "func": self.__filter_by_label},
+                      {"action": "filter", "sort_type": SortType.Project, "func": self.__filter_by_project}]
 
-    def add_task(self, text, label, project, date_expression):
-        task = Task(text)
-        task.label = label
-        task.project = project
-        task.date_expression = date_expression
-        self.tasks.add(task)
-        self.db.save(self.tasks)
-        return task
+    def __add_row(self, task):
+        self.rows.append(task)
+        row_list = task.get_task_status()
+        self.table.add_row(row_list)
 
-    def delete_task(self, key):
-        assert type(key) is str
-        self.tasks.delete(key)
-        self.db.save(self.tasks)
-
-    def edit_task(self, **kwargs):
-        key = kwargs.get("key")
-        assert type(key) is str
-
-        self.logger.debug(f"edit_task: received {kwargs}")
-        task = self.tasks.edit(key, kwargs.get("text"), kwargs.get("label"), kwargs.get("project"),
-                               kwargs.get("due_date"))
-        self.db.save(self.tasks)
-        return task
-
-    def complete_task(self, key):
-        assert type(key) is str
-        self.tasks.complete(key)
-        self.db.save(self.tasks)
-
-    def reschedule_tasks(self, today=Today()):
-        self.tasks.reschedule(today)
-        self.db.save(self.tasks)
-
-    def group_tasks(self, sort_type=None):
-        for view_dict in self.views:
-            if view_dict["sort_type"] == sort_type and view_dict["action"] == "group":
-                func = view_dict["func"]
-                return func(self.tasks)
-
-    def filter_tasks(self, sort_type=None):
-        for view_dict in self.views:
-            if view_dict["sort_type"] == sort_type and view_dict["action"] == "filter":
-                func = view_dict["func"]
-                return func(self.tasks)
-
-    def list_labels(self):
-        print("Labels: {}".format(list(self.tasks.unique(SortType.Label))))
-
-    def list_projects(self):
-        print("Projects: {}".format(list(self.tasks.unique(SortType.Project))))
-
-    def __filter_by_date(self, tasks):
-        self.table.clear_rows()
-        for task in tasks.get_filtered_list():
-            if self.calendar.contains_today(task.due_dates):
-                self.table.add_row(self.__get_row(task))
-        print(self.table.get_string())
-        return tasks
-
-    @staticmethod
-    def __get_row(task):
-        return task.get_task_status()
-
-    def __print_row(self):
-        if len(self.table._rows) > 0:
+    def __print_table(self):
+        if len(self.rows) > 0:
             print(self.table.get_string())
+            return self.rows
         else:
             print("No rows to display. Use add command.")
 
-    def __group_by_label(self, tasks):
-        self.table.clear_rows()
-        for label in tasks.unique(SortType.Label):
-            for task in tasks.get_list_by_type(SortType.Label, label):
-                self.table.add_row(self.__get_row(task))
-        self.__print_row()
-        return tasks
+    def group_tasks(self, sort_type=None):
+        self.rows = list()
+        for view_dict in self.views:
+            if view_dict["sort_type"] == sort_type and view_dict["action"] == "group":
+                func = view_dict["func"]
+                return func()
 
-    def __group_by_project(self, tasks):
-        self.table.clear_rows()
-        for project in tasks.unique(SortType.Project):
-            for task in tasks.get_list_by_type(SortType.Project, project):
-                self.table.add_row(self.__get_row(task))
-        self.__print_row()
-        return tasks
+    def filter_tasks(self, **kwargs):
+        self.rows = list()
+        sort_type = kwargs.get("filter")
+        for view_dict in self.views:
+            if view_dict["sort_type"] == sort_type and view_dict["action"] == "filter":
+                func = view_dict["func"]
+                kwargs["tasks"] = self.get_filtered_list()
+                return func(**kwargs)
 
-    def __filter_by_incomplete_status(self, tasks):
+    def __list_labels(self):
+        print("Labels: {}".format(list(self.tasks.unique(SortType.Label))))
+
+    def __list_projects(self):
+        print("Projects: {}".format(list(self.tasks.unique(SortType.Project))))
+
+    def __group_by_label(self):
         self.table.clear_rows()
-        for task in tasks.get_filtered_list():
+        for label in self.tasks.unique(SortType.Label):
+            for task in self.tasks.get_list_by_type(SortType.Label, label):
+                self.__add_row(task)
+        return self.__print_table()
+
+    def __group_by_project(self):
+        self.table.clear_rows()
+        for project in self.tasks.unique(SortType.Project):
+            for task in self.tasks.get_list_by_type(SortType.Project, project):
+                self.__add_row(task)
+        return self.__print_table()
+
+    def __display_all_tasks(self):
+        self.table.clear_rows()
+        for task in self.get_filtered_list():
+            self.__add_row(task)
+        return self.__print_table()
+
+    def __filter_by_date(self, **kwargs):
+        self.table.clear_rows()
+        tasks_list = kwargs.get("tasks")
+        for task in tasks_list:
+            if self.calendar.contains_today(task.due_dates):
+                self.__add_row(task)
+        return self.__print_table()
+
+    def __filter_by_incomplete_status(self, **kwargs):
+        self.table.clear_rows()
+        tasks_list = kwargs.get("tasks")
+        for task in tasks_list:
             if not task.is_completed():
-                self.table.add_row(self.__get_row(task))
-        print(self.table.get_string())
-        return tasks
+                self.__add_row(task)
+        return self.__print_table()
 
-    def __filter_by_complete_status(self, tasks):
+    def __filter_by_complete_status(self, **kwargs):
         self.table.clear_rows()
-        for task in tasks.get_filtered_list():
+        tasks_list = kwargs.get("tasks")
+        for task in tasks_list:
             if task.is_completed():
-                self.table.add_row(self.__get_row(task))
-        print(self.table.get_string())
-        return tasks
+                self.__add_row(task)
+        return self.__print_table()
 
-    def __display_all_tasks(self, tasks):
-        self.table.clear_rows()
-        for task in tasks.get_filtered_list():
-            self.table.add_row(self.__get_row(task))
-        self.__print_row()
-        return tasks
+    def __filter_by_project(self, **kwargs):
+        print(f"filter_by_project: {kwargs}")
 
-    def remove_all_tasks(self):
-        self.db.remove()
+    def __filter_by_label(self, **kwargs):
+        print(f"filter_by_label {kwargs}")

@@ -1,13 +1,14 @@
-import click
 import sys
+
+import click
+
 from taskmgr.lib.client_lib import CliClient, SyncClient
-from taskmgr.lib.database import FileDatabase
-from taskmgr.lib.date_generator import DateGenerator
 from taskmgr.lib.google_tasks_api import GoogleTasksService
 from taskmgr.lib.logger import AppLogger
+from taskmgr.lib.tasks import SortType, Tasks
 from taskmgr.lib.variables import CommonVariables
 
-cli_client = CliClient(FileDatabase())
+cli_client = CliClient()
 logger = AppLogger("cli").get_logger()
 
 
@@ -25,12 +26,8 @@ def cli():
 @click.option('--due-date', '-d', help="due date for task", default=CommonVariables.default_date_expression,
               type=str, metavar='<due_date>')
 def add_task(**kwargs):
-    date_expression = kwargs["due_date"]
-    if DateGenerator().validate_input(date_expression):
-        cli_client.add_task(kwargs["text"], kwargs["label"], kwargs["project"], kwargs["due_date"])
+    if cli_client.add_task(kwargs["text"], kwargs["label"], kwargs["project"], kwargs["due_date"]) is not None:
         cli_client.group_tasks()
-    else:
-        logger.info(f"Provided due date {date_expression} is invalid")
 
 
 @cli.command("edit")
@@ -41,20 +38,15 @@ def add_task(**kwargs):
 @click.option('--due-date', '-d', help="due date for task", default=CommonVariables.default_date_expression,
               type=str, metavar='<due_date>')
 def edit_task(**kwargs):
-    date_expression = kwargs["due_date"]
-    if DateGenerator().validate_input(date_expression) is False:
-        logger.info(f"Provided due date {date_expression} is invalid")
-        exit(-1)
-
-    cli_client.edit_task(**kwargs)
-    cli_client.group_tasks()
+    if cli_client.edit_task(**kwargs) is not None:
+        cli_client.group_tasks()
 
 
 @cli.command("delete")
-@click.argument('key', type=str)
+@click.argument('key', nargs=-1, required=True)
 def delete_task(**kwargs):
-    cli_client.delete_task(kwargs["key"])
-    cli_client.group_tasks()
+    if cli_client.delete_task(kwargs["key"]) is not None:
+        cli_client.group_tasks()
 
 
 @cli.command("list")
@@ -65,15 +57,17 @@ def list_tasks(**kwargs):
 
 
 @cli.command("show")
-@click.option('--filter', '-f', help="Filter tasks by complete status", metavar='<filter>',
-              type=click.Choice(['incomplete', 'complete']))
+@click.option('--filter', '-f', help="Filter tasks by complete status, project, and label", metavar='<filter>',
+              type=click.Choice(['incomplete', 'complete', 'project', 'label']))
+@click.option('--value', '-v', help="Label or project value", metavar='<value>')
 def show_tasks(**kwargs):
-    cli_client.filter_tasks(kwargs["filter"])
+    cli_client.filter_tasks(**kwargs)
 
 
 @cli.command("today")
 def today():
-    cli_client.filter_tasks("due_date")
+    kwargs = {'filter': SortType.DueDate}
+    cli_client.filter_tasks(**kwargs)
 
 
 @cli.command("reschedule")
@@ -85,13 +79,13 @@ def reschedule():
 @cli.command("complete")
 @click.argument('key', type=str)
 def complete_task(**kwargs):
-    cli_client.complete_task(kwargs["key"])
-    cli_client.group_tasks()
+    if cli_client.complete_task(**kwargs):
+        cli_client.group_tasks()
 
 
 @cli.command("sync")
 def sync():
-    sync_client = SyncClient(GoogleTasksService(), FileDatabase())
+    sync_client = SyncClient(GoogleTasksService(), Tasks())
     sync_client.sync()
 
 

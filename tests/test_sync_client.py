@@ -1,9 +1,10 @@
 import unittest
 
 from taskmgr.lib.client_lib import SyncClient, ImportObject
-from taskmgr.lib.database import FileDatabase
+from taskmgr.lib.database import YamlFileDatabase, JsonFileDatabase
 from taskmgr.lib.date_generator import DueDate
 from taskmgr.lib.task import Task
+from taskmgr.lib.tasks import Tasks
 from tests.mock_tasks_service import MockTasksService
 
 
@@ -11,10 +12,13 @@ class TestSyncClient(unittest.TestCase):
 
     def setUp(self):
         self.service = MockTasksService()
-        self.sync_client = SyncClient(self.service, FileDatabase("test_tasks_db"))
+        self.db = JsonFileDatabase(db_name="test_sync_client_test_db")
+        self.tasks = Tasks(self.db)
+        self.sync_client = SyncClient(self.service, self.tasks)
 
     def tearDown(self):
-        self.sync_client.db.remove()
+        self.db.remove()
+        self.tasks.clear()
 
     def test_convert_datetime(self):
         date_string = self.sync_client.convert_rfc3339_to_date_string("2019-05-25T00:00:00.000Z")

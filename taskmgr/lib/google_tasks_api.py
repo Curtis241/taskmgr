@@ -248,9 +248,16 @@ class GoogleTasksService(TasksService):
     SCOPES = ['https://www.googleapis.com/auth/tasks']
 
     def __init__(self):
-        self.logger.info("Connecting to google tasks api")
+        start_datetime = datetime.now()
+        self.logger.info(f"Connecting to google tasks api")
         creds = self.get_credentials()
+        self.logger.info(f"Completed retrieving credentials")
         self.service = self.build_resource(creds)
+
+        end_datetime = datetime.now()
+        duration = (end_datetime - start_datetime).total_seconds()
+        self.logger.info(
+            f"Completed building resource: (Duration: {duration})")
 
     @staticmethod
     def get_credentials():
@@ -373,8 +380,9 @@ class TasksListAPI:
     def insert(self, title):
         assert type(title) is str and len(title) > 0
         if self.get(title) is None:
+            self.logger.info(f"Beginning tasklist insert: {datetime.now()}")
             tasklist_dict = self.service.insert_tasklist(title)
-            self.logger.debug(f"Inserted {title} tasklist")
+            self.logger.info(f"Inserted {title} tasklist: {datetime.now()}")
             return self.to_object(tasklist_dict)
         else:
             self.logger.error(f"{title} already exists")

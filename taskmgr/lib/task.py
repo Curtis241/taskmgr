@@ -1,5 +1,4 @@
 import textwrap
-import uuid
 
 from taskmgr.lib.date_generator import DateGenerator, DueDate
 from taskmgr.lib.variables import CommonVariables
@@ -13,7 +12,7 @@ class Task(object):
         self.__external_id = str()
         self.__text = text
         self.__label = CommonVariables.default_label
-        self.__deleted = False
+        self.__deleted = None
         self.__priority = 1
         self.__project = CommonVariables.default_project_name
         self.__last_updated = None
@@ -23,8 +22,8 @@ class Task(object):
         else:
             self.date_generator = date_generator
 
-        self.__id = uuid.uuid4().hex
-        self.__key = str(self.__id)[-3:]
+        self.__id = None
+        self.__key = None
         self.__date_expression = CommonVariables.default_date_expression
         self.__due_dates = self.date_generator.get_due_dates(CommonVariables.default_date_expression)
 

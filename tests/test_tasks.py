@@ -1,6 +1,7 @@
-from datetime import datetime
 import unittest
+from datetime import datetime
 
+from taskmgr.lib.database import JsonFileDatabase
 from taskmgr.lib.date_generator import DateGenerator, Day
 from taskmgr.lib.task import Task
 from taskmgr.lib.tasks import Tasks, SortType
@@ -14,7 +15,8 @@ class TestTasks(unittest.TestCase):
         return [due_date for due_date in due_dates if due_date.completed]
 
     def setUp(self):
-        self.tasks = Tasks()
+        self.db = JsonFileDatabase(db_name="test_tasks_file_db")
+        self.tasks = Tasks(self.db)
         self.task1 = Task("Task1")
         self.task1.label = "waiting"
         self.task1.date_expression = "may 2"
@@ -68,6 +70,7 @@ class TestTasks(unittest.TestCase):
 
     def tearDown(self):
         self.tasks.clear()
+        self.db.remove()
 
     def test_to_dict(self):
         returned_result = self.tasks.to_dict()
@@ -92,17 +95,16 @@ class TestTasks(unittest.TestCase):
              'project': 'inbox', 'date_expression': 'mar 9',
              'due_dates': [{"date_string": "2019-03-09", "completed": False}]}]
 
-        tasks = Tasks()
-        tasks.from_dict(tasks_dict_list)
-        tasks_list = tasks.get_filtered_list()
-        self.assertTrue(len(tasks_list) == 2)
+        self.tasks.from_dict(tasks_dict_list)
+        tasks_list = self.tasks.get_list()
+        self.assertTrue(len(tasks_list) == 12)
 
-        task1 = tasks_list[0]
+        task1 = tasks_list[10]
         self.assertTrue(len(task1.due_dates) == 1)
         self.assertTrue(task1.due_dates[0].date_string, '2019-03-09')
         self.assertTrue(task1.text == "Task1")
 
-        task2 = tasks_list[1]
+        task2 = tasks_list[11]
         self.assertTrue(len(task2.due_dates) == 1)
         self.assertTrue(task2.due_dates[0].date_string, '2019-03-09')
         self.assertTrue(task2.text == "Task2")
@@ -110,16 +112,20 @@ class TestTasks(unittest.TestCase):
     def test_add_task(self):
         task = Task("Task11")
         self.tasks.add(task)
-        task_list = self.tasks.get_filtered_list()
+        task_list = self.tasks.get_list()
         self.assertTrue(len(task_list) == 11)
 
         self.assertTrue(task.date_expression == "empty")
         self.assertFalse(task.is_completed())
 
     def test_deleted_task(self):
-        self.tasks.delete(self.task1.key)
-        task_list = self.tasks.get_filtered_list()
-        self.assertTrue(len(task_list) == 9)
+        key = self.task1.key
+        self.tasks.delete(key)
+        task_list = self.tasks.get_list()
+        self.assertTrue(len(task_list) == 10)
+        task = task_list[0]
+        self.assertEqual(task.key, key)
+        self.assertTrue(task.deleted)
 
     def test_complete_task(self):
         date_generator = DateGenerator()

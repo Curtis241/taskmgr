@@ -1,6 +1,8 @@
+import uuid
 from copy import deepcopy
 from datetime import datetime
 
+from taskmgr.lib.database import JsonFileDatabase
 from taskmgr.lib.date_generator import Calendar, Day, DueDate, Today
 from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.task import Task
@@ -37,15 +39,35 @@ class TaskItem:
 class Tasks(object):
     logger = AppLogger("tasks").get_logger()
 
-    def __init__(self):
+    def __init__(self, file_database=None):
+        self.__calendar = Calendar()
+
+        if file_database is not None:
+            self.__db = file_database
+        else:
+            self.__db = JsonFileDatabase()
+
         self.__tasks = list()
-        self.calendar = Calendar()
+        self.retrieve()
+
+    def save(self):
+        self.__db.save(self.to_dict())
+
+    def retrieve(self):
+        tasks_dict_list = self.__db.retrieve()
+        if tasks_dict_list is not None:
+            self.__tasks = list()
+            self.__tasks = self.from_dict(tasks_dict_list)
 
     def add(self, task):
         assert type(task) is Task
+        task.id = uuid.uuid4().hex
+        task.deleted = False
+        task.key = str(task.id)[-3:]
         task.last_updated = self.get_date_time_string()
         self.logger.debug(f"added {dict(task)}")
         self.__tasks.append(task)
+        self.save()
         return task
 
     def get_task(self, func) -> TaskItem:
@@ -73,13 +95,10 @@ class Tasks(object):
     def get_list_by_type(self, sort_type, value):
         assert SortType.contains(sort_type)
         assert type(value) == str
-        return list(filter(lambda t: getattr(t, sort_type) == value, self.get_filtered_list()))
+        return list(filter(lambda t: getattr(t, sort_type) == value, self.get_list()))
 
     def get_list(self):
         return self.__tasks
-
-    def get_filtered_list(self):
-        return [task for task in self.__tasks if not task.deleted]
 
     def delete(self, key) -> Task:
         assert type(key) is str
@@ -89,6 +108,8 @@ class Tasks(object):
             self.logger.debug(f"Deleting {dict(item.task)}")
             item.task.last_updated = self.get_date_time_string()
             item.task.deleted = True
+            self.__tasks[item.index] = item.task
+            self.save()
             return item.task
         else:
             raise TaskKeyError()
@@ -100,6 +121,8 @@ class Tasks(object):
         if item.task is not None:
             item.task.last_updated = self.get_date_time_string()
             item.task.complete()
+            self.__tasks[item.index] = item.task
+            self.save()
             return item.task
         else:
             raise TaskKeyError()
@@ -135,31 +158,33 @@ class Tasks(object):
             item.task.date_expression = date_expression
             item.task.last_updated = self.get_date_time_string()
             self.__tasks[item.index] = item.task
+            self.save()
             return item.task
         else:
             raise TaskKeyError()
 
     def reschedule(self, today) -> None:
         assert type(today) is Today or Day
-        for task in self.get_filtered_list():
+        for task in self.get_list():
             for due_date in task.due_dates:
-                if self.calendar.is_past(due_date, today) and due_date.completed is False:
+                if self.__calendar.is_past(due_date, today) and due_date.completed is False:
                     task.last_updated = self.get_date_time_string()
                     due_date.date_string = today.to_date_string()
+        self.save()
 
     def clear(self):
         self.__tasks = []
 
     def to_dict(self):
-        return [dict(task) for task in self.get_filtered_list()]
+        return [dict(task) for task in self.get_list()]
 
     def sort(self, sort_type):
         assert SortType.contains(sort_type)
-        return [t for t in sorted(self.get_filtered_list(), key=lambda t: getattr(t, sort_type))]
+        return [t for t in sorted(self.get_list(), key=lambda t: getattr(t, sort_type))]
 
     def unique(self, sort_type):
         assert SortType.contains(sort_type)
-        return set([getattr(t, sort_type) for t in self.get_filtered_list()])
+        return set([getattr(t, sort_type) for t in self.get_list()])
 
     def from_dict(self, tasks_dict_list):
         assert type(tasks_dict_list) is list
@@ -172,6 +197,7 @@ class Tasks(object):
                 else:
                     setattr(task, key, value)
             self.__tasks.append(task)
+        return self.__tasks
 
     @staticmethod
     def get_date_time_string() -> str:
