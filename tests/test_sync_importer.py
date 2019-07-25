@@ -1,46 +1,45 @@
 import unittest
 
-from taskmgr.lib.client_lib import SyncClient, ImportObject
-from taskmgr.lib.database import YamlFileDatabase, JsonFileDatabase
-from taskmgr.lib.date_generator import DueDate
+from taskmgr.lib.database import JsonFileDatabase
 from taskmgr.lib.task import Task
+from taskmgr.lib.task_sync import Importer, SyncAction
 from taskmgr.lib.tasks import Tasks
 from tests.mock_tasks_service import MockTasksService
 
 
-class TestSyncClient(unittest.TestCase):
+class TestSyncImporter(unittest.TestCase):
 
     def setUp(self):
         self.service = MockTasksService()
-        self.db = JsonFileDatabase(db_name="test_sync_client_test_db")
+        self.db = JsonFileDatabase(db_name="test_sync_importer_test_db")
         self.tasks = Tasks(self.db)
-        self.sync_client = SyncClient(self.service, self.tasks)
+        self.importer = Importer(self.service, self.tasks)
 
     def tearDown(self):
         self.db.remove()
         self.tasks.clear()
 
     def test_convert_datetime(self):
-        date_string = self.sync_client.convert_rfc3339_to_date_string("2019-05-25T00:00:00.000Z")
+        date_string = self.importer.convert_rfc3339_to_date_string("2019-05-25T00:00:00.000Z")
         self.assertEqual(date_string, '2019-05-25')
 
     def test_pull_tasks_from_service_when_empty(self):
         self.service.return_empty_tasks = True
-        task_list = self.sync_client.pull_tasks_from_service()
+        task_list = self.importer.convert()
         self.assertListEqual(task_list, [])
 
     def test_pull_tasks_from_service_when_null(self):
         self.service.tasks = {'kind': 'tasks#tasks', 'etag': '', 'items': [
             {'kind': 'tasks#task', 'id': '', 'title': '', 'updated': '',
              'position': '', 'status': '', 'due': ''}]}
-        task_list = self.sync_client.pull_tasks_from_service()
+        task_list = self.importer.convert()
         self.assertListEqual(task_list, [])
 
     def test_title_to_text(self):
         self.service.tasks = {'kind': 'tasks#tasks', 'etag': '', 'items': [
             {'kind': 'tasks#task', 'id': '', 'title': 'Title1', 'updated': '',
              'position': '', 'status': '', 'due': ''}]}
-        task_list = self.sync_client.pull_tasks_from_service()
+        task_list = self.importer.convert()
         self.assertTrue(len(task_list) == 2)
         task1 = task_list[0]
         self.assertTrue(task1.text == "Title1")
@@ -49,7 +48,7 @@ class TestSyncClient(unittest.TestCase):
         self.service.tasks = {'kind': 'tasks#tasks', 'etag': '', 'items': [
             {'kind': 'tasks#task', 'id': '', 'title': 'Title1', 'updated': '',
              'position': '', 'status': '', 'due': '', 'deleted': True}]}
-        task_list = self.sync_client.pull_tasks_from_service()
+        task_list = self.importer.convert()
         self.assertTrue(len(task_list) == 2)
         task1 = task_list[0]
         self.assertTrue(task1.deleted)
@@ -61,7 +60,7 @@ class TestSyncClient(unittest.TestCase):
              'updated': '2019-05-17T03:48:30.000Z',
              'position': '00000000000000000001', 'notes': 'Notes1',
              'status': 'needsAction'}]}
-        task_list = self.sync_client.pull_tasks_from_service()
+        task_list = self.importer.convert()
         self.assertTrue(len(task_list) == 2)
         task1 = task_list[0]
         self.assertTrue(task1.label == "Notes1")
@@ -73,6 +72,8 @@ class TestSyncClient(unittest.TestCase):
 
         task101 = Task('Task101')
         task101.external_id = "100"
+        task101.label = "home"
+        task101.deleted = False
 
         task102 = Task('Task101')
         task102.deleted = True
@@ -80,41 +81,14 @@ class TestSyncClient(unittest.TestCase):
 
         tasks_list = [task100, task101, task102]
 
-        import_results = self.sync_client.import_tasks(tasks_list)
-        import_results_list = import_results.get_list()
-        self.assertTrue(len(import_results_list) == 3)
+        sync_results = self.importer.import_tasks(tasks_list)
+        sync_results_list = sync_results.get_list()
+        self.assertTrue(len(sync_results_list) == 3)
 
-        result1 = import_results_list[0]
-        print(f"result1: {dict(result1)}")
-        self.assertTrue(result1.action == ImportObject.ADDED)
-        self.assertTrue(len(result1.task.id) > 0)
+        self.assertTrue(sync_results_list[0] == SyncAction.ADDED)
+        self.assertTrue(sync_results_list[1] == SyncAction.UPDATED)
+        self.assertTrue(sync_results_list[2] == SyncAction.DELETED)
 
-        result2 = import_results_list[1]
-        print(f"result2: {dict(result2)}")
-        self.assertTrue(result2.action == ImportObject.UPDATED)
-        self.assertFalse(result2.task.deleted)
 
-        result3 = import_results_list[2]
-        print(f"result3: {dict(result3)}")
-        self.assertTrue(result3.action == ImportObject.DELETED)
-        self.assertTrue(result3.task.deleted)
-
-    def test_export_tasks(self):
-        task100 = Task('Task100')
-        task100.project = "home"
-        due_date = DueDate()
-        due_date.completed = False
-        due_date.date_string = '2019-04-17'
-        task100.due_dates = [due_date]
-
-        task101 = Task('Task101')
-        task101.project = "home"
-
-        task102 = Task('Task102')
-        task102.project = "work"
-
-        tasks_list = [task100, task101, task102]
-        gtasks_list = self.sync_client.export_tasks(tasks_list)
-        self.assertTrue(len(gtasks_list) == 2)
 
 

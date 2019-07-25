@@ -129,7 +129,7 @@ class Calendar:
     def contains_today(due_date_list, current_day=Today()):
         """
         Looks for today's date in provided list of date strings
-        :param date_string_list: ["2019-01-01"]
+        :param due_date_list: ["2019-01-01"]
         :param current_day: Day object
         :return:
         Boolean value

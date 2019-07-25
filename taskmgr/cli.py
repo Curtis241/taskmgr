@@ -5,6 +5,7 @@ import click
 from taskmgr.lib.client_lib import CliClient, SyncClient
 from taskmgr.lib.google_tasks_api import GoogleTasksService
 from taskmgr.lib.logger import AppLogger
+from taskmgr.lib.task_sync import Importer, Exporter
 from taskmgr.lib.tasks import SortType, Tasks
 from taskmgr.lib.variables import CommonVariables
 
@@ -77,16 +78,27 @@ def reschedule():
 
 
 @cli.command("complete")
-@click.argument('key', type=str)
+@click.argument('key', nargs=-1, required=True)
 def complete_task(**kwargs):
-    if cli_client.complete_task(**kwargs):
+    if cli_client.complete_task(kwargs["key"]) is not None:
         cli_client.group_tasks()
 
 
 @cli.command("sync")
-def sync():
-    sync_client = SyncClient(GoogleTasksService(), Tasks())
-    sync_client.sync()
+@click.option('--export', '-e', default=False, is_flag=True)
+@click.option('--import', '-i', default=False, is_flag=True)
+def sync(**kwargs):
+    export_enabled = kwargs["export"]
+    import_enabled = kwargs["import"]
+
+    if export_enabled is False and import_enabled is False:
+        logger.info("Nothing to do. Enable import and export using parameters")
+        exit(-1)
+
+    service = GoogleTasksService()
+    tasks = Tasks()
+    sync_client = SyncClient(Importer(service, tasks), Exporter(service, tasks))
+    sync_client.sync(export_enabled, import_enabled)
 
 
 if __name__ == "__main__":

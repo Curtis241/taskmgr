@@ -1,5 +1,4 @@
 import os.path
-import pathlib
 import pickle
 from abc import ABC, abstractmethod
 from datetime import datetime
@@ -84,10 +83,10 @@ class GTask:
         yield 'id', self.__id
         yield 'title', self.__title
         yield 'parent', self.__parent
-        yield 'position', self.__position
+        # yield 'position', self.__position
         yield 'notes', self.__notes
         yield 'status', self.__status
-        yield 'updated', self.__updated
+        # yield 'updated', self.__updated
 
         # if due and completed are included when they are empty
         # service throws 404 error.
@@ -248,16 +247,11 @@ class GoogleTasksService(TasksService):
     SCOPES = ['https://www.googleapis.com/auth/tasks']
 
     def __init__(self):
-        start_datetime = datetime.now()
         self.logger.info(f"Connecting to google tasks api")
         creds = self.get_credentials()
         self.logger.info(f"Completed retrieving credentials")
         self.service = self.build_resource(creds)
-
-        end_datetime = datetime.now()
-        duration = (end_datetime - start_datetime).total_seconds()
-        self.logger.info(
-            f"Completed building resource: (Duration: {duration})")
+        self.logger.info(f"Completed building resource")
 
     @staticmethod
     def get_credentials():
@@ -366,7 +360,7 @@ class TasksListAPI:
         results = self.service.list_tasklist()
         tasklist_list = results.get('items', [])
         if not tasklist_list:
-            self.logger.info('No tasklists found.')
+            self.logger.debug('No tasklists found.')
         return self.to_object_list(tasklist_list)
 
     def get(self, title):
@@ -380,9 +374,9 @@ class TasksListAPI:
     def insert(self, title):
         assert type(title) is str and len(title) > 0
         if self.get(title) is None:
-            self.logger.info(f"Beginning tasklist insert: {datetime.now()}")
+            self.logger.debug(f"Beginning tasklist insert")
             tasklist_dict = self.service.insert_tasklist(title)
-            self.logger.info(f"Inserted {title} tasklist: {datetime.now()}")
+            self.logger.debug(f"Inserted {title} tasklist")
             return self.to_object(tasklist_dict)
         else:
             self.logger.error(f"{title} already exists")
@@ -405,7 +399,7 @@ class TasksListAPI:
         if tasklist is not None:
             tasklist.title = new_title
             tasklist_dict = self.service.update_tasklist(tasklist.id, dict(tasklist))
-            self.logger.info("Updated {} to {}".format(current_title, new_title))
+            self.logger.debug("Updated {} to {}".format(current_title, new_title))
             return self.to_object(tasklist_dict)
 
 
@@ -450,21 +444,21 @@ class TasksAPI:
         assert len(task_obj.title) > 0
 
         if self.get(task_obj.title) is None:
-            self.logger.info("Inserted {}".format(task_obj.title))
+            self.logger.debug("Inserted {}".format(task_obj.title))
             self.service.insert_task(self.tasklist_id, dict(task_obj))
             return True
         else:
-            self.logger.info("{} already exists".format(task_obj.title))
+            self.logger.debug("{} already exists".format(task_obj.title))
 
     def clear(self):
-        self.logger.info("Cleared {} tasklist".format(self.tasklist_id))
+        self.logger.debug("Cleared {} tasklist".format(self.tasklist_id))
         self.service.clear_tasks(self.tasklist_id)
 
     def delete(self, title):
         task = self.get(title)
         if task is not None:
             self.service.delete_task(self.tasklist_id, task.id)
-            self.logger.info("Deleted {}".format(task.title))
+            self.logger.debug("Deleted {}".format(task.title))
             return True
 
     def update(self, task_obj):
@@ -473,6 +467,6 @@ class TasksAPI:
 
         task = self.get(task_obj.title)
         if task is not None:
-            self.logger.info("Updated {}".format(task.title))
+            self.logger.debug("Updated {}".format(task.title))
             task_obj.id = task.id
             return self.to_object(self.service.update_task(self.tasklist_id, task.id, dict(task_obj)))

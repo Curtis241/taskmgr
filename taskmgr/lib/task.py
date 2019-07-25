@@ -52,10 +52,14 @@ class Task(object):
         self.__due_dates = due_date_list
 
     def complete(self):
-        if len(self.__due_dates) > 0:
-            due_date_list = [due_date for due_date in self.__due_dates if not due_date.completed]
-            if len(due_date_list) >= 1:
-                due_date_list[0].completed = True
+        # if len(self.__due_dates) > 0:
+        due_date_list = [due_date for due_date in self.__due_dates if not due_date.completed]
+        if len(due_date_list) >= 1:
+            due_date_list[0].completed = True
+        else:
+            due_date = DueDate()
+            due_date.completed = True
+            self.__due_dates.append(due_date)
 
     def is_completed(self) -> bool:
         completed_tasks: int = len(list(filter(lambda d: d.completed is True, self.__due_dates)))

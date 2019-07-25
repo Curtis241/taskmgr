@@ -20,5 +20,6 @@ class CommonVariables:
     credentials_dir = f"{home}/.config/taskmgr/credentials/"
     log_dir = f"{home}/.config/taskmgr/log/"
 
-    # CLI defaults
+    # CliClient defaults
     default_text_field_length = 50
+

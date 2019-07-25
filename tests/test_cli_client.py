@@ -21,14 +21,14 @@ class TestCliClient(unittest.TestCase):
         self.task6 = self.client.add_task("Paint picture", "@idea", "home", "sa")
         self.task7 = self.client.add_task("Build puzzle with family", "@idea", "home", "su")
         self.task8 = self.client.add_task("Schedule meeting with SW team", "@meeting", "work", "m")
-        self.task9 = self.client.add_task("Create facebook 2.0 app", "@idea", "", "")
+        self.task9 = self.client.add_task("Create facebook 2.0 app", "@idea", "", "empty")
 
     def tearDown(self):
         self.client.remove_all_tasks()
         self.db.remove()
 
     def test_add_task(self):
-        self.client.add_task("Clean garage", "", "home", "")
+        self.client.add_task("Clean garage", "", "home", "empty")
         self.assertTrue(len(self.client.tasks.get_list()) == 10)
 
     def test_list_all_tasks(self):
