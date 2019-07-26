@@ -46,6 +46,7 @@ class Rules:
         self.action = action
         self.state = state
         self.rule_list = list()
+        self.summary_list = list()
 
     def add(self, rule):
         assert type(rule) is Rule
@@ -54,10 +55,13 @@ class Rules:
     def get_result(self):
         for rule in self.rule_list:
             if rule.rule_result is False:
-                self.logger.debug(f"Rule {rule.name} failed for {self.action}.{self.state}")
                 return False
-
         return True
+
+    def print_summary(self):
+        for rule in self.rule_list:
+            self.summary_list.append(dict(rule))
+        self.logger.debug(f"action: {self.action}, state: {self.state}, result: {self.summary_list}")
 
 
 class Rule:
@@ -65,6 +69,10 @@ class Rule:
     def __init__(self, name, rule_result=False):
         self.name = name
         self.rule_result = rule_result
+
+    def __iter__(self):
+        yield "name", self.name
+        yield "result", self.rule_result
 
 
 class SyncAction(ABC):
@@ -175,6 +183,12 @@ class ExportAction(SyncAction):
         else:
             return Rule("external_ids_match", False)
 
+    def titles_match(self) -> Rule:
+        if self.local_task is not None and self.remote_task is not None:
+            return Rule("titles_match", self.local_task.title == self.remote_task.title)
+        else:
+            return Rule("titles_match", False)
+
     def can_delete(self):
         """
         Remote task must exist, and also not be deleted.
@@ -186,6 +200,7 @@ class ExportAction(SyncAction):
         rules.add(self.remote_task_exists())
         rules.add(self.remote_task_is_not_deleted())
         rules.add(self.ids_match())
+        rules.print_summary()
         return rules.get_result()
 
     def can_insert(self):
@@ -197,6 +212,7 @@ class ExportAction(SyncAction):
         rules = Rules(self.get_name(), "insert")
         rules.add(self.remote_task_does_not_exist())
         rules.add(self.local_task_is_not_deleted())
+        rules.print_summary()
         return rules.get_result()
 
     def can_update(self):
@@ -204,14 +220,15 @@ class ExportAction(SyncAction):
         Remote task must exist
         Local task must not be deleted
         Local task must not be equal to remote task
-        External id in local and remote tasks must match
+        Titles in local and remote task must match
         :return:
         """
         rules = Rules(self.get_name(), "update")
         rules.add(self.remote_task_exists())
         rules.add(self.local_task_is_not_deleted())
         rules.add(self.has_changed())
-        rules.add(self.ids_match())
+        rules.add(self.titles_match())
+        rules.print_summary()
         return rules.get_result()
 
 
@@ -253,13 +270,15 @@ class ImportAction(SyncAction):
         rules.add(self.local_task_exists())
         rules.add(self.local_task_is_not_deleted())
         rules.add(self.external_ids_match())
+        rules.print_summary()
         return rules.get_result()
 
     def can_update(self):
         """
-        Title in remote and text in local tasks must match
         Local task must exist
         Remote task must exist
+        External ids match
+        Remote task is not deleted
         :return:
         """
         rules = Rules(self.get_name(), "update")
@@ -267,17 +286,21 @@ class ImportAction(SyncAction):
         rules.add(self.remote_task_exists())
         rules.add(self.external_ids_match())
         rules.add(self.remote_task_is_not_deleted())
+        rules.print_summary()
         return rules.get_result()
 
     def can_insert(self):
         """
         Local task must not exist
         Remote task must exist
+        Remote task must not be deleted
         :return:
         """
         rules = Rules(self.get_name(), "insert")
         rules.add(self.local_task_does_not_exist())
         rules.add(self.remote_task_exists())
+        rules.add(self.remote_task_is_not_deleted())
+        rules.print_summary()
         return rules.get_result()
 
 
@@ -411,35 +434,41 @@ class Exporter:
         :param local_task_list:
         :return:
         """
+        self.logger.debug("Starting task export")
         sync_results = SyncResultsList()
         for gtask_list in local_task_list:
-            if len(gtask_list.title) > 0:
-                existing_gtask_list = self.tasks_list_api.get(gtask_list.title)
-                if existing_gtask_list is None:
-                    existing_gtask_list = self.tasks_list_api.insert(gtask_list.title)
+            existing_gtask_list = self.tasks_list_api.get(gtask_list.title)
+            if existing_gtask_list is None:
+                existing_gtask_list = self.tasks_list_api.insert(gtask_list.title)
 
-                tasks_api = TasksAPI(existing_gtask_list.id, self.google_tasks_service)
-                for local_gtask in gtask_list.tasks:
-                    remote_gtask = tasks_api.get(local_gtask.title)
+            tasks_api = TasksAPI(existing_gtask_list.id, self.google_tasks_service)
+            for local_gtask in gtask_list.tasks:
+                self.logger.debug(f"local task: {dict(local_gtask)}")
+                remote_gtask = tasks_api.get(local_gtask.title)
 
-                    action = ExportAction(local_gtask, remote_gtask)
-                    if action.can_insert():
-                        self.logger.debug(f"Inserting task {local_gtask.title} into service")
-                        tasks_api.insert(local_gtask)
-                        sync_results.append(SyncAction.ADDED)
+                if remote_gtask is not None:
+                    self.logger.debug(f"remote task: {dict(remote_gtask)}")
+                else:
+                    self.logger.debug(f"remote_task: None")
 
-                    elif action.can_update():
-                        self.logger.debug(f"Updating task {local_gtask.title} from service")
-                        tasks_api.update(local_gtask)
-                        sync_results.append(SyncAction.UPDATED)
+                action = ExportAction(local_gtask, remote_gtask)
+                if action.can_insert():
+                    self.logger.debug(f"Inserting task {local_gtask.title} into service")
+                    tasks_api.insert(local_gtask)
+                    sync_results.append(SyncAction.ADDED)
 
-                    elif action.can_delete():
-                        self.logger.debug(f"Deleting task {local_gtask.title} from service")
-                        tasks_api.delete(local_gtask.title)
-                        sync_results.append(SyncAction.DELETED)
+                elif action.can_update():
+                    self.logger.debug(f"Updating task {local_gtask.title} from service")
+                    tasks_api.update(local_gtask)
+                    sync_results.append(SyncAction.UPDATED)
 
-                    else:
-                        self.logger.debug(f"Skipping task {local_gtask.title}")
-                        sync_results.append(SyncAction.SKIPPED)
+                elif action.can_delete():
+                    self.logger.debug(f"Deleting task {local_gtask.title} from service")
+                    tasks_api.delete(local_gtask.title)
+                    sync_results.append(SyncAction.DELETED)
+
+                else:
+                    self.logger.debug(f"Skipping task {local_gtask.title}")
+                    sync_results.append(SyncAction.SKIPPED)
 
         return sync_results

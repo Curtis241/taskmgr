@@ -66,9 +66,6 @@ class Client:
             self.display_invalid_due_date_error(date_expression)
             return None
 
-    def get_filtered_list(self):
-        return [task for task in self.tasks.get_list() if not task.deleted]
-
     def delete_task(self, keys):
         assert type(keys) is tuple
         for key in keys:
@@ -165,7 +162,7 @@ class CliClient(Client):
         for view_dict in self.views:
             if view_dict["sort_type"] == sort_type and view_dict["action"] == "filter":
                 func = view_dict["func"]
-                kwargs["tasks"] = self.get_filtered_list()
+                kwargs["tasks"] = self.tasks.get_filtered_list()
                 return func(**kwargs)
 
     def __list_labels(self):
@@ -190,7 +187,7 @@ class CliClient(Client):
 
     def __display_all_tasks(self):
         self.table.clear_rows()
-        for task in self.get_filtered_list():
+        for task in self.tasks.get_filtered_list():
             self.__add_row(task)
         return self.__print_table()
 
@@ -219,7 +216,14 @@ class CliClient(Client):
         return self.__print_table()
 
     def __filter_by_project(self, **kwargs):
-        print(f"filter_by_project: {kwargs}")
+        project = kwargs.get("value")
+        for task in self.tasks.get_list_by_type(SortType.Project, project):
+            self.__add_row(task)
+        return self.__print_table()
 
     def __filter_by_label(self, **kwargs):
-        print(f"filter_by_label {kwargs}")
+        label = kwargs.get("value")
+        for task in self.tasks.get_list_by_type(SortType.Label, label):
+            self.__add_row(task)
+        return self.__print_table()
+

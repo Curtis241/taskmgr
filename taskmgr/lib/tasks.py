@@ -71,7 +71,7 @@ class Tasks(object):
         return task
 
     def get_task(self, func) -> TaskItem:
-        for index, task in enumerate(self.__tasks):
+        for index, task in enumerate(self.get_filtered_list()):
             if func(task) is not None:
                 self.logger.debug(f"Retrieved task by index: {index}, text: {task.text}")
                 return TaskItem(index, task)
@@ -96,6 +96,9 @@ class Tasks(object):
         assert SortType.contains(sort_type)
         assert type(value) == str
         return list(filter(lambda t: getattr(t, sort_type) == value, self.get_list()))
+
+    def get_filtered_list(self):
+        return [task for task in self.get_list() if not task.deleted]
 
     def get_list(self):
         return self.__tasks

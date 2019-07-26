@@ -360,7 +360,7 @@ class TasksListAPI:
         results = self.service.list_tasklist()
         tasklist_list = results.get('items', [])
         if not tasklist_list:
-            self.logger.debug('No tasklists found.')
+            self.logger.error('No tasklists found.')
         return self.to_object_list(tasklist_list)
 
     def get(self, title):
@@ -374,9 +374,7 @@ class TasksListAPI:
     def insert(self, title):
         assert type(title) is str and len(title) > 0
         if self.get(title) is None:
-            self.logger.debug(f"Beginning tasklist insert")
             tasklist_dict = self.service.insert_tasklist(title)
-            self.logger.debug(f"Inserted {title} tasklist")
             return self.to_object(tasklist_dict)
         else:
             self.logger.error(f"{title} already exists")
@@ -386,7 +384,6 @@ class TasksListAPI:
         tasklist = self.get(title)
         if tasklist is not None:
             self.service.delete_tasklist(tasklist.id)
-            self.logger.debug(f"Deleted {title} tasklist")
             return True
         else:
             self.logger.error("{} does not exist".format(title))
@@ -399,7 +396,6 @@ class TasksListAPI:
         if tasklist is not None:
             tasklist.title = new_title
             tasklist_dict = self.service.update_tasklist(tasklist.id, dict(tasklist))
-            self.logger.debug("Updated {} to {}".format(current_title, new_title))
             return self.to_object(tasklist_dict)
 
 
@@ -415,7 +411,6 @@ class TasksAPI:
     def to_object(task_dict):
 
         if type(task_dict) is dict:
-            TasksAPI.logger.debug(f"TasksAPI.to_object: {task_dict}")
             obj = GTask()
             for key, value in task_dict.items():
                 setattr(obj, key, value)
@@ -444,21 +439,18 @@ class TasksAPI:
         assert len(task_obj.title) > 0
 
         if self.get(task_obj.title) is None:
-            self.logger.debug("Inserted {}".format(task_obj.title))
             self.service.insert_task(self.tasklist_id, dict(task_obj))
             return True
         else:
             self.logger.debug("{} already exists".format(task_obj.title))
 
     def clear(self):
-        self.logger.debug("Cleared {} tasklist".format(self.tasklist_id))
         self.service.clear_tasks(self.tasklist_id)
 
     def delete(self, title):
         task = self.get(title)
         if task is not None:
             self.service.delete_task(self.tasklist_id, task.id)
-            self.logger.debug("Deleted {}".format(task.title))
             return True
 
     def update(self, task_obj):
@@ -467,6 +459,5 @@ class TasksAPI:
 
         task = self.get(task_obj.title)
         if task is not None:
-            self.logger.debug("Updated {}".format(task.title))
             task_obj.id = task.id
             return self.to_object(self.service.update_task(self.tasklist_id, task.id, dict(task_obj)))
