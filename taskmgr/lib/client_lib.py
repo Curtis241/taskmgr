@@ -1,8 +1,10 @@
+
 from datetime import datetime
 
 from prettytable import PrettyTable
 
 from taskmgr.lib.date_generator import Calendar, Today, DateGenerator
+from taskmgr.lib.file_exporter import FileExporter
 from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.task import Task
 from taskmgr.lib.tasks import SortType, Tasks
@@ -197,7 +199,11 @@ class CliClient(Client):
         for task in tasks_list:
             if self.calendar.contains_today(task.due_dates):
                 self.__add_row(task)
-        return self.__print_table()
+            rows = self.__print_table()
+            if "save" in kwargs and kwargs.get("save") is not None:
+                exporter = FileExporter(kwargs.get("save"))
+                exporter.save(rows)
+            return rows
 
     def __filter_by_incomplete_status(self, **kwargs):
         self.table.clear_rows()

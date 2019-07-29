@@ -25,7 +25,7 @@ class Task(object):
         self.__id = None
         self.__key = None
         self.__date_expression = CommonVariables.default_date_expression
-        self.__due_dates = self.date_generator.get_due_dates(CommonVariables.default_date_expression)
+        self.__due_dates = [DueDate()]
 
     @property
     def date_expression(self):
@@ -52,14 +52,9 @@ class Task(object):
         self.__due_dates = due_date_list
 
     def complete(self):
-        # if len(self.__due_dates) > 0:
-        due_date_list = [due_date for due_date in self.__due_dates if not due_date.completed]
-        if len(due_date_list) >= 1:
+        if len(self.__due_dates) > 0:
+            due_date_list = [due_date for due_date in self.__due_dates if not due_date.completed]
             due_date_list[0].completed = True
-        else:
-            due_date = DueDate()
-            due_date.completed = True
-            self.__due_dates.append(due_date)
 
     def is_completed(self) -> bool:
         completed_tasks: int = len(list(filter(lambda d: d.completed is True, self.__due_dates)))

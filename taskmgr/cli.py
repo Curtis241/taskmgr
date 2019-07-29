@@ -66,8 +66,9 @@ def show_tasks(**kwargs):
 
 
 @cli.command("today")
-def today():
-    kwargs = {'filter': SortType.DueDate}
+@click.option('--save', '-s', help="Destination path to save markdown file.", metavar='<save>')
+def today(**kwargs):
+    kwargs["filter"] = SortType.DueDate
     cli_client.filter_tasks(**kwargs)
 
 

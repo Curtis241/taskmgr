@@ -7,6 +7,7 @@ class CommonVariables:
     date_time_format = "%Y-%m-%d %H:%M:%S"
     time_format = "%H:%M:%S"
     rfc3339_date_time_format = '%Y-%m-%dT%H:%M:%S.%fZ'
+    file_name_timestamp = "%Y%m%d_%H%M%S"
     recurring_month_limit = 2
 
     # Task defaults

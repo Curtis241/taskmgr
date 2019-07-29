@@ -117,7 +117,7 @@ class Calendar:
     @staticmethod
     def is_past(due_date, current_day=Today()):
 
-        if type(due_date) is DueDate:
+        if type(due_date) is DueDate and len(due_date.date_string) > 0:
             day = Day(datetime.strptime(due_date.date_string, CommonVariables.date_format))
             timedelta1 = day.to_date_time() - current_day.to_date_time()
             if timedelta1.days < 0:
@@ -578,11 +578,17 @@ class DateGenerator(object):
         self.handler_1.handle(parser)
 
         due_date_list = list()
-        for date_string in parser.date_list:
+        if len(parser.date_list) == 0:
             due_date = DueDate()
-            due_date.date_string = date_string
+            due_date.date_string = ""
             due_date.completed = False
             due_date_list.append(due_date)
+        else:
+            for date_string in parser.date_list:
+                due_date = DueDate()
+                due_date.date_string = date_string
+                due_date.completed = False
+                due_date_list.append(due_date)
 
         return due_date_list
 
