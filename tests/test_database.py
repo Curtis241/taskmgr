@@ -13,6 +13,7 @@ class TestDatabase(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.json_db.remove()
+        self.yaml_db.remove()
 
     def test_json_db(self):
         task = Task("test")

@@ -160,9 +160,10 @@ class Calendar:
             if type(due_date_list[0]) is DueDate:
                 # calculate the difference between current day and date string
                 for due_date in due_date_list:
-                    day = Day(datetime.strptime(due_date.date_string, CommonVariables.date_format))
-                    timedelta1 = day.to_date_time() - current_day.to_date_time()
-                    diff_list.append(timedelta1.days)
+                    if len(due_date.date_string) > 0:
+                        day = Day(datetime.strptime(due_date.date_string, CommonVariables.date_format))
+                        timedelta1 = day.to_date_time() - current_day.to_date_time()
+                        diff_list.append(timedelta1.days)
 
                 # return the date string using the smallest difference
                 for index, diff_num in enumerate(diff_list):

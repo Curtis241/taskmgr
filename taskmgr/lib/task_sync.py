@@ -353,17 +353,12 @@ class Importer:
         for remote_task in remote_task_list:
             assert type(remote_task) is Task
 
-            item = self.tasks.get_task_by_external_id(remote_task.external_id)
-            if item is not None:
-                local_task = item.task
-            else:
-                local_task = None
-
+            local_task = self.tasks.get_task_by_external_id(remote_task.external_id)
             action = ImportAction(local_task, remote_task)
 
             if action.can_delete():
                 self.logger.debug(f"Deleting local task {local_task.text}")
-                self.tasks.delete(local_task.key)
+                self.tasks.delete(local_task.id)
                 sync_results.append(SyncAction.DELETED)
 
             elif action.can_update():

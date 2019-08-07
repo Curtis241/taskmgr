@@ -190,7 +190,10 @@ class TestDateGenerator(unittest.TestCase):
 
     def test_empty_date_handler(self):
         due_date_list = self.date_generator.get_due_dates("empty")
-        self.assertListEqual(due_date_list, [])
+        self.assertTrue(len(due_date_list) == 1)
+        due_date = due_date_list[0]
+        self.assertEqual(due_date.date_string, "")
+        self.assertFalse(due_date.completed)
 
 
 if __name__ == "__main__":

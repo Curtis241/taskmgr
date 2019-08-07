@@ -16,7 +16,7 @@ colorama==0.4.1
 pyyaml==3.12
 ujson==1.35
 
-prettytable==0.7.2
+beautifultable==0.7.0
 requests==2.22.0
 
 google-api-python-client==1.7.8

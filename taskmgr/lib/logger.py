@@ -1,7 +1,6 @@
 import logging
 import os
 import sys
-from pathlib import Path
 
 from taskmgr.lib.variables import CommonVariables
 

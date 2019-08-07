@@ -1,7 +1,6 @@
-
 from datetime import datetime
 
-from prettytable import PrettyTable
+from beautifultable import BeautifulTable, ALIGN_LEFT, STYLE_BOX
 
 from taskmgr.lib.date_generator import Calendar, Today, DateGenerator
 from taskmgr.lib.file_exporter import FileExporter
@@ -51,62 +50,109 @@ class SyncClient(object):
 class Client:
     logger = AppLogger("client").get_logger()
 
-    def __init__(self):
-        self.tasks = Tasks()
+    def __init__(self, tasks):
+        assert type(tasks) is Tasks
+        self.__tasks = tasks
         self.date_generator = DateGenerator()
 
-    def add_task(self, text, label, project, date_expression):
+    def get_unique_label_list(self):
+        return list(self.__tasks.unique(SortType.Label))
 
+    def get_unique_project_list(self):
+        return list(self.__tasks.unique(SortType.Project))
+
+    def get_tasks_by_project(self, project):
+        assert type(project) is str
+        return self.__tasks.get_list_by_type(SortType.Project, project)
+
+    def get_tasks_by_label(self, label):
+        assert type(label) is str
+        return self.__tasks.get_list_by_type(SortType.Label, label)
+
+    def get_task_list(self):
+        return self.__tasks.get_filtered_list()
+
+    def add_task(self, text, label, project, date_expression) -> Task:
+        """
+        Adds a task
+        :param text:
+        :param label:
+        :param project:
+        :param date_expression:
+        :return: Task
+        """
+        assert type(text) is str
+        assert type(label) is str
+        assert type(project) is str
+        assert type(date_expression) is str
         if self.date_generator.validate_input(date_expression):
             task = Task(text)
             task.label = label
             task.project = project
             task.date_expression = date_expression
-            self.tasks.add(task)
+            self.__tasks.add(task)
             return task
         else:
             self.display_invalid_due_date_error(date_expression)
-            return None
 
-    def delete_task(self, keys):
-        assert type(keys) is tuple
-        for key in keys:
-            if self.tasks.get_task_by_key(key) is not None:
-                return self.tasks.delete(key)
+    def delete_tasks(self, index_tuple) -> list:
+        assert type(index_tuple) is tuple
+        results = list()
+        for index in index_tuple:
+            task = self.__tasks.get_task_by_index(index)
+            if task is not None:
+                results.append(self.__tasks.delete(task.id))
             else:
-                self.display_invalid_key_error(key)
+                self.display_invalid_index_error(index)
+        return results
 
-    def edit_task(self, **kwargs):
-        key = kwargs.get("key")
-        date_expression = kwargs.get("due_date")
-
-        if self.tasks.get_task_by_key(key) is None:
-            self.display_invalid_key_error(key)
-            return None
+    def edit_task(self, index, text, project, label, date_expression) -> Task:
+        """
+        Edits an existing task by replacing string values. None are allowed
+        and handled by the Task object.
+        :param index: integer starting at 0
+        :param text: name of the task
+        :param project:
+        :param label:
+        :param date_expression:
+        :return: Task
+        """
+        assert type(index) is int
+        assert type(date_expression) is str
+        task = self.__tasks.get_task_by_index(index)
+        if task is None:
+            self.display_invalid_index_error(index)
 
         if self.date_generator.validate_input(date_expression) is False:
             self.display_invalid_due_date_error(date_expression)
-            return None
 
-        return self.tasks.edit(key, kwargs.get("text"), kwargs.get("label"), kwargs.get("project"),
-                               date_expression)
+        return self.__tasks.edit(task.id, text, label, project, date_expression)
 
-    def complete_task(self, keys):
-        assert type(keys) is tuple
-        for key in keys:
-            if self.tasks.get_task_by_key(key) is not None:
-                return self.tasks.complete(key)
+    def complete_tasks(self, index_tuple) -> list:
+        """
+        Changes the completed status in the DueDate object
+        :param index_tuple: int tuple
+        :return: list
+        """
+        assert type(index_tuple) is tuple
+        results = list()
+        for index in index_tuple:
+            task = self.__tasks.get_task_by_index(index)
+            if task is not None:
+                if task.is_completed() is False:
+                    results.append(self.__tasks.complete(task.id))
             else:
-                self.display_invalid_key_error(key)
+                self.display_invalid_index_error(index)
+        return results
 
     def reschedule_tasks(self, today=Today()):
-        self.tasks.reschedule(today)
+        self.__tasks.reschedule(today)
 
     def remove_all_tasks(self):
-        self.tasks.clear()
+        self.__tasks.clear()
 
-    def display_invalid_key_error(self, key):
-        self.logger.info(f"Provided key {key} is invalid")
+    def display_invalid_index_error(self, index):
+        self.logger.info(f"Provided index {index} is invalid")
 
     def display_invalid_due_date_error(self, date_expression):
         self.logger.info(f"Provided due date {date_expression} is invalid")
@@ -115,121 +161,133 @@ class Client:
 class CliClient(Client):
     logger = AppLogger("cli_client").get_logger()
 
-    def __init__(self):
-        super().__init__()
-        self.calendar = Calendar()
-        self.rows = list()
+    def __init__(self, tasks):
+        super().__init__(tasks)
 
-        self.table = PrettyTable(["Id", "Done", "Text", "Project", "Label", "Due Date", "Until"])
-        self.table.align["Id"] = "l"
-        self.table.align["Done"] = "l"
-        self.table.align["Text"] = "l"
-        self.table.align["Project"] = "l"
-        self.table.align["Label"] = "l"
-        self.table.align["Due Date"] = "l"
-        self.table.align["Until"] = "l"
+        self.__calendar = Calendar()
+        self.__table = BeautifulTable(default_alignment=ALIGN_LEFT, max_width=200)
+        self.__table.set_style(STYLE_BOX)
+        self.__table.column_headers = ["#", "Done", "Text", "Project", "Label", "Due Date", "Until"]
 
-        self.views = [{"action": "group", "sort_type": SortType.Label, "func": self.__group_by_label},
-                      {"action": "group", "sort_type": None, "func": self.__display_all_tasks},
-                      {"action": "group", "sort_type": SortType.Project, "func": self.__group_by_project},
-                      {"action": "filter", "sort_type": SortType.DueDate, "func": self.__filter_by_date},
-                      {"action": "filter", "sort_type": SortType.Incomplete,
-                       "func": self.__filter_by_incomplete_status},
-                      {"action": "filter", "sort_type": SortType.Complete, "func": self.__filter_by_complete_status},
-                      {"action": "filter", "sort_type": SortType.Label, "func": self.__filter_by_label},
-                      {"action": "filter", "sort_type": SortType.Project, "func": self.__filter_by_project}]
+        self.__views = [{"action": "group", "sort_type": SortType.Label, "func": self.__group_by_label},
+                        {"action": "group", "sort_type": None, "func": self.__display_all_tasks},
+                        {"action": "group", "sort_type": SortType.Project, "func": self.__group_by_project},
+                        {"action": "filter", "sort_type": SortType.DueDate, "func": self.__filter_by_date},
+                        {"action": "filter", "sort_type": SortType.Incomplete,
+                         "func": self.__filter_by_incomplete_status},
+                        {"action": "filter", "sort_type": SortType.Complete, "func": self.__filter_by_complete_status},
+                        {"action": "filter", "sort_type": SortType.Label, "func": self.__filter_by_label},
+                        {"action": "filter", "sort_type": SortType.Project, "func": self.__filter_by_project}]
 
-    def __add_row(self, task):
-        self.rows.append(task)
-        row_list = task.get_task_status()
-        self.table.add_row(row_list)
+    def get_table(self):
+        return self.__table
 
-    def __print_table(self):
-        if len(self.rows) > 0:
-            print(self.table.get_string())
-            return self.rows
-        else:
-            print("No rows to display. Use add command.")
+    def group(self, **kwargs):
+        assert "group" in kwargs
+        sort_type = kwargs.get("group")
 
-    def group_tasks(self, sort_type=None):
-        self.rows = list()
-        for view_dict in self.views:
+        for view_dict in self.__views:
             if view_dict["sort_type"] == sort_type and view_dict["action"] == "group":
                 func = view_dict["func"]
                 return func()
 
-    def filter_tasks(self, **kwargs):
-        self.rows = list()
+    def filter(self, **kwargs):
+        assert "filter" in kwargs
         sort_type = kwargs.get("filter")
-        for view_dict in self.views:
+
+        for view_dict in self.__views:
             if view_dict["sort_type"] == sort_type and view_dict["action"] == "filter":
                 func = view_dict["func"]
-                kwargs["tasks"] = self.tasks.get_filtered_list()
+                kwargs["tasks"] = self.get_task_list()
                 return func(**kwargs)
 
-    def __list_labels(self):
-        print("Labels: {}".format(list(self.tasks.unique(SortType.Label))))
+    def list_labels(self):
+        print("Labels: {}".format(self.get_unique_label_list()))
 
-    def __list_projects(self):
-        print("Projects: {}".format(list(self.tasks.unique(SortType.Project))))
+    def list_projects(self):
+        print("Projects: {}".format(self.get_unique_project_list()))
 
+    # Private methods
     def __group_by_label(self):
-        self.table.clear_rows()
-        for label in self.tasks.unique(SortType.Label):
-            for task in self.tasks.get_list_by_type(SortType.Label, label):
-                self.__add_row(task)
+        self.__clear()
+        for label in self.get_unique_label_list():
+            for task in self.get_tasks_by_label(label):
+                self.__add_table_row(task)
         return self.__print_table()
 
     def __group_by_project(self):
-        self.table.clear_rows()
-        for project in self.tasks.unique(SortType.Project):
-            for task in self.tasks.get_list_by_type(SortType.Project, project):
-                self.__add_row(task)
+        self.__clear()
+        for project in self.get_unique_project_list():
+            for task in self.get_tasks_by_project(project):
+                self.__add_table_row(task)
         return self.__print_table()
 
     def __display_all_tasks(self):
-        self.table.clear_rows()
-        for task in self.tasks.get_filtered_list():
-            self.__add_row(task)
+        self.__clear()
+        for task in self.get_task_list():
+            self.__add_table_row(task)
         return self.__print_table()
 
+    def __clear(self):
+        self.__table.clear()
+        self.__id_lookup_list = list()
+
+    def __print_table(self):
+        if len(self.__table) > 0:
+            print(self.__table)
+            return self.__table
+        else:
+            print("No rows to display. Use add command.")
+
     def __filter_by_date(self, **kwargs):
-        self.table.clear_rows()
+        assert "tasks" in kwargs
+        self.__clear()
         tasks_list = kwargs.get("tasks")
         for task in tasks_list:
-            if self.calendar.contains_today(task.due_dates):
-                self.__add_row(task)
-            rows = self.__print_table()
-            if "save" in kwargs and kwargs.get("save") is not None:
-                exporter = FileExporter(kwargs.get("save"))
-                exporter.save(rows)
-            return rows
+            if self.__calendar.contains_today(task.due_dates):
+                self.__add_table_row(task)
+
+        rows = self.__print_table()
+        if "save" in kwargs and kwargs.get("save") is not None:
+            exporter = FileExporter(kwargs.get("save"))
+            exporter.save(rows)
+        return rows
+
+    def __add_table_row(self, task):
+        assert type(task) is Task
+        row = task.get_task_status()
+        self.__table.append_row(row)
 
     def __filter_by_incomplete_status(self, **kwargs):
-        self.table.clear_rows()
+        assert "tasks" in kwargs
+        self.__clear()
         tasks_list = kwargs.get("tasks")
         for task in tasks_list:
             if not task.is_completed():
-                self.__add_row(task)
+                self.__add_table_row(task)
         return self.__print_table()
 
     def __filter_by_complete_status(self, **kwargs):
-        self.table.clear_rows()
+        assert "tasks" in kwargs
+        self.__clear()
         tasks_list = kwargs.get("tasks")
         for task in tasks_list:
             if task.is_completed():
-                self.__add_row(task)
+                self.__add_table_row(task)
         return self.__print_table()
 
     def __filter_by_project(self, **kwargs):
+        assert "value" in kwargs
+        self.__clear()
         project = kwargs.get("value")
-        for task in self.tasks.get_list_by_type(SortType.Project, project):
-            self.__add_row(task)
+        for task in self.get_tasks_by_project(project):
+            self.__add_table_row(task)
         return self.__print_table()
 
     def __filter_by_label(self, **kwargs):
+        assert "value" in kwargs
+        self.__clear()
         label = kwargs.get("value")
-        for task in self.tasks.get_list_by_type(SortType.Label, label):
-            self.__add_row(task)
+        for task in self.get_tasks_by_label(label):
+            self.__add_table_row(task)
         return self.__print_table()
-

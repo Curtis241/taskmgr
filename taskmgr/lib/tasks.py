@@ -2,7 +2,6 @@ import uuid
 from copy import deepcopy
 from datetime import datetime
 
-from taskmgr.lib.database import JsonFileDatabase
 from taskmgr.lib.date_generator import Calendar, Day, DueDate, Today
 from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.task import Task
@@ -29,24 +28,12 @@ class SortType:
         return value in SortType.__dict__.values()
 
 
-class TaskItem:
-
-    def __init__(self, index, task):
-        self.index = index
-        self.task = task
-
-
 class Tasks(object):
     logger = AppLogger("tasks").get_logger()
 
-    def __init__(self, file_database=None):
+    def __init__(self, file_database):
         self.__calendar = Calendar()
-
-        if file_database is not None:
-            self.__db = file_database
-        else:
-            self.__db = JsonFileDatabase()
-
+        self.__db = file_database
         self.__tasks = list()
         self.retrieve()
 
@@ -63,39 +50,39 @@ class Tasks(object):
         assert type(task) is Task
         task.id = uuid.uuid4().hex
         task.deleted = False
-        task.key = str(task.id)[-3:]
+        task.index = self.get_index()
         task.last_updated = self.get_date_time_string()
         self.logger.debug(f"added {dict(task)}")
         self.__tasks.append(task)
         self.save()
         return task
 
-    def get_task(self, func) -> TaskItem:
-        for index, task in enumerate(self.get_filtered_list()):
+    def get_task(self, func) -> Task:
+        for task in self.get_list():
             if func(task) is not None:
-                self.logger.debug(f"Retrieved task by index: {index}, text: {task.text}")
-                return TaskItem(index, task)
+                self.logger.debug(f"Retrieved task by index: {task.index}, text: {task.text}")
+                return task
 
-    def get_task_by_key(self, key) -> TaskItem:
-        assert type(key) is str
-        return self.get_task(lambda task: task if task.key == key else None)
+    def get_task_by_index(self, index) -> Task:
+        assert type(index) is int
+        return self.get_task(lambda task: task if task.index == index else None)
 
-    def get_task_by_external_id(self, external_id) -> TaskItem:
+    def get_task_by_external_id(self, external_id) -> Task:
         assert type(external_id) is str
         return self.get_task(lambda task: task if task.external_id == external_id else None)
 
-    def get_task_by_id(self, task_id) -> TaskItem:
+    def get_task_by_id(self, task_id) -> Task:
         assert type(task_id) is str
         return self.get_task(lambda task: task if task.id == task_id else None)
 
-    def get_task_by_name(self, task_name) -> TaskItem:
+    def get_task_by_name(self, task_name) -> Task:
         assert type(task_name) is str
         return self.get_task(lambda task: task if task.text == task_name else None)
 
     def get_list_by_type(self, sort_type, value):
         assert SortType.contains(sort_type)
         assert type(value) == str
-        return list(filter(lambda t: getattr(t, sort_type) == value, self.get_list()))
+        return list(filter(lambda t: getattr(t, sort_type) == value, self.get_filtered_list()))
 
     def get_filtered_list(self):
         return [task for task in self.get_list() if not task.deleted]
@@ -103,66 +90,66 @@ class Tasks(object):
     def get_list(self):
         return self.__tasks
 
-    def delete(self, key) -> Task:
-        assert type(key) is str
+    def delete(self, task_id) -> Task:
+        assert type(task_id) is str
 
-        item = self.get_task_by_key(key)
-        if item.task is not None:
-            self.logger.debug(f"Deleting {dict(item.task)}")
-            item.task.last_updated = self.get_date_time_string()
-            item.task.deleted = True
-            self.__tasks[item.index] = item.task
+        task = self.get_task_by_id(task_id)
+        if task is not None:
+            self.logger.debug(f"Deleting {dict(task)}")
+            task.last_updated = self.get_date_time_string()
+            task.deleted = True
+            self.__tasks[task.index] = task
             self.save()
-            return item.task
+            return task
         else:
             raise TaskKeyError()
 
-    def complete(self, key) -> Task:
-        assert type(key) is str
+    def complete(self, task_id) -> Task:
+        assert type(task_id) is str
 
-        item = self.get_task_by_key(key)
-        if item.task is not None:
-            item.task.last_updated = self.get_date_time_string()
-            item.task.complete()
-            self.__tasks[item.index] = item.task
+        task = self.get_task_by_id(task_id)
+        if task is not None:
+            task.last_updated = self.get_date_time_string()
+            task.complete()
+            self.__tasks[task.index] = task
             self.save()
-            return item.task
+            return task
         else:
             raise TaskKeyError()
 
-    def replace(self, task) -> Task:
-        assert type(task) is Task
+    def replace(self, modified_task) -> Task:
+        assert type(modified_task) is Task
 
-        self.logger.debug(f"Attempting to replace task {dict(task)}")
-        item = TaskItem(0, None)
-        if type(task.external_id) is str and len(task.external_id) > 0:
-            item = deepcopy(self.get_task_by_external_id(task.external_id))
-        elif type(task.id) is str and len(task.id) > 0:
-            item = deepcopy(self.get_task_by_id(task.id))
+        existing_task = None
+        self.logger.debug(f"Attempting to replace task {dict(modified_task)}")
+        if type(modified_task.external_id) is str and len(modified_task.external_id) > 0:
+            existing_task = deepcopy(self.get_task_by_external_id(modified_task.external_id))
+        elif type(modified_task.id) is str and len(modified_task.id) > 0:
+            existing_task = deepcopy(self.get_task_by_id(modified_task.id))
 
-        if item.task is not None:
-            item.task.id = item.task.id
-            item.task.key = item.task.key
-            item.task.deleted = False
-            item.task.last_updated = self.get_date_time_string()
-            self.__tasks[item.index] = item.task
-            return item.task
+        if existing_task is not None:
+            existing_task.id = modified_task.id
+            existing_task.index = modified_task.index
+            existing_task.deleted = False
+            existing_task.last_updated = self.get_date_time_string()
+            self.__tasks[existing_task.index] = modified_task
+            return existing_task
         else:
             msg = "task.external_id or task.id is required"
             self.logger.error(msg)
             raise AttributeError(msg)
 
-    def edit(self, key, text, label, project, date_expression) -> Task:
-        item = deepcopy(self.get_task_by_key(key))
-        if item.task is not None:
-            item.task.text = text
-            item.task.label = label
-            item.task.project = project
-            item.task.date_expression = date_expression
-            item.task.last_updated = self.get_date_time_string()
-            self.__tasks[item.index] = item.task
+    def edit(self, task_id, text, label, project, date_expression) -> Task:
+        task = deepcopy(self.get_task_by_id(task_id))
+        if task is not None:
+            task.text = text
+            task.label = label
+            task.project = project
+            task.date_expression = date_expression
+            task.last_updated = self.get_date_time_string()
+            self.__tasks[task.index] = task
             self.save()
-            return item.task
+            return task
         else:
             raise TaskKeyError()
 
@@ -187,13 +174,14 @@ class Tasks(object):
 
     def unique(self, sort_type):
         assert SortType.contains(sort_type)
-        return set([getattr(t, sort_type) for t in self.get_list()])
+        return set([getattr(t, sort_type) for t in self.get_filtered_list()])
 
     def from_dict(self, tasks_dict_list):
         assert type(tasks_dict_list) is list
 
-        for task_dict in tasks_dict_list:
+        for index, task_dict in enumerate(tasks_dict_list):
             task = Task(getattr(task_dict, "text", str()))
+            task.index = index
             for key, value in task_dict.items():
                 if type(value) is list:
                     task.due_dates = [DueDate().from_dict(due_date_dict) for due_date_dict in value]
@@ -205,3 +193,6 @@ class Tasks(object):
     @staticmethod
     def get_date_time_string() -> str:
         return Day(datetime.now()).to_date_time_string()
+
+    def get_index(self):
+        return len(self.__tasks)

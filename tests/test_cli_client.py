@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 from taskmgr.lib.client_lib import CliClient
 from taskmgr.lib.database import JsonFileDatabase
-from taskmgr.lib.date_generator import Day, Today
+from taskmgr.lib.date_generator import Today, Day
 from taskmgr.lib.tasks import SortType, Tasks
 
 
@@ -11,8 +11,8 @@ class TestCliClient(unittest.TestCase):
 
     def setUp(self):
         self.db = JsonFileDatabase("test_cli_client_file_db")
-        self.client = CliClient()
-        self.client.tasks = Tasks(self.db)
+        self.tasks = Tasks(self.db)
+        self.client = CliClient(self.tasks)
         self.task1 = self.client.add_task("Clean car", "@waiting_on", "home", "today")
         self.task2 = self.client.add_task("Clean bathroom", "", "home", "tomorrow")
         self.task3 = self.client.add_task("Book flight to New York", "@at_computer", "work", "m")
@@ -29,23 +29,29 @@ class TestCliClient(unittest.TestCase):
 
     def test_add_task(self):
         self.client.add_task("Clean garage", "", "home", "empty")
-        self.assertTrue(len(self.client.tasks.get_list()) == 10)
+        kwargs = {"group": None}
+        self.client.group(**kwargs)
+        row_count = len(self.client.get_table())
+        self.assertTrue(row_count == 10)
 
     def test_list_all_tasks(self):
-        rows = self.client.group_tasks()
+        kwargs = {"group": None}
+        rows = self.client.group(**kwargs)
         self.assertTrue(len(rows) == 9)
 
     def test_list_tasks_by_label(self):
-        rows = self.client.group_tasks(SortType.Label)
+        kwargs = {'group': SortType.Label}
+        rows = self.client.group(**kwargs)
         self.assertTrue(len(rows) == 9)
 
     def test_list_tasks_by_project(self):
-        rows = self.client.group_tasks(SortType.Project)
+        kwargs = {'group': SortType.Project}
+        rows = self.client.group(**kwargs)
         self.assertTrue(len(rows) == 9)
 
     def test_list_tasks_by_date(self):
         kwargs = {'filter': SortType.DueDate}
-        rows = self.client.filter_tasks(**kwargs)
+        rows = self.client.filter(**kwargs)
         self.assertTrue(len(rows) == 1)
 
     def test_encoding_decoding_date_string(self):
@@ -55,9 +61,7 @@ class TestCliClient(unittest.TestCase):
         self.assertIsInstance(date_object, datetime)
 
     def test_edit_task(self):
-        kwargs = {"key": self.task1.key, "text": "text_value", "label": "all", "project": None, "due_date": "apr 14"}
-        task = self.client.edit_task(**kwargs)
-        self.assertEqual(task.key, self.task1.key)
+        task = self.client.edit_task(0, "text_value", "", "all", "apr 14")
         self.assertEqual(task.text, 'text_value')
         self.assertEqual(task.label, "all")
         self.assertEqual(task.deleted, False)
@@ -71,23 +75,38 @@ class TestCliClient(unittest.TestCase):
 
     def test_reschedule_tasks(self):
         today = Today()
-        rows = self.client.group_tasks()
-        self.assertTrue(len(rows) == 9)
-        item = self.client.tasks.get_task_by_key(self.task1.key)
-
-        self.assertIsNotNone(item.task)
-        self.assertTrue(len(item.task.due_dates) == 1)
-        self.assertTrue(item.task.due_dates[0].date_string == today.to_date_string())
+        kwargs = {"group": None}
+        rows = self.client.group(**kwargs)
+        self.assertTrue(len(list(rows)) == 9)
+        row1 = list(rows[0])
+        self.assertIsNotNone(row1)
+        date_string = row1[5]
+        self.assertTrue(date_string == today.to_date_string())
 
         future_day = today.to_date_time() + timedelta(days=1)
         future_day = Day(future_day)
         self.client.reschedule_tasks(future_day)
 
-        rows = self.client.group_tasks()
+        rows = self.client.group(**kwargs)
         self.assertTrue(len(rows) == 9)
-        item = self.client.tasks.get_task_by_key(self.task1.key)
-        self.assertTrue(len(item.task.due_dates) == 1)
-        self.assertTrue(item.task.due_dates[0].date_string == future_day.to_date_string())
+        row1 = list(rows[0])
+        self.assertIsNotNone(row1)
+        date_string = row1[5]
+        self.assertTrue(date_string == future_day.to_date_string())
+
+    def test_today(self):
+        self.client.add_task("task1", "home", "home", "empty")
+        self.client.add_task("task2", "home", "home", "today")
+        kwargs = {"filter": SortType.DueDate}
+        rows = self.client.filter(**kwargs)
+        self.assertTrue(len(list(rows)) == 2)
+
+    def test_delete(self):
+        task_list = self.client.delete_tasks((0, 1,))
+        self.assertTrue(len(task_list) == 2)
+
+        self.assertTrue(task_list[0].deleted)
+        self.assertTrue(task_list[1].deleted)
 
 
 if __name__ == "__main__":

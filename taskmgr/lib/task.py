@@ -1,4 +1,5 @@
 import textwrap
+import uuid
 
 from taskmgr.lib.date_generator import DateGenerator, DueDate
 from taskmgr.lib.variables import CommonVariables
@@ -7,23 +8,21 @@ from taskmgr.lib.variables import CommonVariables
 class Task(object):
 
     def __init__(self, text, date_generator=None):
-        self.__id = str()
-        self.__key = str()
+        self.__id = uuid.uuid4().hex
+        self.__index = int()
         self.__external_id = str()
         self.__text = text
         self.__label = CommonVariables.default_label
-        self.__deleted = None
+        self.__deleted = False
         self.__priority = 1
         self.__project = CommonVariables.default_project_name
-        self.__last_updated = None
+        self.__last_updated = str()
 
         if date_generator is None:
             self.date_generator = DateGenerator()
         else:
             self.date_generator = date_generator
 
-        self.__id = None
-        self.__key = None
         self.__date_expression = CommonVariables.default_date_expression
         self.__due_dates = [DueDate()]
 
@@ -51,10 +50,12 @@ class Task(object):
             assert type(due_date_list[0]) is DueDate
         self.__due_dates = due_date_list
 
-    def complete(self):
+    def complete(self) -> list:
         if len(self.__due_dates) > 0:
             due_date_list = [due_date for due_date in self.__due_dates if not due_date.completed]
             due_date_list[0].completed = True
+            return due_date_list
+        return list()
 
     def is_completed(self) -> bool:
         completed_tasks: int = len(list(filter(lambda d: d.completed is True, self.__due_dates)))
@@ -82,7 +83,7 @@ class Task(object):
                 date_string = due_date_list[0].date_string
                 until_string = due_date_list[-1].date_string
 
-        return [self.key, self.is_completed(), text, self.project, self.label, date_string, until_string]
+        return [self.index, self.is_completed(), text, self.project, self.label, date_string, until_string]
 
     @property
     def id(self):
@@ -93,12 +94,12 @@ class Task(object):
         self.__id = id
 
     @property
-    def key(self):
-        return self.__key
+    def index(self):
+        return self.__index
 
-    @key.setter
-    def key(self, key):
-        self.__key = str(key)
+    @index.setter
+    def index(self, index):
+        self.__index = int(index)
 
     @property
     def external_id(self):
@@ -165,7 +166,7 @@ class Task(object):
     def __iter__(self):
         yield 'id', self.__id
         yield 'external_id', self.external_id
-        yield 'key', self.__key
+        yield 'index', self.__index
         yield 'text', self.__text
         yield 'label', self.__label
         yield 'deleted', self.__deleted
