@@ -4,6 +4,7 @@ import click
 
 from taskmgr.lib.client_lib import CliClient, SyncClient
 from taskmgr.lib.database import JsonFileDatabase
+from taskmgr.lib.file_exporter import FileExporter
 from taskmgr.lib.google_tasks_api import GoogleTasksService
 from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.task_sync import Importer, Exporter
@@ -11,7 +12,7 @@ from taskmgr.lib.tasks import SortType, Tasks
 from taskmgr.lib.variables import CommonVariables
 
 tasks = Tasks(JsonFileDatabase("tasks_db"))
-cli_client = CliClient(tasks)
+cli_client = CliClient(tasks, FileExporter())
 logger = AppLogger("cli").get_logger()
 
 
@@ -66,7 +67,7 @@ def show_tasks(**kwargs):
 
 
 @cli.command("today")
-@click.option('--save', '-s', help="Destination path to save markdown file.", metavar='<save>')
+@click.option('--export_path', '-p', help="Destination path to save markdown file.", metavar='<export_path>')
 def today(**kwargs):
     kwargs["filter"] = SortType.DueDate
     cli_client.filter(**kwargs)

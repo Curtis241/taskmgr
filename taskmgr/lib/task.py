@@ -1,4 +1,3 @@
-import textwrap
 import uuid
 
 from taskmgr.lib.date_generator import DateGenerator, DueDate
@@ -65,25 +64,18 @@ class Task(object):
         else:
             return completed_tasks == total_tasks
 
-    def get_task_status(self):
-        until_string = str()
-        date_string = str()
-        text = textwrap.shorten(self.text, CommonVariables.default_text_field_length, placeholder="...")
-
+    def get_date_string_list(self) -> list:
         # If there is only 1 due_date then get the last object
         if len(self.due_dates) == 1:
             due_date = self.due_dates[-1]
-            date_string = due_date.date_string
+            return [due_date.date_string, ""]
 
         elif len(self.due_dates) > 1:
-            due_date_list = list(filter(lambda d: d.completed is False, self.__due_dates))
+            due_date_list = list(filter(lambda d: d.completed is False, self.due_dates))
 
             # If there are completed due_dates; then get the first .
             if len(due_date_list) > 0:
-                date_string = due_date_list[0].date_string
-                until_string = due_date_list[-1].date_string
-
-        return [self.index, self.is_completed(), text, self.project, self.label, date_string, until_string]
+                return [due_date_list[0].date_string, due_date_list[-1].date_string]
 
     @property
     def id(self):

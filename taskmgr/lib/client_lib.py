@@ -1,12 +1,15 @@
+import textwrap
+import ast
 from datetime import datetime
 
 from beautifultable import BeautifulTable, ALIGN_LEFT, STYLE_BOX
+from colored import fg
 
 from taskmgr.lib.date_generator import Calendar, Today, DateGenerator
-from taskmgr.lib.file_exporter import FileExporter
 from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.task import Task
 from taskmgr.lib.tasks import SortType, Tasks
+from taskmgr.lib.variables import CommonVariables
 
 
 class SyncClient(object):
@@ -161,9 +164,11 @@ class Client:
 class CliClient(Client):
     logger = AppLogger("cli_client").get_logger()
 
-    def __init__(self, tasks):
+    def __init__(self, tasks, file_exporter):
         super().__init__(tasks)
 
+        self.__file_exporter = file_exporter
+        self.__task_list = list()
         self.__calendar = Calendar()
         self.__table = BeautifulTable(default_alignment=ALIGN_LEFT, max_width=200)
         self.__table.set_style(STYLE_BOX)
@@ -178,6 +183,23 @@ class CliClient(Client):
                         {"action": "filter", "sort_type": SortType.Complete, "func": self.__filter_by_complete_status},
                         {"action": "filter", "sort_type": SortType.Label, "func": self.__filter_by_label},
                         {"action": "filter", "sort_type": SortType.Project, "func": self.__filter_by_project}]
+
+    @staticmethod
+    def format_row(task):
+        assert type(task) is Task
+
+        text = textwrap.shorten(task.text, CommonVariables.default_text_field_length, placeholder="...")
+        is_completed = task.is_completed()
+
+        if is_completed:
+            completed_text = fg('green') + str(is_completed)
+        else:
+            completed_text = fg('blue') + str(is_completed)
+
+        row = [task.index, completed_text, text, task.project, task.label]
+        row.extend(task.get_date_string_list())
+
+        return row
 
     def get_table(self):
         return self.__table
@@ -199,7 +221,11 @@ class CliClient(Client):
             if view_dict["sort_type"] == sort_type and view_dict["action"] == "filter":
                 func = view_dict["func"]
                 kwargs["tasks"] = self.get_task_list()
-                return func(**kwargs)
+
+                table_row_list = func(**kwargs)
+                if "export_path" in kwargs and kwargs.get("export_path") is not None:
+                    self.__file_exporter.save(table_row_list, kwargs.get("export_path"))
+                return table_row_list
 
     def list_labels(self):
         print("Labels: {}".format(self.get_unique_label_list()))
@@ -230,12 +256,12 @@ class CliClient(Client):
 
     def __clear(self):
         self.__table.clear()
-        self.__id_lookup_list = list()
+        self.__task_list = list()
 
     def __print_table(self):
         if len(self.__table) > 0:
             print(self.__table)
-            return self.__table
+            return self.__task_list
         else:
             print("No rows to display. Use add command.")
 
@@ -243,20 +269,18 @@ class CliClient(Client):
         assert "tasks" in kwargs
         self.__clear()
         tasks_list = kwargs.get("tasks")
+        filtered_tasks_list = list()
         for task in tasks_list:
             if self.__calendar.contains_today(task.due_dates):
+                filtered_tasks_list.append(task)
                 self.__add_table_row(task)
-
-        rows = self.__print_table()
-        if "save" in kwargs and kwargs.get("save") is not None:
-            exporter = FileExporter(kwargs.get("save"))
-            exporter.save(rows)
-        return rows
+        return self.__print_table()
 
     def __add_table_row(self, task):
         assert type(task) is Task
-        row = task.get_task_status()
+        row = self.format_row(task)
         self.__table.append_row(row)
+        self.__task_list.append(task)
 
     def __filter_by_incomplete_status(self, **kwargs):
         assert "tasks" in kwargs
