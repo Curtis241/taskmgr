@@ -65,8 +65,24 @@ class TestSyncImporter(unittest.TestCase):
         task1 = task_list[0]
         self.assertTrue(task1.label == "Notes1")
 
-    def test_import_tasks(self):
+    def test_convert_completed(self):
+        self.service.tasks = {'kind': 'tasks#tasks', 'etag': '', 'items': [
+            {'kind': 'tasks#task', 'id': 'RlhuMVpoZ0pHSDRCUE9JZw',
+             'title': 'Build sidewalk',
+             'parent': '0',
+             'notes': '',
+             'status': 'completed',
+             'completed': '2019-08-11T01:56:14.000Z',
+             'deleted': False, 'hidden': True}]}
+        task_list = self.importer.convert()
+        self.assertTrue(len(task_list) == 2)
+        task1 = task_list[0]
+        self.assertTrue(len(task1.due_dates) == 1)
+        due_date = task1.due_dates[0]
+        due_date.date_string = '2019-08-11'
+        self.assertTrue(due_date.completed)
 
+    def test_import_tasks(self):
         task100 = Task('Task100')
         task100.external_id = "100"
 
@@ -88,7 +104,3 @@ class TestSyncImporter(unittest.TestCase):
         self.assertTrue(sync_results_list[0] == SyncAction.ADDED)
         self.assertTrue(sync_results_list[1] == SyncAction.UPDATED)
         self.assertTrue(sync_results_list[2] == SyncAction.DELETED)
-
-
-
-

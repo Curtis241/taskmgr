@@ -31,6 +31,7 @@ setup(
     entry_points='''
         [console_scripts]
         taskmgr=taskmgr.cli:cli
+        gtask=taskmgr.google_task_tool:google_task_tool
     ''',
     packages=['taskmgr', 'taskmgr.lib'],
     install_requires=requirements,

@@ -22,6 +22,7 @@ class SortType:
     Label = "label"
     Project = "project"
     DueDate = "due_date"
+    Text = "text"
 
     @staticmethod
     def contains(value):
@@ -52,8 +53,8 @@ class Tasks(object):
         task.deleted = False
         task.index = self.get_index()
         task.last_updated = self.get_date_time_string()
-        self.logger.debug(f"added {dict(task)}")
         self.__tasks.append(task)
+        self.logger.debug(f"Added {dict(task)}")
         self.save()
         return task
 
@@ -95,10 +96,10 @@ class Tasks(object):
 
         task = self.get_task_by_id(task_id)
         if task is not None:
-            self.logger.debug(f"Deleting {dict(task)}")
             task.last_updated = self.get_date_time_string()
             task.deleted = True
             self.__tasks[task.index] = task
+            self.logger.debug(f"Deleted {dict(task)}")
             self.save()
             return task
         else:
@@ -121,7 +122,6 @@ class Tasks(object):
         assert type(modified_task) is Task
 
         existing_task = None
-        self.logger.debug(f"Attempting to replace task {dict(modified_task)}")
         if type(modified_task.external_id) is str and len(modified_task.external_id) > 0:
             existing_task = deepcopy(self.get_task_by_external_id(modified_task.external_id))
         elif type(modified_task.id) is str and len(modified_task.id) > 0:
@@ -133,6 +133,7 @@ class Tasks(object):
             existing_task.deleted = False
             existing_task.last_updated = self.get_date_time_string()
             self.__tasks[existing_task.index] = modified_task
+            self.logger.debug(f"Replaced {dict(modified_task)}")
             return existing_task
         else:
             msg = "task.external_id or task.id is required"

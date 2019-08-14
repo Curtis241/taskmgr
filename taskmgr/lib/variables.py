@@ -12,8 +12,9 @@ class CommonVariables:
 
     # Task defaults
     default_date_expression = "empty"
-    default_project_name = "inbox"
+    default_project_name = ""
     default_label = ""
+    default_text = ""
 
     # Directories
     home = str(Path.home())

@@ -1,5 +1,4 @@
 import textwrap
-import ast
 from datetime import datetime
 
 from beautifultable import BeautifulTable, ALIGN_LEFT, STYLE_BOX
@@ -71,6 +70,10 @@ class Client:
     def get_tasks_by_label(self, label):
         assert type(label) is str
         return self.__tasks.get_list_by_type(SortType.Label, label)
+
+    def get_tasks_by_text(self, text):
+        assert type(text) is str
+        return self.__tasks.get_list_by_type(SortType.Text, text)
 
     def get_task_list(self):
         return self.__tasks.get_filtered_list()
@@ -182,7 +185,8 @@ class CliClient(Client):
                          "func": self.__filter_by_incomplete_status},
                         {"action": "filter", "sort_type": SortType.Complete, "func": self.__filter_by_complete_status},
                         {"action": "filter", "sort_type": SortType.Label, "func": self.__filter_by_label},
-                        {"action": "filter", "sort_type": SortType.Project, "func": self.__filter_by_project}]
+                        {"action": "filter", "sort_type": SortType.Project, "func": self.__filter_by_project},
+                        {"action": "filter", "sort_type": SortType.Text, "func": self.__filter_by_text}]
 
     @staticmethod
     def format_row(task):
@@ -314,4 +318,13 @@ class CliClient(Client):
         label = kwargs.get("value")
         for task in self.get_tasks_by_label(label):
             self.__add_table_row(task)
+        return self.__print_table()
+
+    def __filter_by_text(self, **kwargs):
+        assert "value" in kwargs
+        self.__clear()
+        tasks_list = kwargs.get("tasks")
+        for task in tasks_list:
+            if str(kwargs.get("value")).lower() in str(task.text).lower():
+                self.__add_table_row(task)
         return self.__print_table()

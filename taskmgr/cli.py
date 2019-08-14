@@ -35,9 +35,11 @@ def add_task(**kwargs):
 
 @cli.command("edit")
 @click.argument('index', type=int)
-@click.option('--text', '-t', help="text for task", default=None, type=str, metavar='<text>')
-@click.option('--label', '-l', help="label for task", default=None, type=str, metavar='<label>')
-@click.option('--project', '-p', help="project for task", default=None, type=str, metavar='<project>')
+@click.option('--text', '-t', help="text for task", default=CommonVariables.default_text, type=str, metavar='<text>')
+@click.option('--label', '-l', help="label for task", default=CommonVariables.default_label,
+              type=str, metavar='<label>')
+@click.option('--project', '-p', help="project for task", default=CommonVariables.default_project_name,
+              type=str, metavar='<project>')
 @click.option('--due-date', '-d', help="due date for task", default=CommonVariables.default_date_expression,
               type=str, metavar='<due_date>')
 def edit_task(**kwargs):
@@ -58,11 +60,12 @@ def list_tasks(**kwargs):
     cli_client.group(**kwargs)
 
 
-@cli.command("show")
-@click.option('--filter', '-f', help="Filter tasks by complete status, project, and label", metavar='<filter>',
-              type=click.Choice(['incomplete', 'complete', 'project', 'label']))
+@cli.command("filter")
+@click.option('--type', '-t', 'filter', help="Filter tasks by complete status, project, text, and label",
+              metavar='<filter>', type=click.Choice(['incomplete', 'complete', 'project', 'label', 'text']))
 @click.option('--value', '-v', help="Label or project value", metavar='<value>')
-def show_tasks(**kwargs):
+@click.option('--export_path', '-p', help="Destination path to save markdown file.", metavar='<export_path>')
+def filter_tasks(**kwargs):
     cli_client.filter(**kwargs)
 
 

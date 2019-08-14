@@ -68,5 +68,9 @@ class FileExporter:
     def make_path(self, output_dir):
         timestamp_string = time.strftime(CommonVariables.file_name_timestamp)
         file_name = self.file_name.substitute(timestamp=timestamp_string)
-        path = f"{output_dir}/{file_name}"
+
+        if str(output_dir).endswith("/"):
+            path = f"{output_dir}{file_name}"
+        else:
+            path = f"{output_dir}/{file_name}"
         return path

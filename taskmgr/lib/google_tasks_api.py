@@ -313,7 +313,7 @@ class GoogleTasksService(TasksService):
         creds = self.get_credentials()
         try:
             header_dict = {"Authorization": f"Bearer {creds.token}"}
-            params_dict = {"showDeleted": True, "showCompleted": True, "showHidden": True}
+            params_dict = {"showDeleted": True, "showCompleted": True, "showHidden": True, "maxResults": 100}
             response = requests.get(f"https://www.googleapis.com/tasks/v1/lists/{tasklist_id}/tasks",
                                     params=params_dict,
                                     headers=header_dict)

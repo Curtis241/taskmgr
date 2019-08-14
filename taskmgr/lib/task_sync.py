@@ -36,7 +36,7 @@ class SyncResultsList:
 
     def get_summary(self):
         return f"added: {self.__added_count}, deleted: {self.__deleted_count}, updated: {self.__updated_count}, " \
-            f"skipped: {self.__skipped_count} "
+               f"skipped: {self.__skipped_count} "
 
 
 class Rules:
@@ -58,10 +58,19 @@ class Rules:
                 return False
         return True
 
-    def print_summary(self):
+    @staticmethod
+    def decompose(task):
+        if task is not None:
+            return dict(task)
+        return 'None'
+
+    def print_summary(self, local_task, remote_task, rule_result):
         for rule in self.rule_list:
             self.summary_list.append(dict(rule))
-        self.logger.debug(f"action: {self.action}, state: {self.state}, result: {self.summary_list}")
+
+        self.logger.debug(f"action: {self.action}, state: {self.state}, rule_result: {rule_result}, "
+                          f"summary: {self.summary_list}, local_task: "
+                          f"{self.decompose(local_task)}, remote_task: {self.decompose(remote_task)}")
 
 
 class Rule:
@@ -200,8 +209,9 @@ class ExportAction(SyncAction):
         rules.add(self.remote_task_exists())
         rules.add(self.remote_task_is_not_deleted())
         rules.add(self.ids_match())
-        rules.print_summary()
-        return rules.get_result()
+        rule_result = rules.get_result()
+        rules.print_summary(self.local_task, self.remote_task, rule_result)
+        return rule_result
 
     def can_insert(self):
         """
@@ -212,8 +222,9 @@ class ExportAction(SyncAction):
         rules = Rules(self.get_name(), "insert")
         rules.add(self.remote_task_does_not_exist())
         rules.add(self.local_task_is_not_deleted())
-        rules.print_summary()
-        return rules.get_result()
+        rule_result = rules.get_result()
+        rules.print_summary(self.local_task, self.remote_task, rule_result)
+        return rule_result
 
     def can_update(self):
         """
@@ -228,8 +239,9 @@ class ExportAction(SyncAction):
         rules.add(self.local_task_is_not_deleted())
         rules.add(self.has_changed())
         rules.add(self.titles_match())
-        rules.print_summary()
-        return rules.get_result()
+        rule_result = rules.get_result()
+        rules.print_summary(self.local_task, self.remote_task, rule_result)
+        return rule_result
 
 
 class ImportAction(SyncAction):
@@ -270,8 +282,9 @@ class ImportAction(SyncAction):
         rules.add(self.local_task_exists())
         rules.add(self.local_task_is_not_deleted())
         rules.add(self.external_ids_match())
-        rules.print_summary()
-        return rules.get_result()
+        rule_result = rules.get_result()
+        rules.print_summary(self.local_task, self.remote_task, rule_result)
+        return rule_result
 
     def can_update(self):
         """
@@ -286,8 +299,9 @@ class ImportAction(SyncAction):
         rules.add(self.remote_task_exists())
         rules.add(self.external_ids_match())
         rules.add(self.remote_task_is_not_deleted())
-        rules.print_summary()
-        return rules.get_result()
+        rule_result = rules.get_result()
+        rules.print_summary(self.local_task, self.remote_task, rule_result)
+        return rule_result
 
     def can_insert(self):
         """
@@ -300,8 +314,9 @@ class ImportAction(SyncAction):
         rules.add(self.local_task_does_not_exist())
         rules.add(self.remote_task_exists())
         rules.add(self.remote_task_is_not_deleted())
-        rules.print_summary()
-        return rules.get_result()
+        rule_result = rules.get_result()
+        rules.print_summary(self.local_task, self.remote_task, rule_result)
+        return rule_result
 
 
 class Importer:
@@ -322,22 +337,27 @@ class Importer:
         for google_taskslist in self.tasks_list_api.list():
             self.logger.info(f"Working on tasks in {google_taskslist.title}")
             for gtask in TasksAPI(google_taskslist.id, self.google_tasks_service).list():
-
-                self.logger.debug(f"Retrieved task {dict(gtask)}")
                 if len(gtask.title) != 0:
+                    self.logger.debug(f"{gtask.title}")
                     t = Task(gtask.title)
                     t.external_id = gtask.id
                     t.deleted = gtask.deleted
                     t.label = gtask.notes
                     t.project = google_taskslist.title
 
+                    due_date = DueDate()
                     if len(gtask.due) != 0:
-                        due_date = DueDate()
-                        due_date.completed = bool(gtask.completed)
+                        due_date.completed = bool(gtask.is_completed)
                         due_date.date_string = self.convert_rfc3339_to_date_string(gtask.due)
-                        t.due_dates = [due_date]
 
-                    self.logger.debug(f"Converted task {dict(t)}")
+                    elif len(gtask.completed) != 0:
+                        due_date.completed = bool(gtask.is_completed)
+                        due_date.date_string = self.convert_rfc3339_to_date_string(gtask.completed)
+
+                    else:
+                        due_date.completed = False
+                        due_date.date_string = str()
+                    t.due_dates = [due_date]
                     task_list.append(t)
 
         return task_list
@@ -357,17 +377,14 @@ class Importer:
             action = ImportAction(local_task, remote_task)
 
             if action.can_delete():
-                self.logger.debug(f"Deleting local task {local_task.text}")
                 self.tasks.delete(local_task.id)
                 sync_results.append(SyncAction.DELETED)
 
             elif action.can_update():
-                self.logger.debug(f"Replacing local task {remote_task.text}")
                 self.tasks.replace(remote_task)
                 sync_results.append(SyncAction.UPDATED)
 
             elif action.can_insert():
-                self.logger.debug(f"Adding local task {remote_task.text}")
                 self.tasks.add(remote_task)
                 sync_results.append(SyncAction.ADDED)
 
@@ -438,27 +455,18 @@ class Exporter:
 
             tasks_api = TasksAPI(existing_gtask_list.id, self.google_tasks_service)
             for local_gtask in gtask_list.tasks:
-                self.logger.debug(f"local task: {dict(local_gtask)}")
                 remote_gtask = tasks_api.get(local_gtask.title)
-
-                if remote_gtask is not None:
-                    self.logger.debug(f"remote task: {dict(remote_gtask)}")
-                else:
-                    self.logger.debug(f"remote_task: None")
 
                 action = ExportAction(local_gtask, remote_gtask)
                 if action.can_insert():
-                    self.logger.debug(f"Inserting task {local_gtask.title} into service")
                     tasks_api.insert(local_gtask)
                     sync_results.append(SyncAction.ADDED)
 
                 elif action.can_update():
-                    self.logger.debug(f"Updating task {local_gtask.title} from service")
                     tasks_api.update(local_gtask)
                     sync_results.append(SyncAction.UPDATED)
 
                 elif action.can_delete():
-                    self.logger.debug(f"Deleting task {local_gtask.title} from service")
                     tasks_api.delete(local_gtask.title)
                     sync_results.append(SyncAction.DELETED)
 

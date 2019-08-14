@@ -31,12 +31,11 @@ class Task(object):
 
     @date_expression.setter
     def date_expression(self, expression):
-        if expression is not None:
-            assert type(expression) is str
-            if len(str(expression)) > 0:
-                self.__date_expression = expression
-                due_dates = self.date_generator.get_due_dates(expression)
-                self.__due_dates = due_dates
+        assert type(expression) is str
+        if len(str(expression)) > 0:
+            self.__date_expression = expression
+            due_dates = self.date_generator.get_due_dates(expression)
+            self.__due_dates = due_dates
 
     @property
     def due_dates(self):

@@ -79,25 +79,26 @@ class TestCliClient(unittest.TestCase):
         self.assertEqual(due_date.date_string, '2019-04-14')
         self.assertEqual(due_date.completed, False)
 
-    # def test_reschedule_tasks(self):
-    #     today = Today()
-    #     kwargs = {"group": None}
-    #     task_list = self.client.group(**kwargs)
-    #     self.assertTrue(len(task_list) == 9)
-    #     task1 = task_list[0]
-    #     self.assertIsNotNone(task1)
-    #     self.assertTrue(task1. == today.to_date_string())
-    #
-    #     future_day = today.to_date_time() + timedelta(days=1)
-    #     future_day = Day(future_day)
-    #     self.client.reschedule_tasks(future_day)
-    #
-    #     rows = self.client.group(**kwargs)
-    #     self.assertTrue(len(rows) == 9)
-    #     row1 = list(rows[0])
-    #     self.assertIsNotNone(row1)
-    #     date_string = row1[5]
-    #     self.assertTrue(date_string == future_day.to_date_string())
+    def test_reschedule_tasks(self):
+        today = Today()
+        kwargs = {"group": None}
+        task_list = self.client.group(**kwargs)
+        self.assertTrue(len(task_list) > 0)
+        task1 = task_list[0]
+        self.assertIsNotNone(task1)
+        self.assertTrue(len(task1.due_dates) == 1)
+        self.assertTrue(task1.due_dates[0].date_string == today.to_date_string())
+
+        future_day = today.to_date_time() + timedelta(days=1)
+        future_day = Day(future_day)
+        self.client.reschedule_tasks(future_day)
+
+        task_list = self.client.group(**kwargs)
+        self.assertTrue(len(task_list) > 0)
+        task1 = task_list[0]
+        self.assertIsNotNone(task1)
+        self.assertTrue(len(task1.due_dates) == 1)
+        self.assertTrue(task1.due_dates[0].date_string == future_day.to_date_string())
 
     def test_today(self):
         self.client.add_task("task1", "home", "home", "empty")
