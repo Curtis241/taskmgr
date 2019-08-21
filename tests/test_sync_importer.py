@@ -84,16 +84,15 @@ class TestSyncImporter(unittest.TestCase):
 
     def test_import_tasks(self):
         task100 = Task('Task100')
-        task100.external_id = "100"
+        task100.label = "added"
 
-        task101 = Task('Task101')
-        task101.external_id = "100"
-        task101.label = "home"
+        task101 = Task('Task100')
+        task101.label = "updated"
         task101.deleted = False
 
-        task102 = Task('Task101')
+        task102 = Task('Task100')
         task102.deleted = True
-        task102.external_id = "100"
+        task102.label = "deleted"
 
         tasks_list = [task100, task101, task102]
 
@@ -101,6 +100,7 @@ class TestSyncImporter(unittest.TestCase):
         sync_results_list = sync_results.get_list()
         self.assertTrue(len(sync_results_list) == 3)
 
+        print(sync_results_list)
         self.assertTrue(sync_results_list[0] == SyncAction.ADDED)
         self.assertTrue(sync_results_list[1] == SyncAction.UPDATED)
         self.assertTrue(sync_results_list[2] == SyncAction.DELETED)

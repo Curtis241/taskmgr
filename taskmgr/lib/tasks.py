@@ -118,27 +118,17 @@ class Tasks(object):
         else:
             raise TaskKeyError()
 
-    def replace(self, modified_task) -> Task:
-        assert type(modified_task) is Task
+    def replace(self, local_task, remote_task) -> Task:
+        assert type(remote_task) is Task
+        assert type(local_task) is Task
 
-        existing_task = None
-        if type(modified_task.external_id) is str and len(modified_task.external_id) > 0:
-            existing_task = deepcopy(self.get_task_by_external_id(modified_task.external_id))
-        elif type(modified_task.id) is str and len(modified_task.id) > 0:
-            existing_task = deepcopy(self.get_task_by_id(modified_task.id))
-
-        if existing_task is not None:
-            existing_task.id = modified_task.id
-            existing_task.index = modified_task.index
-            existing_task.deleted = False
-            existing_task.last_updated = self.get_date_time_string()
-            self.__tasks[existing_task.index] = modified_task
-            self.logger.debug(f"Replaced {dict(modified_task)}")
-            return existing_task
-        else:
-            msg = "task.external_id or task.id is required"
-            self.logger.error(msg)
-            raise AttributeError(msg)
+        if local_task is not None:
+            remote_task.last_updated = self.get_date_time_string()
+            remote_task.index = local_task.index
+            self.__tasks[local_task.index] = remote_task
+            self.save()
+            self.logger.debug(f"Replaced local_task: {dict(local_task)} with remote_task: {dict(remote_task)}")
+            return remote_task
 
     def edit(self, task_id, text, label, project, date_expression) -> Task:
         task = deepcopy(self.get_task_by_id(task_id))

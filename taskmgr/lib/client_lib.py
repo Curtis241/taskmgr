@@ -226,6 +226,7 @@ class CliClient(Client):
                 func = view_dict["func"]
                 kwargs["tasks"] = self.get_task_list()
 
+                # Export table results to markdown file
                 table_row_list = func(**kwargs)
                 if "export_path" in kwargs and kwargs.get("export_path") is not None:
                     self.__file_exporter.save(table_row_list, kwargs.get("export_path"))

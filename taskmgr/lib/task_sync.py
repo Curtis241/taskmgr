@@ -208,7 +208,7 @@ class ExportAction(SyncAction):
         rules.add(self.local_task_is_deleted())
         rules.add(self.remote_task_exists())
         rules.add(self.remote_task_is_not_deleted())
-        rules.add(self.ids_match())
+        rules.add(self.titles_match())
         rule_result = rules.get_result()
         rules.print_summary(self.local_task, self.remote_task, rule_result)
         return rule_result
@@ -269,6 +269,12 @@ class ImportAction(SyncAction):
         else:
             return Rule("external_ids_match", False)
 
+    def names_match(self) -> Rule:
+        if self.local_task is not None and self.remote_task is not None:
+            return Rule("names_match", self.local_task.text == self.remote_task.text)
+        else:
+            return Rule("names_match", False)
+
     def can_delete(self):
         """
         Remote task must be deleted
@@ -281,7 +287,7 @@ class ImportAction(SyncAction):
         rules.add(self.remote_task_is_deleted())
         rules.add(self.local_task_exists())
         rules.add(self.local_task_is_not_deleted())
-        rules.add(self.external_ids_match())
+        rules.add(self.names_match())
         rule_result = rules.get_result()
         rules.print_summary(self.local_task, self.remote_task, rule_result)
         return rule_result
@@ -290,14 +296,14 @@ class ImportAction(SyncAction):
         """
         Local task must exist
         Remote task must exist
-        External ids match
+        Names match
         Remote task is not deleted
         :return:
         """
         rules = Rules(self.get_name(), "update")
         rules.add(self.local_task_exists())
         rules.add(self.remote_task_exists())
-        rules.add(self.external_ids_match())
+        rules.add(self.names_match())
         rules.add(self.remote_task_is_not_deleted())
         rule_result = rules.get_result()
         rules.print_summary(self.local_task, self.remote_task, rule_result)
@@ -373,7 +379,7 @@ class Importer:
         for remote_task in remote_task_list:
             assert type(remote_task) is Task
 
-            local_task = self.tasks.get_task_by_external_id(remote_task.external_id)
+            local_task = self.tasks.get_task_by_name(remote_task.text)
             action = ImportAction(local_task, remote_task)
 
             if action.can_delete():
@@ -381,7 +387,7 @@ class Importer:
                 sync_results.append(SyncAction.DELETED)
 
             elif action.can_update():
-                self.tasks.replace(remote_task)
+                self.tasks.replace(local_task, remote_task)
                 sync_results.append(SyncAction.UPDATED)
 
             elif action.can_insert():

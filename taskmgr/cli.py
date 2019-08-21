@@ -48,9 +48,20 @@ def edit_task(**kwargs):
 
 
 @cli.command("delete")
-@click.argument('index', nargs=-1, required=True, type=int)
+@click.option('--index', '-i', help="Task index", type=int)
+@click.option('--min', help="Minimum task index value", type=int)
+@click.option('--max', help="Maximum task index value", type=int)
 def delete_task(**kwargs):
-    cli_client.delete_tasks(kwargs.get("index"))
+    index = kwargs.get("index")
+    min_index = kwargs.get("min")
+    max_index = kwargs.get("max")
+
+    if index is not None:
+        cli_client.delete_tasks((index,))
+
+    if min_index and max_index is not None:
+        indexes = tuple(range(min_index, (max_index+1)))
+        cli_client.delete_tasks(indexes)
 
 
 @cli.command("list")

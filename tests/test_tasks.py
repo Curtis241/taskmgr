@@ -214,17 +214,9 @@ class TestTasks(unittest.TestCase):
         task = self.tasks.get_task_by_name("Task1")
         task.deleted = True
 
-        existing_task = self.tasks.replace(task)
+        existing_task = self.tasks.replace(self.task1, task)
         self.assertFalse(existing_task.deleted)
         self.assertEqual(task.text, "Task1")
-
-    def test_replace_when_ids_are_null(self):
-        task = self.tasks.get_task_by_name("Task1")
-        task.id = str()
-        task.external_id = str()
-
-        with self.assertRaises(AttributeError):
-            self.tasks.replace(task)
 
 
 if __name__ == "__main__":
