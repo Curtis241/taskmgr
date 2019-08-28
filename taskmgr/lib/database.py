@@ -9,6 +9,10 @@ from taskmgr.lib.variables import CommonVariables
 
 
 class Database(ABC):
+    """Generic base class to support Yaml and Json file databases. I chose a file db instead
+    of a database such as MySql, Postgres, etc to keep client as light weight as possible. I don't want more
+    then 100 tasks at any time because it would be too hard to manage priorities. The Google tasks service
+    is really the persistent storage for this app so no need to make it complex by adding an external db."""
     logger = AppLogger("database").get_logger()
 
     def __init__(self, db_name, ext):
@@ -40,6 +44,10 @@ class Database(ABC):
 
 
 class JsonFileDatabase(Database):
+    """
+    Manages saving and retrieving tasks as dict object to a json file
+    located in the resource directory.
+    """
     logger = AppLogger("json_file_database").get_logger()
 
     def __init__(self, db_name):
@@ -59,6 +67,10 @@ class JsonFileDatabase(Database):
 
 
 class YamlFileDatabase(Database):
+    """
+    Manages saving and retrieving tasks as dict object to a yaml file
+    located in the resource directory.
+    """
     logger = AppLogger("yaml_file_database").get_logger()
 
     def __init__(self, db_name):

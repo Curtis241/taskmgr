@@ -6,6 +6,8 @@ from taskmgr.lib.variables import CommonVariables
 
 
 class DueDate(object):
+    """The DueDate object was created to support reoccurring tasks. When there are many dates each
+    date can be marked as completed."""
 
     def __init__(self):
         self.__completed = False
@@ -26,13 +28,28 @@ class DueDate(object):
 
     @date_string.setter
     def date_string(self, date_string):
+        """
+        Store a datetime object converted to a date string using a formatter.
+        See the CommonVariables.date_format formatter
+        :param date_string:
+        :return:
+        """
         assert type(date_string) is str
         self.__date_string = date_string
 
     def to_dict(self):
+        """
+        Converts object to dict
+        :return:  dict
+        """
         return {"date_string": self.__date_string, "completed": self.__completed}
 
     def from_dict(self, due_date_dict):
+        """
+        Converts dict to object
+        :param due_date_dict: DueDate dict
+        :return: DueDate object
+        """
         if "date_string" in due_date_dict:
             self.__date_string = due_date_dict["date_string"]
 

@@ -40,5 +40,9 @@ class AppLogger:
         return log_dir
 
     def get_logger(self):
+        """
+
+        :rtype:
+        """
         return self.logger
 

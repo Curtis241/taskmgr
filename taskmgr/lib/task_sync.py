@@ -40,6 +40,10 @@ class SyncResultsList:
 
 
 class Rules:
+    """
+    Aggregates rule objects and retrieves the result from multiple rules. It also provides an effective way
+    to debug the result of import and export rules.
+    """
     logger = AppLogger("rules").get_logger()
 
     def __init__(self, action, state):
@@ -85,6 +89,11 @@ class Rule:
 
 
 class SyncAction(ABC):
+    """
+    Generic base class for the ImportAction and ExportAction classes. The methods that are common are placed
+    in this class to avoid duplication. The public properties below act as a simple enum, instead of passing
+    strings the public property is used instead.
+    """
     SKIPPED = 'skipped'
     UPDATED = 'updated'
     DELETED = 'deleted'
@@ -170,6 +179,10 @@ class SyncAction(ABC):
 
 
 class ExportAction(SyncAction):
+    """
+    Defines the delete, insert, and update rules for exporting tasks. I removed the complex if..then logic in the
+    exporter and replaced it with methods that encapsulate the operation specific rules.
+    """
 
     def __init__(self, local_task, remote_task):
         super().__init__(local_task, remote_task)
@@ -200,9 +213,11 @@ class ExportAction(SyncAction):
 
     def can_delete(self):
         """
+        Rules:
+        Titles must match
         Remote task must exist, and also not be deleted.
         Local task must be deleted
-        :return:
+        :return: rule_result
         """
         rules = Rules(self.get_name(), "delete")
         rules.add(self.local_task_is_deleted())
@@ -215,9 +230,11 @@ class ExportAction(SyncAction):
 
     def can_insert(self):
         """
+        Rules:
+
         Remote task must not exist
         Local task must not be deleted
-        :return:
+        :return: rule_result
         """
         rules = Rules(self.get_name(), "insert")
         rules.add(self.remote_task_does_not_exist())
@@ -228,11 +245,13 @@ class ExportAction(SyncAction):
 
     def can_update(self):
         """
+        Rules:
+
         Remote task must exist
         Local task must not be deleted
         Local task must not be equal to remote task
         Titles in local and remote task must match
-        :return:
+        :return: rule_result
         """
         rules = Rules(self.get_name(), "update")
         rules.add(self.remote_task_exists())
@@ -245,6 +264,9 @@ class ExportAction(SyncAction):
 
 
 class ImportAction(SyncAction):
+    """
+    Defines the delete, insert, and update rules for importing tasks.
+    """
 
     def __init__(self, local_task, remote_task):
         super().__init__(local_task, remote_task)

@@ -9,6 +9,24 @@ from taskmgr.lib.variables import CommonVariables
 
 
 class FileExporter:
+    """
+    Exports a task_list to a markdown file with name (ie. tasks_results_20190813_210046.md) using the format:
+
+    YYYY-MM-DD
+
+    Completed:
+    * Task 1: <label>
+    * Task 2: <label>
+
+    Not-Completed:
+    * Task 3: <label>
+    * Task 4: <label>
+
+    A FileExporter class was created to encapsulate the export functionality and reduce the complexity of
+    the Client base class. Since there is only 1 file template type, the template is built into the write_file
+    and write_row methods. The template portion could be placed into an external template file
+    so that the user could pick a template name and convert the tasks to the markdown file.
+    """
     logger = AppLogger("file_exporter").get_logger()
 
     def __init__(self):

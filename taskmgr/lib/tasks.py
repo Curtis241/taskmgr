@@ -30,6 +30,9 @@ class SortType:
 
 
 class Tasks(object):
+    """
+    Main entry point for querying and managing local tasks.
+    """
     logger = AppLogger("tasks").get_logger()
 
     def __init__(self, file_database):

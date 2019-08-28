@@ -1,6 +1,5 @@
 import os.path
 import pickle
-from abc import ABC, abstractmethod
 from datetime import datetime
 
 import requests
@@ -13,6 +12,13 @@ from taskmgr.lib.variables import CommonVariables
 
 
 class GTaskList:
+    """
+    Models the structure of Google Tasks service tasklist object. Detailed description found here:
+    https://developers.google.com/tasks/v1/reference/tasks
+
+    Creating an object allows the tasklist structure model to be serialized from the Google Tasks service
+    to an object and then converted to a dictionary when __iter__ is called by using dict(object) method.
+    """
 
     def __init__(self):
         self.__kind = "tasks#taskList"
@@ -62,6 +68,13 @@ class GTaskList:
 
 
 class GTask:
+    """
+    Models the structure of Google Tasks service task object. Detailed description found here:
+    https://developers.google.com/tasks/v1/reference/tasks
+
+    Creating an object allows the task structure model to be serialized from the Google Tasks service
+    to an object and then converted to a dictionary when __iter__ is called by using dict(object) method.
+    """
 
     def __init__(self):
         self.__kind = "tasks#task"
@@ -207,40 +220,18 @@ class GTask:
         self.__hidden = hidden
 
 
-class TasksService(ABC):
-
-    @abstractmethod
-    def list_tasklist(self): pass
-
-    @abstractmethod
-    def get_tasklist(self, tasklist_id): pass
-
-    @abstractmethod
-    def insert_tasklist(self, tasklist_title): pass
-
-    @abstractmethod
-    def delete_tasklist(self, tasklist_id): pass
-
-    @abstractmethod
-    def update_tasklist(self, tasklist_id, tasklist): pass
-
-    @abstractmethod
-    def list_tasks(self, tasklist_id): pass
-
-    @abstractmethod
-    def insert_task(self, tasklist_id, task): pass
-
-    @abstractmethod
-    def clear_tasks(self, tasklist_id): pass
-
-    @abstractmethod
-    def delete_task(self, tasklist_id, task_id): pass
-
-    @abstractmethod
-    def update_task(self, tasklist_id, task_id, task): pass
-
-
-class GoogleTasksService(TasksService):
+class GoogleTasksService:
+    """
+    Connects to the Google Tasks service using OAuth 2.0 authorization. For general info:
+    https://en.wikipedia.org/wiki/OAuth.
+    Steps:
+    1. Create a credentials.json file that contains the project and the auth_uri. If the file
+    does not exist it can be generated using the https://console.developers.google.com/apis/dashboard
+    2. Save the file to the ~/.config/taskmgr/credentials/ directory.
+    3. If the token.pickle file exists then the connection to the Google Tasks service is complete. If
+    it does not exist then the Google Tasks service will begin the authentication process by displaying
+    the login prompt and requesting authorization for the application.
+    """
     logger = AppLogger("google_tasks_service").get_logger()
 
     # If modifying these scopes, delete the file token.pickle.
@@ -255,12 +246,13 @@ class GoogleTasksService(TasksService):
 
     @staticmethod
     def get_credentials():
-        """Shows basic usage of the Tasks API.
+        """
+        Manages the authentication process for connecting to the Google Tasks service.The file token.pickle
+        stores the user's access and refresh tokens, and is created automatically when the authorization
+        flow completes for the first time.
         """
         creds = None
-        # The file token.pickle stores the user's access and refresh tokens, and is
-        # created automatically when the authorization flow completes for the first
-        # time.
+
         credentials_dir = GoogleTasksService.get_dir()
         pickle_path = f'{credentials_dir}/token.pickle'
         credentials_path = f"{credentials_dir}/credentials.json"

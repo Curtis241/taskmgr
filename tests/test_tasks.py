@@ -134,54 +134,43 @@ class TestTasks(unittest.TestCase):
         task.label = "home"
         task.date_expression = "every sa"
         self.assertFalse(task.is_completed())
-        print(dict(task))
-        # self.assertListEqual(task.get_task_status(),
-        #                      [0, False, 'Repetitive task', 'inbox', 'home', '2019-05-04', '2019-06-29'])
-        #
-        # task.complete()
-        # self.assertFalse(task.is_completed())
-        # self.assertListEqual(task.get_task_status(),
-        #                      [0, False, 'Repetitive task', 'inbox', 'home', '2019-05-11', '2019-06-29'])
-        #
-        # task.complete()
-        # self.assertFalse(task.is_completed())
-        # self.assertListEqual(task.get_task_status(),
-        #                      [0, False, 'Repetitive task', 'inbox', 'home', '2019-05-18', '2019-06-29'])
-        #
-        # task.complete()
-        # self.assertFalse(task.is_completed())
-        # self.assertListEqual(task.get_task_status(),
-        #                      [0, False, 'Repetitive task', 'inbox', 'home', '2019-05-25', '2019-06-29'])
-        #
-        # task.complete()
-        # self.assertFalse(task.is_completed())
-        # self.assertListEqual(task.get_task_status(),
-        #                      [0, False, 'Repetitive task', 'inbox', 'home', '2019-06-01', '2019-06-29'])
-        #
-        # task.complete()
-        # self.assertFalse(task.is_completed())
-        # self.assertListEqual(task.get_task_status(),
-        #                      [0, False, 'Repetitive task', 'inbox', 'home', '2019-06-08', '2019-06-29'])
-        #
-        # task.complete()
-        # self.assertFalse(task.is_completed())
-        # self.assertListEqual(task.get_task_status(),
-        #                      [0, False, 'Repetitive task', 'inbox', 'home', '2019-06-15', '2019-06-29'])
-        #
-        # task.complete()
-        # self.assertFalse(task.is_completed())
-        # self.assertListEqual(task.get_task_status(),
-        #                      [0, False, 'Repetitive task', 'inbox', 'home', '2019-06-22', '2019-06-29'])
-        #
-        # task.complete()
-        # self.assertFalse(task.is_completed())
-        # self.assertListEqual(task.get_task_status(),
-        #                      [0, False, 'Repetitive task', 'inbox', 'home', '2019-06-29', '2019-06-29'])
-        #
-        # task.complete()
-        # self.assertTrue(task.is_completed())
-        # self.assertListEqual(task.get_task_status(),
-        #                      [0, True, 'Repetitive task', 'inbox', 'home', '', ''])
+        self.assertListEqual(task.get_date_string_list(), ['2019-05-04', '2019-06-29'])
+
+        task.complete()
+        self.assertFalse(task.is_completed())
+        self.assertListEqual(task.get_date_string_list(), ['2019-05-11', '2019-06-29'])
+
+        task.complete()
+        self.assertFalse(task.is_completed())
+        self.assertListEqual(task.get_date_string_list(), ['2019-05-18', '2019-06-29'])
+
+        task.complete()
+        self.assertFalse(task.is_completed())
+        self.assertListEqual(task.get_date_string_list(), ['2019-05-25', '2019-06-29'])
+
+        task.complete()
+        self.assertFalse(task.is_completed())
+        self.assertListEqual(task.get_date_string_list(), ['2019-06-01', '2019-06-29'])
+
+        task.complete()
+        self.assertFalse(task.is_completed())
+        self.assertListEqual(task.get_date_string_list(), ['2019-06-08', '2019-06-29'])
+
+        task.complete()
+        self.assertFalse(task.is_completed())
+        self.assertListEqual(task.get_date_string_list(), ['2019-06-15', '2019-06-29'])
+
+        task.complete()
+        self.assertFalse(task.is_completed())
+        self.assertListEqual(task.get_date_string_list(), ['2019-06-22', '2019-06-29'])
+
+        task.complete()
+        self.assertFalse(task.is_completed())
+        self.assertListEqual(task.get_date_string_list(), ['2019-06-29', '2019-06-29'])
+
+        task.complete()
+        self.assertTrue(task.is_completed())
+        self.assertIsNone(task.get_date_string_list())
 
     def test_task_is_complete(self):
         task = Task("Simple task")
@@ -215,7 +204,7 @@ class TestTasks(unittest.TestCase):
         task.deleted = True
 
         existing_task = self.tasks.replace(self.task1, task)
-        self.assertFalse(existing_task.deleted)
+        self.assertTrue(existing_task.deleted)
         self.assertEqual(task.text, "Task1")
 
 

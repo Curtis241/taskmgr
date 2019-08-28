@@ -12,6 +12,9 @@ from taskmgr.lib.variables import CommonVariables
 
 
 class SyncClient(object):
+    """
+    Synchronizes tasks from local storage to and from Google Tasks service
+    """
     logger = AppLogger("sync_client").get_logger()
 
     def __init__(self, importer, exporter):
@@ -20,6 +23,11 @@ class SyncClient(object):
 
     @staticmethod
     def get_duration(start_datetime):
+        """
+        Gets a formatted time string using the provided datetime object
+        :param start_datetime:
+        :return: time string
+        """
         end_datetime = datetime.now()
         total_seconds = (end_datetime - start_datetime).total_seconds()
         hours, remainder = divmod(total_seconds, 3600)
@@ -27,6 +35,13 @@ class SyncClient(object):
         return '{:02}m:{:02}s'.format(int(minutes), int(seconds))
 
     def sync(self, export_enabled=False, import_enabled=False):
+        """
+        Converts the local or google tasks into the destination format and
+        imports or exports the tasks.
+        :param export_enabled: True/False
+        :param import_enabled: True/False
+        :return: None
+        """
         start_datetime = datetime.now()
 
         if import_enabled:
@@ -50,6 +65,9 @@ class SyncClient(object):
 
 
 class Client:
+    """
+    Base client class to provide generic features for additional clients.
+    """
     logger = AppLogger("client").get_logger()
 
     def __init__(self, tasks):
@@ -58,33 +76,40 @@ class Client:
         self.date_generator = DateGenerator()
 
     def get_unique_label_list(self):
+        """Returns a list of labels from the tasks. Wrapped so method can be overridden."""
         return list(self.__tasks.unique(SortType.Label))
 
     def get_unique_project_list(self):
+        """Returns list of project names from the tasks. Wrapped so method can be overridden."""
         return list(self.__tasks.unique(SortType.Project))
 
     def get_tasks_by_project(self, project):
+        """Returns list of tasks that match the provided project name. Wrapped so method can be overridden."""
         assert type(project) is str
         return self.__tasks.get_list_by_type(SortType.Project, project)
 
     def get_tasks_by_label(self, label):
+        """Returns list of tasks that match the provided label. Wrapped so method can be overridden."""
         assert type(label) is str
         return self.__tasks.get_list_by_type(SortType.Label, label)
 
     def get_tasks_by_text(self, text):
+        """Returns list of tasks that match the provided text string. Wrapped so method can be overridden."""
         assert type(text) is str
         return self.__tasks.get_list_by_type(SortType.Text, text)
 
     def get_task_list(self):
+        """Returns list of tasks that are not deleted. Wrapped so method can be overridden."""
         return self.__tasks.get_filtered_list()
 
     def add_task(self, text, label, project, date_expression) -> Task:
         """
         Adds a task
-        :param text:
-        :param label:
-        :param project:
-        :param date_expression:
+        :param text: text string describing the task
+        :param label: label for the task
+        :param project: project name for the task
+        :param date_expression: Must be one of [today, tomorrow, m-s, every *, month / day, etc]. For complete
+        list see the expression_lists in handler objects in date_generator.py
         :return: Task
         """
         assert type(text) is str
@@ -117,10 +142,11 @@ class Client:
         Edits an existing task by replacing string values. None are allowed
         and handled by the Task object.
         :param index: integer starting at 0
-        :param text: name of the task
-        :param project:
-        :param label:
-        :param date_expression:
+        :param text: text string describing the task
+        :param project: project name of the task
+        :param label: label name of the task
+        :param date_expression: Must be one of [today, tomorrow, m-s, every *, month / day, etc]. For complete
+        list see the expression_lists in handler objects in date_generator.py
         :return: Task
         """
         assert type(index) is int
@@ -165,18 +191,30 @@ class Client:
 
 
 class CliClient(Client):
+    """
+    Contains features specific for the command-line client, such as
+    filtering and presentation of tasks.
+    """
     logger = AppLogger("cli_client").get_logger()
 
     def __init__(self, tasks, file_exporter):
         super().__init__(tasks)
 
         self.__file_exporter = file_exporter
+
+        # Task list is needed to store the tasks to allow
+        # unit tests to check the output
         self.__task_list = list()
         self.__calendar = Calendar()
+
+        # Sets up the BeautifulTable defaults
         self.__table = BeautifulTable(default_alignment=ALIGN_LEFT, max_width=200)
         self.__table.set_style(STYLE_BOX)
         self.__table.column_headers = ["#", "Done", "Text", "Project", "Label", "Due Date", "Until"]
 
+        # Maps the available group and filter options to the appropriate methods. This makes it easy to
+        # add filter or group methods that only do one thing only. Using the single responsibility principle
+        # in this way makes the code more maintainable.
         self.__views = [{"action": "group", "sort_type": SortType.Label, "func": self.__group_by_label},
                         {"action": "group", "sort_type": None, "func": self.__display_all_tasks},
                         {"action": "group", "sort_type": SortType.Project, "func": self.__group_by_project},
@@ -190,6 +228,12 @@ class CliClient(Client):
 
     @staticmethod
     def format_row(task):
+        """
+        Prepares the structure of the table, colors the done column based on status, and shortens
+        the text when it exceeds the default length.
+        :param task:
+        :return: list
+        """
         assert type(task) is Task
 
         text = textwrap.shorten(task.text, CommonVariables.default_text_field_length, placeholder="...")
@@ -209,6 +253,12 @@ class CliClient(Client):
         return self.__table
 
     def group(self, **kwargs):
+        """
+        Main method that groups the tasks by sorting. Depends on receiving
+        kwargs parameters from cli.py.
+        :param kwargs: kwargs[group] must be one of label, project, or None
+        :return: task list
+        """
         assert "group" in kwargs
         sort_type = kwargs.get("group")
 
@@ -218,6 +268,13 @@ class CliClient(Client):
                 return func()
 
     def filter(self, **kwargs):
+        """
+        Main method that filters the tasks. Depends on receiving kwargs parameters from cli.py.
+        Also allows results to be saved to a markdown file, if the export_path parameter
+        is provided.
+        :param kwargs: kwargs[filter] must be one of due_date, incomplete, complete, text, label, and project
+        :return: task_list
+        """
         assert "filter" in kwargs
         sort_type = kwargs.get("filter")
 
@@ -233,13 +290,25 @@ class CliClient(Client):
                 return table_row_list
 
     def list_labels(self):
+        """
+        Lists all labels contained in the tasks
+        :return:
+        """
         print("Labels: {}".format(self.get_unique_label_list()))
 
     def list_projects(self):
+        """
+        Lists all projects contained in the tasks
+        :return:
+        """
         print("Projects: {}".format(self.get_unique_project_list()))
 
     # Private methods
     def __group_by_label(self):
+        """
+        Displays all tasks and sorts by label
+        :return: task_list
+        """
         self.__clear()
         for label in self.get_unique_label_list():
             for task in self.get_tasks_by_label(label):
@@ -247,6 +316,10 @@ class CliClient(Client):
         return self.__print_table()
 
     def __group_by_project(self):
+        """
+        Displays all tasks and sorts by project
+        :return: task_list
+        """
         self.__clear()
         for project in self.get_unique_project_list():
             for task in self.get_tasks_by_project(project):
@@ -254,16 +327,20 @@ class CliClient(Client):
         return self.__print_table()
 
     def __display_all_tasks(self):
+        """
+        Simple list of all tasks without any sorting applied.
+        :return: task_list
+        """
         self.__clear()
         for task in self.get_task_list():
             self.__add_table_row(task)
         return self.__print_table()
 
-    def __clear(self):
-        self.__table.clear()
-        self.__task_list = list()
-
     def __print_table(self):
+        """
+        Controls the final display to the console.
+        :return: task_list
+        """
         if len(self.__table) > 0:
             print(self.__table)
             return self.__task_list
@@ -271,6 +348,11 @@ class CliClient(Client):
             print("No rows to display. Use add command.")
 
     def __filter_by_date(self, **kwargs):
+        """
+        Filters the tasks that contain today's date.
+        :param kwargs: kwargs[tasks] contains tasks_list
+        :return: task_list
+        """
         assert "tasks" in kwargs
         self.__clear()
         tasks_list = kwargs.get("tasks")
@@ -281,13 +363,31 @@ class CliClient(Client):
                 self.__add_table_row(task)
         return self.__print_table()
 
+    def __clear(self):
+        """
+        Clears the BeautifulTable internal tables object and task list.
+        :return:
+        """
+        self.__table.clear()
+        self.__task_list = list()
+
     def __add_table_row(self, task):
+        """
+        Adds the task to the BeautifulTable internal tables object and task list
+        :param task:
+        :return:
+        """
         assert type(task) is Task
         row = self.format_row(task)
         self.__table.append_row(row)
         self.__task_list.append(task)
 
     def __filter_by_incomplete_status(self, **kwargs):
+        """
+        Filters tasks that are not complete
+        :param kwargs: kwargs[tasks] contains tasks_list
+        :return: task_list
+        """
         assert "tasks" in kwargs
         self.__clear()
         tasks_list = kwargs.get("tasks")
@@ -297,6 +397,11 @@ class CliClient(Client):
         return self.__print_table()
 
     def __filter_by_complete_status(self, **kwargs):
+        """
+        Filters tasks that are complete
+        :param kwargs: kwargs[tasks] contains tasks_list
+        :return: task_list
+        """
         assert "tasks" in kwargs
         self.__clear()
         tasks_list = kwargs.get("tasks")
@@ -306,6 +411,11 @@ class CliClient(Client):
         return self.__print_table()
 
     def __filter_by_project(self, **kwargs):
+        """
+        Filters tasks by project
+        :param kwargs: kwargs[value] contains a project_name
+        :return: task_list
+        """
         assert "value" in kwargs
         self.__clear()
         project = kwargs.get("value")
@@ -314,6 +424,11 @@ class CliClient(Client):
         return self.__print_table()
 
     def __filter_by_label(self, **kwargs):
+        """
+        Filters tasks by label
+        :param kwargs: kwargs[value] contains a label
+        :return: task_list
+        """
         assert "value" in kwargs
         self.__clear()
         label = kwargs.get("value")
@@ -322,6 +437,11 @@ class CliClient(Client):
         return self.__print_table()
 
     def __filter_by_text(self, **kwargs):
+        """
+        Filters tasks by text. Similar to a text search
+        :param kwargs: kwargs[value] contains the title of a task and depends on kwargs[tasks]
+        :return: task_list
+        """
         assert "value" in kwargs
         self.__clear()
         tasks_list = kwargs.get("tasks")
