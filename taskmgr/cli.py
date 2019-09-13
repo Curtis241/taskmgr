@@ -87,6 +87,12 @@ def complete_task(**kwargs):
     cli_client.complete_tasks(kwargs.get("index"))
 
 
+@cli.command("pick")
+@click.argument('index', nargs=-1, required=True, type=int)
+def pick_task(**kwargs):
+    cli_client.pick_tasks(kwargs.get("index"))
+
+
 @cli.command("sync")
 @click.option('--export', '-e', default=False, is_flag=True)
 @click.option('--import', '-i', default=False, is_flag=True)

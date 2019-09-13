@@ -2,7 +2,7 @@ import unittest
 from datetime import datetime
 
 from taskmgr.lib.database import JsonFileDatabase
-from taskmgr.lib.date_generator import DateGenerator, Day
+from taskmgr.lib.date_generator import DateGenerator, Day, Today
 from taskmgr.lib.task import Task
 from taskmgr.lib.tasks import Tasks, SortType
 from taskmgr.lib.variables import CommonVariables
@@ -206,6 +206,15 @@ class TestTasks(unittest.TestCase):
         existing_task = self.tasks.replace(self.task1, task)
         self.assertTrue(existing_task.deleted)
         self.assertEqual(task.text, "Task1")
+
+    def test_pick(self):
+        task = self.tasks.get_task_by_name("Task10")
+        self.tasks.pick(task.id)
+
+        self.assertTrue(len(task.due_dates) == 1)
+        due_date = task.due_dates[0]
+        current_date_string = Today().to_date_string()
+        self.assertTrue(due_date.date_string == current_date_string)
 
 
 if __name__ == "__main__":

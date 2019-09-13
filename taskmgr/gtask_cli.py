@@ -1,16 +1,16 @@
 import sys
-
 import click
 
+from taskmgr.lib.google_datastore import GoogleDatastoreService
 from taskmgr.lib.google_tasks_api import GoogleTasksService, TasksListAPI, TasksAPI
 
 
 @click.group()
-def google_task_tool():
+def gtask_cli():
     pass
 
 
-@google_task_tool.command("get")
+@gtask_cli.command("get")
 @click.option('--list_title', '-l', help="Title of Tasklist", metavar='<list_title>')
 @click.option('--task_title', '-t', help="Title of Task", metavar='<task_title>')
 def get_task(**kwargs):
@@ -21,5 +21,10 @@ def get_task(**kwargs):
     print(dict(tasks_api.get(kwargs.get('task_title'))))
 
 
+@gtask_cli.command("count")
+def count_tasks(**kwargs):
+    GoogleDatastoreService()
+
+
 if __name__ == "__main__":
-    sys.exit(google_task_tool())
+    sys.exit(gtask_cli())

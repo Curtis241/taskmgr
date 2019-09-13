@@ -1,7 +1,4 @@
-from taskmgr.lib.google_tasks_api import TasksService
-
-
-class MockTasksService(TasksService):
+class MockTasksService():
 
     def __init__(self):
         self.tasklist = {'kind': 'tasks#taskLists',

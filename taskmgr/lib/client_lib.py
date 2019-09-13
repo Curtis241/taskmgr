@@ -4,7 +4,7 @@ from datetime import datetime
 from beautifultable import BeautifulTable, ALIGN_LEFT, STYLE_BOX
 from colored import fg
 
-from taskmgr.lib.date_generator import Calendar, Today, DateGenerator
+from taskmgr.lib.date_generator import Calendar, Today, DateGenerator, DueDate
 from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.task import Task
 from taskmgr.lib.tasks import SortType, Tasks
@@ -173,6 +173,21 @@ class Client:
             if task is not None:
                 if task.is_completed() is False:
                     results.append(self.__tasks.complete(task.id))
+            else:
+                self.display_invalid_index_error(index)
+        return results
+
+    def pick_tasks(self, index_tuple) -> list:
+        """
+        Adds the current due date to the tasks
+        :param index_tuple: int tuple
+        :return: list
+        """
+        results = list()
+        for index in index_tuple:
+            task = self.__tasks.get_task_by_index(index)
+            if task is not None:
+                results.append(self.__tasks.pick(task.id))
             else:
                 self.display_invalid_index_error(index)
         return results

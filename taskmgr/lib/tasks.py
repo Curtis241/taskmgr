@@ -121,6 +121,21 @@ class Tasks(object):
         else:
             raise TaskKeyError()
 
+    def pick(self, task_id) -> Task:
+        assert type(task_id) is str
+
+        task = self.get_task_by_id(task_id)
+        if task is not None:
+            due_date = DueDate()
+            due_date.completed = False
+            due_date.date_string = Today().to_date_string()
+            task.due_dates = [due_date]
+            self.__tasks[task.index] = task
+            self.save()
+            return task
+        else:
+            raise TaskKeyError()
+
     def replace(self, local_task, remote_task) -> Task:
         assert type(remote_task) is Task
         assert type(local_task) is Task

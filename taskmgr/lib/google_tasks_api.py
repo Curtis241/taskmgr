@@ -1,12 +1,11 @@
-import os.path
-import pickle
 from datetime import datetime
 
 import requests
-from google.auth.transport.requests import Request
-from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.exceptions import DefaultCredentialsError
+
 from googleapiclient.discovery import build
 
+from taskmgr.lib.google_auth import GoogleAuth
 from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.variables import CommonVariables
 
@@ -238,92 +237,80 @@ class GoogleTasksService:
     SCOPES = ['https://www.googleapis.com/auth/tasks']
 
     def __init__(self):
-        self.logger.info(f"Connecting to google tasks api")
-        creds = self.get_credentials()
-        self.logger.info(f"Completed retrieving credentials")
-        self.service = self.build_resource(creds)
-        self.logger.info(f"Completed building resource")
-
-    @staticmethod
-    def get_credentials():
-        """
-        Manages the authentication process for connecting to the Google Tasks service.The file token.pickle
-        stores the user's access and refresh tokens, and is created automatically when the authorization
-        flow completes for the first time.
-        """
-        creds = None
-
-        credentials_dir = GoogleTasksService.get_dir()
-        pickle_path = f'{credentials_dir}/token.pickle'
-        credentials_path = f"{credentials_dir}/credentials.json"
-
-        if os.path.exists(pickle_path):
-            with open(pickle_path, 'rb') as token:
-                creds = pickle.load(token)
-        # If there are no (valid) credentials available, let the user log in.
-        if not creds or not creds.valid:
-            if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request())
-            else:
-
-                flow = InstalledAppFlow.from_client_secrets_file(
-                    credentials_path, GoogleTasksService.SCOPES)
-                creds = flow.run_local_server()
-            # Save the credentials for the next run
-            with open(pickle_path, 'wb') as token:
-                pickle.dump(creds, token)
-
-        return creds
-
-    @staticmethod
-    def get_dir():
-        credentials_dir = CommonVariables.credentials_dir
-        os.makedirs(f"{credentials_dir}", 0o777, exist_ok=True)
-        return credentials_dir
-
-    @staticmethod
-    def build_resource(creds):
-        return build('tasks', 'v1', credentials=creds)
-
-    def list_tasklist(self):
-        return self.service.tasklists().list(maxResults=100).execute()
-
-    def get_tasklist(self, tasklist_id):
-        return self.service.tasklists().get(tasklist=tasklist_id).execute()
-
-    def insert_tasklist(self, tasklist_title):
-        return self.service.tasklists().insert(body={"title": tasklist_title}).execute()
-
-    def delete_tasklist(self, tasklist_id):
-        return self.service.tasklists().delete(tasklist=tasklist_id).execute()
-
-    def update_tasklist(self, tasklist_id, tasklist):
-        return self.service.tasklists().update(tasklist=tasklist_id, body=tasklist).execute()
-
-    def list_tasks(self, tasklist_id):
-        assert type(tasklist_id) is str and len(tasklist_id) > 0
-        creds = self.get_credentials()
+        self.service = None
+        self.credentials = GoogleAuth.get_credentials(GoogleTasksService.SCOPES)
+        self.empty_tasklist = {'kind': 'tasks#taskLists', 'items': []}
+        self.empty_tasks = {'kind': 'tasks#tasks', 'items': []}
         try:
-            header_dict = {"Authorization": f"Bearer {creds.token}"}
-            params_dict = {"showDeleted": True, "showCompleted": True, "showHidden": True, "maxResults": 100}
-            response = requests.get(f"https://www.googleapis.com/tasks/v1/lists/{tasklist_id}/tasks",
-                                    params=params_dict,
-                                    headers=header_dict)
-            return response.json()
-        except BaseException as ex:
-            self.logger.error(ex)
+            self.logger.info(f"Connecting to google tasks api")
+            self.logger.info(f"Completed retrieving credentials")
+            self.service = build('tasks', 'v1', credentials=self.credentials)
+            self.logger.info(f"Completed building resource")
 
-    def insert_task(self, tasklist_id, task):
-        return self.service.tasks().insert(tasklist=tasklist_id, body=task).execute()
+        except DefaultCredentialsError as ex:
+            GoogleTasksService.logger.info(ex)
 
-    def clear_tasks(self, tasklist_id):
-        return self.service.tasks().clear(tasklist=tasklist_id).execute()
+    def list_tasklist(self) -> dict:
+        if self.service is not None:
+            return self.service.tasklists().list(maxResults=100).execute()
+        else:
+            return self.empty_tasklist
 
-    def delete_task(self, tasklist_id, task_id):
-        return self.service.tasks().delete(tasklist=tasklist_id, task=task_id).execute()
+    def get_tasklist(self, tasklist_id) -> dict:
+        if self.service is not None:
+            return self.service.tasklists().get(tasklist=tasklist_id).execute()
+        else:
+            return self.empty_tasklist
 
-    def update_task(self, tasklist_id, task_id, task):
-        self.service.tasks().update(tasklist=tasklist_id, task=task_id, body=task).execute()
+    def insert_tasklist(self, tasklist_title) -> dict:
+        if self.service is not None:
+            return self.service.tasklists().insert(body={"title": tasklist_title}).execute()
+        else:
+            return self.empty_tasklist
+
+    def delete_tasklist(self, tasklist_id) -> bool:
+        if self.service is not None:
+            self.service.tasklists().delete(tasklist=tasklist_id).execute()
+            return True
+        else:
+            return False
+
+    def update_tasklist(self, tasklist_id, tasklist) -> dict:
+        if self.service is not None:
+            return self.service.tasklists().update(tasklist=tasklist_id, body=tasklist).execute()
+        else:
+            return self.empty_tasklist
+
+    def list_tasks(self, tasklist_id) -> dict:
+        assert type(tasklist_id) is str and len(tasklist_id) > 0
+        if self.credentials is not None:
+            try:
+                header_dict = {"Authorization": f"Bearer {self.credentials.token}"}
+                params_dict = {"showDeleted": True, "showCompleted": True, "showHidden": True, "maxResults": 100}
+                response = requests.get(f"https://www.googleapis.com/tasks/v1/lists/{tasklist_id}/tasks",
+                                        params=params_dict,
+                                        headers=header_dict)
+                return response.json()
+            except BaseException as ex:
+                self.logger.error(ex)
+        else:
+            return self.empty_tasks
+
+    def insert_task(self, tasklist_id, task) -> None:
+        if self.service is not None:
+            return self.service.tasks().insert(tasklist=tasklist_id, body=task).execute()
+
+    def clear_tasks(self, tasklist_id) -> None:
+        if self.service is not None:
+            return self.service.tasks().clear(tasklist=tasklist_id).execute()
+
+    def delete_task(self, tasklist_id, task_id) -> None:
+        if self.service is not None:
+            return self.service.tasks().delete(tasklist=tasklist_id, task=task_id).execute()
+
+    def update_task(self, tasklist_id, task_id, task) -> None:
+        if self.service is not None:
+            self.service.tasks().update(tasklist=tasklist_id, task=task_id, body=task).execute()
 
 
 class TasksListAPI:
@@ -334,7 +321,6 @@ class TasksListAPI:
 
     @staticmethod
     def to_object(tasklist_dict):
-
         if type(tasklist_dict) is dict:
             obj = GTaskList()
             for key, value in tasklist_dict.items():
@@ -348,7 +334,7 @@ class TasksListAPI:
         assert type(tasklist_list) is list
         return [TasksListAPI.to_object(tasklist_dict) for tasklist_dict in tasklist_list]
 
-    def list(self):
+    def list(self) -> list:
         results = self.service.list_tasklist()
         tasklist_list = results.get('items', [])
         if not tasklist_list:
@@ -360,8 +346,6 @@ class TasksListAPI:
         tasklist_list = self.to_object_list([tasklist for tasklist in self.list() if tasklist.title == title])
         if len(tasklist_list) > 0:
             return tasklist_list[0]
-        else:
-            return None
 
     def insert(self, title):
         assert type(title) is str and len(title) > 0
@@ -426,24 +410,29 @@ class TasksAPI:
             if task.title == title:
                 return task
 
-    def insert(self, task_obj):
+    def insert(self, task_obj) -> bool:
         assert type(task_obj) is GTask
         assert len(task_obj.title) > 0
+
+        if self.service is None:
+            return False
 
         if self.get(task_obj.title) is None:
             self.service.insert_task(self.tasklist_id, dict(task_obj))
             return True
         else:
             self.logger.debug("{} already exists".format(task_obj.title))
+            return False
 
     def clear(self):
         self.service.clear_tasks(self.tasklist_id)
 
-    def delete(self, title):
+    def delete(self, title) -> bool:
         task = self.get(title)
         if task is not None:
             self.service.delete_task(self.tasklist_id, task.id)
             return True
+        return False
 
     def update(self, task_obj):
         assert type(task_obj) is GTask
