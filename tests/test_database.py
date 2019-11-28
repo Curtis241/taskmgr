@@ -1,7 +1,7 @@
 import unittest
 
-from taskmgr.lib.database import JsonFileDatabase, YamlFileDatabase
-from taskmgr.lib.task import Task
+from taskmgr.lib.model.database import JsonFileDatabase, YamlFileDatabase
+from taskmgr.lib.model.task import Task
 
 
 class TestDatabase(unittest.TestCase):

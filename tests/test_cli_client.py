@@ -1,11 +1,12 @@
 import unittest
 from datetime import datetime, timedelta
 
-from taskmgr.lib.client_lib import CliClient
-from taskmgr.lib.database import JsonFileDatabase
-from taskmgr.lib.date_generator import Today, Day
-from taskmgr.lib.file_exporter import FileExporter
-from taskmgr.lib.tasks import SortType, Tasks
+from taskmgr.lib.presenter.snapshots import Snapshots
+from taskmgr.lib.view.cli_client import CliClient
+from taskmgr.lib.model.database import JsonFileDatabase
+from taskmgr.lib.presenter.date_generator import Today, Day
+from taskmgr.lib.presenter.file_exporter import FileExporter
+from taskmgr.lib.presenter.tasks import SortType, Tasks
 
 
 class MockFileExporter(FileExporter):
@@ -18,7 +19,8 @@ class TestCliClient(unittest.TestCase):
     def setUp(self):
         self.db = JsonFileDatabase("test_cli_client_file_db")
         self.tasks = Tasks(self.db)
-        self.client = CliClient(self.tasks, MockFileExporter())
+        snapshots = Snapshots(JsonFileDatabase("test_snapshots_db"))
+        self.client = CliClient(self.tasks, snapshots, MockFileExporter())
         self.task1 = self.client.add_task("Clean car", "@waiting_on", "home", "today")
         self.task2 = self.client.add_task("Clean bathroom", "", "home", "tomorrow")
         self.task3 = self.client.add_task("Book flight to New York", "@at_computer", "work", "m")
@@ -37,7 +39,7 @@ class TestCliClient(unittest.TestCase):
         self.client.add_task("Clean garage", "", "home", "empty")
         kwargs = {"group": None}
         self.client.group(**kwargs)
-        row_count = len(self.client.get_table())
+        row_count = len(self.client.task_table.get_table())
         self.assertTrue(row_count == 10)
 
     def test_list_all_tasks(self):

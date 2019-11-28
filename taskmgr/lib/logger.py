@@ -35,14 +35,9 @@ class AppLogger:
 
     @staticmethod
     def get_dir():
-        log_dir = CommonVariables.log_dir
+        log_dir = CommonVariables().log_dir
         os.makedirs(f"{log_dir}", 0o777, exist_ok=True)
         return log_dir
 
     def get_logger(self):
-        """
-
-        :rtype:
-        """
         return self.logger
-

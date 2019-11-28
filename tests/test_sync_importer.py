@@ -1,9 +1,9 @@
 import unittest
 
-from taskmgr.lib.database import JsonFileDatabase
-from taskmgr.lib.task import Task
-from taskmgr.lib.task_sync import Importer, SyncAction
-from taskmgr.lib.tasks import Tasks
+from taskmgr.lib.model.database import JsonFileDatabase
+from taskmgr.lib.model.task import Task
+from taskmgr.lib.presenter.task_sync import GoogleTasksImporter, SyncAction
+from taskmgr.lib.presenter.tasks import Tasks
 from tests.mock_tasks_service import MockTasksService
 
 
@@ -13,7 +13,7 @@ class TestSyncImporter(unittest.TestCase):
         self.service = MockTasksService()
         self.db = JsonFileDatabase(db_name="test_sync_importer_test_db")
         self.tasks = Tasks(self.db)
-        self.importer = Importer(self.service, self.tasks)
+        self.importer = GoogleTasksImporter(self.service, self.tasks)
 
     def tearDown(self):
         self.db.remove()
@@ -25,21 +25,21 @@ class TestSyncImporter(unittest.TestCase):
 
     def test_pull_tasks_from_service_when_empty(self):
         self.service.return_empty_tasks = True
-        task_list = self.importer.convert()
+        task_list = self.importer.convert_to_task_list()
         self.assertListEqual(task_list, [])
 
     def test_pull_tasks_from_service_when_null(self):
         self.service.tasks = {'kind': 'tasks#tasks', 'etag': '', 'items': [
             {'kind': 'tasks#task', 'id': '', 'title': '', 'updated': '',
              'position': '', 'status': '', 'due': ''}]}
-        task_list = self.importer.convert()
+        task_list = self.importer.convert_to_task_list()
         self.assertListEqual(task_list, [])
 
     def test_title_to_text(self):
         self.service.tasks = {'kind': 'tasks#tasks', 'etag': '', 'items': [
             {'kind': 'tasks#task', 'id': '', 'title': 'Title1', 'updated': '',
              'position': '', 'status': '', 'due': ''}]}
-        task_list = self.importer.convert()
+        task_list = self.importer.convert_to_task_list()
         self.assertTrue(len(task_list) == 2)
         task1 = task_list[0]
         self.assertTrue(task1.text == "Title1")
@@ -48,7 +48,7 @@ class TestSyncImporter(unittest.TestCase):
         self.service.tasks = {'kind': 'tasks#tasks', 'etag': '', 'items': [
             {'kind': 'tasks#task', 'id': '', 'title': 'Title1', 'updated': '',
              'position': '', 'status': '', 'due': '', 'deleted': True}]}
-        task_list = self.importer.convert()
+        task_list = self.importer.convert_to_task_list()
         self.assertTrue(len(task_list) == 2)
         task1 = task_list[0]
         self.assertTrue(task1.deleted)
@@ -60,7 +60,7 @@ class TestSyncImporter(unittest.TestCase):
              'updated': '2019-05-17T03:48:30.000Z',
              'position': '00000000000000000001', 'notes': 'Notes1',
              'status': 'needsAction'}]}
-        task_list = self.importer.convert()
+        task_list = self.importer.convert_to_task_list()
         self.assertTrue(len(task_list) == 2)
         task1 = task_list[0]
         self.assertTrue(task1.label == "Notes1")
@@ -74,7 +74,7 @@ class TestSyncImporter(unittest.TestCase):
              'status': 'completed',
              'completed': '2019-08-11T01:56:14.000Z',
              'deleted': False, 'hidden': True}]}
-        task_list = self.importer.convert()
+        task_list = self.importer.convert_to_task_list()
         self.assertTrue(len(task_list) == 2)
         task1 = task_list[0]
         self.assertTrue(len(task1.due_dates) == 1)

@@ -1,10 +1,12 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
 
-from taskmgr.lib.date_generator import Day, DueDate
-from taskmgr.lib.google_tasks_api import GTask, GTaskList, TasksListAPI, TasksAPI
+from taskmgr.lib.model.gtask_list import GTaskList
+from taskmgr.lib.presenter.date_generator import Day, DueDate
+from taskmgr.lib.presenter.gtask_list_api import GTasksListAPI
+from taskmgr.lib.presenter.gtasks_api import GTask, GTasksAPI
 from taskmgr.lib.logger import AppLogger
-from taskmgr.lib.task import Task
+from taskmgr.lib.model.task import Task
 from taskmgr.lib.variables import CommonVariables
 
 
@@ -347,24 +349,24 @@ class ImportAction(SyncAction):
         return rule_result
 
 
-class Importer:
-    logger = AppLogger("importer").get_logger()
+class GoogleTasksImporter:
+    logger = AppLogger("google_tasks_importer").get_logger()
 
-    def __init__(self, service, tasks):
-        self.tasks = tasks
-        self.google_tasks_service = service
-        self.tasks_list_api = TasksListAPI(self.google_tasks_service)
+    def __init__(self, google_tasks_service, tasks):
+        self.__tasks = tasks
+        self.__google_tasks_service = google_tasks_service
+        self.__tasks_list_api = GTasksListAPI(self.__google_tasks_service)
 
     @staticmethod
     def convert_rfc3339_to_date_string(rfc3339_string) -> str:
-        dt = datetime.strptime(rfc3339_string, CommonVariables.rfc3339_date_time_format)
+        dt = datetime.strptime(rfc3339_string, CommonVariables().rfc3339_date_time_format)
         return Day(dt).to_date_string()
 
-    def convert(self) -> list:
+    def convert_to_task_list(self) -> list:
         task_list = list()
-        for google_taskslist in self.tasks_list_api.list():
+        for google_taskslist in self.__tasks_list_api.list():
             self.logger.info(f"Working on tasks in {google_taskslist.title}")
-            for gtask in TasksAPI(google_taskslist.id, self.google_tasks_service).list():
+            for gtask in GTasksAPI(google_taskslist.id, self.__google_tasks_service).list():
                 if len(gtask.title) != 0:
                     self.logger.debug(f"{gtask.title}")
                     t = Task(gtask.title)
@@ -401,19 +403,19 @@ class Importer:
         for remote_task in remote_task_list:
             assert type(remote_task) is Task
 
-            local_task = self.tasks.get_task_by_name(remote_task.text)
+            local_task = self.__tasks.get_task_by_name(remote_task.text)
             action = ImportAction(local_task, remote_task)
 
             if action.can_delete():
-                self.tasks.delete(local_task.id)
+                self.__tasks.delete(local_task.id)
                 sync_results.append(SyncAction.DELETED)
 
             elif action.can_update():
-                self.tasks.replace(local_task, remote_task)
+                self.__tasks.replace(local_task, remote_task)
                 sync_results.append(SyncAction.UPDATED)
 
             elif action.can_insert():
-                self.tasks.add(remote_task)
+                self.__tasks.add(remote_task)
                 sync_results.append(SyncAction.ADDED)
 
             else:
@@ -423,29 +425,29 @@ class Importer:
         return sync_results
 
 
-class Exporter:
-    logger = AppLogger("exporter").get_logger()
+class GoogleTasksExporter:
+    logger = AppLogger("google_tasks_exporter").get_logger()
 
-    def __init__(self, service, tasks):
-        self.google_tasks_service = service
-        self.tasks_list_api = TasksListAPI(self.google_tasks_service)
-        self.tasks = tasks
+    def __init__(self, google_tasks_service, tasks):
+        self.__google_tasks_service = google_tasks_service
+        self.__tasks_list_api = GTasksListAPI(google_tasks_service)
+        self.__tasks = tasks
+        self.vars = CommonVariables()
 
-    @staticmethod
-    def convert_date_string_to_rfc3339(date_string) -> str:
+    def convert_date_string_to_rfc3339(self, date_string) -> str:
         if len(date_string) > 0:
-            dt = datetime.strptime(date_string, CommonVariables.date_format)
-            return dt.strftime(CommonVariables.rfc3339_date_time_format)
+            dt = datetime.strptime(date_string, self.vars.date_format)
+            return dt.strftime(self.vars.rfc3339_date_time_format)
         return date_string
 
-    def convert(self) -> list:
+    def convert_to_gtasklist(self) -> list:
         """
         Prepares local Task objects for export
         :return:
         """
 
         gtasks_list = list()
-        tasks_list = self.tasks.get_list()
+        tasks_list = self.__tasks.get_list()
         if len(tasks_list) > 0:
 
             for project in set([t.project for t in tasks_list]):
@@ -468,20 +470,20 @@ class Exporter:
                 gtasks_list.append(gtasks)
         return gtasks_list
 
-    def export_tasks(self, local_task_list) -> SyncResultsList:
+    def export_tasks(self, task_list) -> SyncResultsList:
         """
         Manages task export to the Google Tasks Service
-        :param local_task_list:
+        :param task_list:
         :return:
         """
         self.logger.debug("Starting task export")
         sync_results = SyncResultsList()
-        for gtask_list in local_task_list:
-            existing_gtask_list = self.tasks_list_api.get(gtask_list.title)
+        for gtask_list in task_list:
+            existing_gtask_list = self.__tasks_list_api.get(gtask_list.title)
             if existing_gtask_list is None:
-                existing_gtask_list = self.tasks_list_api.insert(gtask_list.title)
+                existing_gtask_list = self.__tasks_list_api.insert(gtask_list.title)
 
-            tasks_api = TasksAPI(existing_gtask_list.id, self.google_tasks_service)
+            tasks_api = GTasksAPI(existing_gtask_list.id, self.__google_tasks_service)
             for local_gtask in gtask_list.tasks:
                 remote_gtask = tasks_api.get(local_gtask.title)
 

@@ -1,6 +1,7 @@
 import unittest
 
-from taskmgr.lib.google_tasks_api import TasksListAPI, TasksAPI, GTask
+from taskmgr.lib.presenter.gtask_list_api import GTasksListAPI
+from taskmgr.lib.presenter.gtasks_api import GTask, GTasksAPI
 from tests.mock_tasks_service import MockTasksService
 
 
@@ -8,9 +9,9 @@ class TestGoogleTasks(unittest.TestCase):
 
     def setUp(self):
         self.service = MockTasksService()
-        self.tasks_list_api = TasksListAPI(self.service)
+        self.tasks_list_api = GTasksListAPI(self.service)
         tasklist_obj = self.tasks_list_api.get("My Tasks")
-        self.tasks_api = TasksAPI(tasklist_obj.id, self.service)
+        self.tasks_api = GTasksAPI(tasklist_obj.id, self.service)
 
     def tearDown(self): pass
 

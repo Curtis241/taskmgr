@@ -1,8 +1,8 @@
 import unittest
 
-from taskmgr.lib.google_tasks_api import GTask
-from taskmgr.lib.task import Task
-from taskmgr.lib.task_sync import ExportAction, ImportAction
+from taskmgr.lib.presenter.gtasks_api import GTask
+from taskmgr.lib.model.task import Task
+from taskmgr.lib.presenter.task_sync import ExportAction, ImportAction
 
 
 class TestTaskSync(unittest.TestCase):

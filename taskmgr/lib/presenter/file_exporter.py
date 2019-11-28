@@ -2,9 +2,9 @@ import os
 import time
 from string import Template
 
-from taskmgr.lib.date_generator import Today
+from taskmgr.lib.presenter.date_generator import Today
 from taskmgr.lib.logger import AppLogger
-from taskmgr.lib.task import Task
+from taskmgr.lib.model.task import Task
 from taskmgr.lib.variables import CommonVariables
 
 
@@ -84,7 +84,7 @@ class FileExporter:
         return os.path.exists(output_dir)
 
     def make_path(self, output_dir):
-        timestamp_string = time.strftime(CommonVariables.file_name_timestamp)
+        timestamp_string = time.strftime(CommonVariables().file_name_timestamp)
         file_name = self.file_name.substitute(timestamp=timestamp_string)
 
         if str(output_dir).endswith("/"):

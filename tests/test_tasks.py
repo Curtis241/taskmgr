@@ -1,10 +1,10 @@
 import unittest
 from datetime import datetime
 
-from taskmgr.lib.database import JsonFileDatabase
-from taskmgr.lib.date_generator import DateGenerator, Day, Today
-from taskmgr.lib.task import Task
-from taskmgr.lib.tasks import Tasks, SortType
+from taskmgr.lib.model.database import JsonFileDatabase
+from taskmgr.lib.presenter.date_generator import DateGenerator, Day, Today
+from taskmgr.lib.model.task import Task
+from taskmgr.lib.presenter.tasks import Tasks, SortType
 from taskmgr.lib.variables import CommonVariables
 
 
@@ -128,7 +128,7 @@ class TestTasks(unittest.TestCase):
 
     def test_complete_task(self):
         date_generator = DateGenerator()
-        current_day = datetime.strptime('2019-05-01', CommonVariables.date_format)
+        current_day = datetime.strptime('2019-05-01', CommonVariables().date_format)
         date_generator.current_day = Day(current_day)
         task = Task("Repetitive task", date_generator)
         task.label = "home"
@@ -207,9 +207,9 @@ class TestTasks(unittest.TestCase):
         self.assertTrue(existing_task.deleted)
         self.assertEqual(task.text, "Task1")
 
-    def test_pick(self):
+    def test_copy(self):
         task = self.tasks.get_task_by_name("Task10")
-        self.tasks.pick(task.id)
+        self.tasks.copy(task.id)
 
         self.assertTrue(len(task.due_dates) == 1)
         due_date = task.due_dates[0]

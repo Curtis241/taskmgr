@@ -1,20 +1,21 @@
 import uuid
 
-from taskmgr.lib.date_generator import DateGenerator, DueDate
+from taskmgr.lib.presenter.date_generator import DateGenerator, DueDate
 from taskmgr.lib.variables import CommonVariables
 
 
 class Task(object):
 
     def __init__(self, text, date_generator=None):
+        self.vars = CommonVariables()
         self.__id = uuid.uuid4().hex
         self.__index = int()
         self.__external_id = str()
         self.__text = text
-        self.__label = CommonVariables.default_label
+        self.__label = self.vars.default_label
         self.__deleted = False
         self.__priority = 1
-        self.__project = CommonVariables.default_project_name
+        self.__project = self.vars.default_project_name
         self.__last_updated = str()
 
         if date_generator is None:
@@ -22,7 +23,7 @@ class Task(object):
         else:
             self.date_generator = date_generator
 
-        self.__date_expression = CommonVariables.default_date_expression
+        self.__date_expression = self.vars.default_date_expression
         self.__due_dates = [DueDate()]
 
     @property

@@ -1,10 +1,10 @@
 import uuid
 from copy import deepcopy
-from datetime import datetime
 
-from taskmgr.lib.date_generator import Calendar, Day, DueDate, Today
 from taskmgr.lib.logger import AppLogger
-from taskmgr.lib.task import Task
+from taskmgr.lib.model.model import Model
+from taskmgr.lib.model.task import Task
+from taskmgr.lib.presenter.date_generator import Calendar, Day, DueDate, Today
 
 
 class TaskKeyError(IndexError):
@@ -29,37 +29,25 @@ class SortType:
         return value in SortType.__dict__.values()
 
 
-class Tasks(object):
+class Tasks(Model):
     """
     Main entry point for querying and managing local tasks.
     """
     logger = AppLogger("tasks").get_logger()
 
     def __init__(self, file_database):
+        super().__init__(file_database)
         self.__calendar = Calendar()
-        self.__db = file_database
-        self.__tasks = list()
-        self.retrieve()
 
-    def save(self):
-        self.__db.save(self.to_dict())
-
-    def retrieve(self):
-        tasks_dict_list = self.__db.retrieve()
-        if tasks_dict_list is not None:
-            self.__tasks = list()
-            self.__tasks = self.from_dict(tasks_dict_list)
-
-    def add(self, task):
-        assert type(task) is Task
-        task.id = uuid.uuid4().hex
-        task.deleted = False
-        task.index = self.get_index()
-        task.last_updated = self.get_date_time_string()
-        self.__tasks.append(task)
-        self.logger.debug(f"Added {dict(task)}")
+    def add(self, obj):
+        assert type(obj) is Task
+        obj.id = uuid.uuid4().hex
+        obj.index = self.get_index()
+        obj.last_updated = self.get_date_time_string()
+        self.append(obj)
+        self.logger.debug(f"Added {dict(obj)}")
         self.save()
-        return task
+        return obj
 
     def get_task(self, func) -> Task:
         for task in self.get_list():
@@ -83,16 +71,19 @@ class Tasks(object):
         assert type(task_name) is str
         return self.get_task(lambda task: task if task.text == task_name else None)
 
-    def get_list_by_type(self, sort_type, value):
+    def get_list_by_type(self, sort_type, value, include_deleted=False):
         assert SortType.contains(sort_type)
         assert type(value) == str
-        return list(filter(lambda t: getattr(t, sort_type) == value, self.get_filtered_list()))
+
+        if include_deleted:
+            task_list = self.get_list()
+        else:
+            task_list = self.get_filtered_list()
+
+        return list(filter(lambda t: getattr(t, sort_type) == value, task_list))
 
     def get_filtered_list(self):
         return [task for task in self.get_list() if not task.deleted]
-
-    def get_list(self):
-        return self.__tasks
 
     def delete(self, task_id) -> Task:
         assert type(task_id) is str
@@ -101,7 +92,7 @@ class Tasks(object):
         if task is not None:
             task.last_updated = self.get_date_time_string()
             task.deleted = True
-            self.__tasks[task.index] = task
+            self.insert(task.index, task)
             self.logger.debug(f"Deleted {dict(task)}")
             self.save()
             return task
@@ -115,13 +106,13 @@ class Tasks(object):
         if task is not None:
             task.last_updated = self.get_date_time_string()
             task.complete()
-            self.__tasks[task.index] = task
+            self.insert(task.index, task)
             self.save()
             return task
         else:
             raise TaskKeyError()
 
-    def pick(self, task_id) -> Task:
+    def copy(self, task_id) -> Task:
         assert type(task_id) is str
 
         task = self.get_task_by_id(task_id)
@@ -130,7 +121,7 @@ class Tasks(object):
             due_date.completed = False
             due_date.date_string = Today().to_date_string()
             task.due_dates = [due_date]
-            self.__tasks[task.index] = task
+            self.insert(task.index, task)
             self.save()
             return task
         else:
@@ -143,7 +134,7 @@ class Tasks(object):
         if local_task is not None:
             remote_task.last_updated = self.get_date_time_string()
             remote_task.index = local_task.index
-            self.__tasks[local_task.index] = remote_task
+            self.insert(local_task.index, remote_task)
             self.save()
             self.logger.debug(f"Replaced local_task: {dict(local_task)} with remote_task: {dict(remote_task)}")
             return remote_task
@@ -156,7 +147,7 @@ class Tasks(object):
             task.project = project
             task.date_expression = date_expression
             task.last_updated = self.get_date_time_string()
-            self.__tasks[task.index] = task
+            self.insert(task.index, task)
             self.save()
             return task
         else:
@@ -171,37 +162,30 @@ class Tasks(object):
                     due_date.date_string = today.to_date_string()
         self.save()
 
-    def clear(self):
-        self.__tasks = []
-
-    def to_dict(self):
-        return [dict(task) for task in self.get_list()]
-
     def sort(self, sort_type):
         assert SortType.contains(sort_type)
         return [t for t in sorted(self.get_list(), key=lambda t: getattr(t, sort_type))]
 
-    def unique(self, sort_type):
+    def unique(self, sort_type, include_deleted=False):
         assert SortType.contains(sort_type)
-        return set([getattr(t, sort_type) for t in self.get_filtered_list()])
 
-    def from_dict(self, tasks_dict_list):
-        assert type(tasks_dict_list) is list
+        if include_deleted:
+            task_list = self.get_list()
+        else:
+            task_list = self.get_filtered_list()
 
-        for index, task_dict in enumerate(tasks_dict_list):
-            task = Task(getattr(task_dict, "text", str()))
+        return set([getattr(t, sort_type) for t in task_list])
+
+    def from_dict(self, dict_list):
+        assert type(dict_list) is list
+
+        for index, obj_dict in enumerate(dict_list):
+            task = Task(getattr(obj_dict, "text", str()))
             task.index = index
-            for key, value in task_dict.items():
+            for key, value in obj_dict.items():
                 if type(value) is list:
                     task.due_dates = [DueDate().from_dict(due_date_dict) for due_date_dict in value]
                 else:
                     setattr(task, key, value)
-            self.__tasks.append(task)
-        return self.__tasks
-
-    @staticmethod
-    def get_date_time_string() -> str:
-        return Day(datetime.now()).to_date_time_string()
-
-    def get_index(self):
-        return len(self.__tasks)
+            self.append(task)
+        return self.get_list()

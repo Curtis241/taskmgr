@@ -69,6 +69,7 @@ class Day:
         self.timestamp = dt.timestamp()
         self.weekday_number = dt.weekday()
         self.week = self.get_week(self.day, self.weekday_number, self.month, self.year)
+        self.vars = CommonVariables()
 
     def to_date_list(self):
         return [self.to_date_string()]
@@ -82,12 +83,12 @@ class Day:
         return f"{self.year}-{month}-{day}"
 
     def to_date_time_string(self):
-        return datetime.strftime(self.dt, CommonVariables.date_time_format)
+        return datetime.strftime(self.dt, self.vars.date_time_format)
 
     def to_date_time(self):
         month = self.pad(self.month)
         day = self.pad(self.day)
-        return datetime.strptime(f"{self.year}-{month}-{day}", CommonVariables.date_format)
+        return datetime.strptime(f"{self.year}-{month}-{day}", self.vars.date_format)
 
     @staticmethod
     def pad(value):
@@ -117,6 +118,7 @@ class Calendar:
         self.month_list = range(1, 13)
         self.weekdays_list = [('su', 6), ('m', 0), ('tu', 1), ('w', 2), ('th', 3), ('f', 4), ('sa', 5)]
         self.today = Today()
+        self.vars = CommonVariables()
 
     @staticmethod
     def __exists(day_tuple, date_list):
@@ -131,19 +133,17 @@ class Calendar:
             date_list.append(day_tuple)
         return date_list
 
-    @staticmethod
-    def is_past(due_date, current_day=Today()):
+    def is_past(self, due_date, current_day=Today()):
 
         if type(due_date) is DueDate and len(due_date.date_string) > 0:
-            day = Day(datetime.strptime(due_date.date_string, CommonVariables.date_format))
+            day = Day(datetime.strptime(due_date.date_string, self.vars.date_format))
             timedelta1 = day.to_date_time() - current_day.to_date_time()
             if timedelta1.days < 0:
                 return True
 
         return False
 
-    @staticmethod
-    def contains_today(due_date_list, current_day=Today()):
+    def contains_today(self, due_date_list, current_day=Today()):
         """
         Looks for today's date in provided list of date strings
         :param due_date_list: ["2019-01-01"]
@@ -152,15 +152,14 @@ class Calendar:
         Boolean value
         """
         if len(due_date_list) != 0:
-            due_date = Calendar.get_closest_due_date(due_date_list, current_day)
+            due_date = self.get_closest_due_date(due_date_list, current_day)
             if due_date is not None:
                 if due_date.date_string == current_day.to_date_string():
                     return True
 
         return False
 
-    @staticmethod
-    def get_closest_due_date(due_date_list, current_day=None):
+    def get_closest_due_date(self, due_date_list, current_day=None):
         """
         Returns a future date string that is the closest to the current day
         :param due_date_list: list of due_date objects with the format yyyy-mm-dd
@@ -178,7 +177,7 @@ class Calendar:
                 # calculate the difference between current day and date string
                 for due_date in due_date_list:
                     if len(due_date.date_string) > 0:
-                        day = Day(datetime.strptime(due_date.date_string, CommonVariables.date_format))
+                        day = Day(datetime.strptime(due_date.date_string, self.vars.date_format))
                         timedelta1 = day.to_date_time() - current_day.to_date_time()
                         diff_list.append(timedelta1.days)
 
@@ -471,6 +470,7 @@ class RecurringDateHandler(Handler):
         self.expression_list = ["every day", "every weekday", "every su", "every m", "every tu", "every w", "every th",
                                 "every f", "every sa"]
         self.week_abbrev_list = ['su', 'm', 'tu', 'w', 'th', 'f', 'sa']
+        self.vars = CommonVariables()
 
     def handle(self, parser):
         if self.validate(parser.expression):
@@ -481,18 +481,18 @@ class RecurringDateHandler(Handler):
     def parse_expression(self, parser):
         parser.handler_name = RecurringDateHandler.__name__
         if parser.expression == "every day":
-            date_list = parser.calendar.get_months(parser.today, CommonVariables.recurring_month_limit)
+            date_list = parser.calendar.get_months(parser.today, self.vars.recurring_month_limit)
             parser.date_list = date_list
 
         elif parser.expression == "every weekday":
             parser.date_list = parser.calendar.get_work_week_dates(parser.today,
-                                                                   CommonVariables.recurring_month_limit)
+                                                                   self.vars.recurring_month_limit)
         elif str(parser.expression).startswith("every"):
             expression = str(parser.expression).split(" ")
             if expression[1] in self.week_abbrev_list:
                 weekday_number = parser.calendar.get_weekday_number(expression[1])
                 parser.date_list = parser.calendar.get_week_days(parser.today, weekday_number,
-                                                                 CommonVariables.recurring_month_limit)
+                                                                 self.vars.recurring_month_limit)
 
     def validate(self, expression):
         return expression in self.expression_list

@@ -1,8 +1,8 @@
 import unittest
 from datetime import datetime
 
-from taskmgr.lib.date_generator import DateGenerator, Day, Calendar, Today
-from taskmgr.lib.task import DueDate
+from taskmgr.lib.presenter.date_generator import DateGenerator, Day, Calendar, Today
+from taskmgr.lib.model.task import DueDate
 from taskmgr.lib.variables import CommonVariables
 
 
@@ -15,13 +15,13 @@ class TestDateGenerator(unittest.TestCase):
 
     def get_date(self, current_date_string, date_expression, expected_date_string):
 
-        current_date_time = datetime.strptime(current_date_string, CommonVariables.date_format)
+        current_date_time = datetime.strptime(current_date_string, CommonVariables().date_format)
         self.date_generator.current_day = Day(current_date_time)
         due_date_list = self.date_generator.get_due_dates(date_expression)
         return self.get_first_date_string(due_date_list) == expected_date_string
 
     def get_date_count(self, current_date_string, date_expression):
-        current_date_time = datetime.strptime(current_date_string, CommonVariables.date_format)
+        current_date_time = datetime.strptime(current_date_string, CommonVariables().date_format)
         self.date_generator.current_day = Day(current_date_time)
         due_date_list = self.date_generator.get_due_dates(date_expression)
         return len(due_date_list)
@@ -39,11 +39,12 @@ class TestDateGenerator(unittest.TestCase):
 
     def setUp(self):
         self.today = Today()
-        self.march1 = datetime.strptime('2019-03-01', CommonVariables.date_format)
-        self.march31 = datetime.strptime('2019-03-31', CommonVariables.date_format)
-        self.may31 = datetime.strptime('2019-05-31', CommonVariables.date_format)
-        self.dec1 = datetime.strptime("2019-12-01", CommonVariables.date_format)
-        self.dec31 = datetime.strptime("2019-12-31", CommonVariables.date_format)
+        self.vars = CommonVariables()
+        self.march1 = datetime.strptime('2019-03-01', self.vars.date_format)
+        self.march31 = datetime.strptime('2019-03-31', self.vars.date_format)
+        self.may31 = datetime.strptime('2019-05-31', self.vars.date_format)
+        self.dec1 = datetime.strptime("2019-12-01", self.vars.date_format)
+        self.dec31 = datetime.strptime("2019-12-31", self.vars.date_format)
         self.calendar = Calendar()
         self.date_generator = DateGenerator()
 
@@ -51,7 +52,7 @@ class TestDateGenerator(unittest.TestCase):
         pass
 
     def test_pad_number(self):
-        current_date_time = datetime.strptime('2019-03-12', CommonVariables.date_format)
+        current_date_time = datetime.strptime('2019-03-12', self.vars.date_format)
         day = Day(current_date_time)
         date_list = day.to_date_list()
         self.assertListEqual(date_list, ['2019-03-12'])
@@ -164,7 +165,7 @@ class TestDateGenerator(unittest.TestCase):
     def test_get_closest_date(self):
         day_list = self.calendar.get_first_day(Day(self.march1), 10)
         due_date_list = self.from_date_string_list(day_list)
-        current_date_time = datetime.strptime('2019-04-17', CommonVariables.date_format)
+        current_date_time = datetime.strptime('2019-04-17', self.vars.date_format)
         due_date = self.calendar.get_closest_due_date(due_date_list, Day(current_date_time))
         self.assertTrue(due_date.date_string == "2019-05-01")
 

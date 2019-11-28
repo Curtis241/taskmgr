@@ -1,10 +1,10 @@
 import unittest
 
-from taskmgr.lib.database import JsonFileDatabase
-from taskmgr.lib.date_generator import DueDate
-from taskmgr.lib.task import Task
-from taskmgr.lib.task_sync import Exporter
-from taskmgr.lib.tasks import Tasks
+from taskmgr.lib.model.database import JsonFileDatabase
+from taskmgr.lib.presenter.date_generator import DueDate
+from taskmgr.lib.model.task import Task
+from taskmgr.lib.presenter.task_sync import GoogleTasksExporter
+from taskmgr.lib.presenter.tasks import Tasks
 from tests.mock_tasks_service import MockTasksService
 
 
@@ -14,7 +14,7 @@ class TestSyncExporter(unittest.TestCase):
         self.service = MockTasksService()
         self.db = JsonFileDatabase(db_name="test_sync_exporter_test_db")
         self.tasks = Tasks(self.db)
-        self.exporter = Exporter(self.service, self.tasks)
+        self.exporter = GoogleTasksExporter(self.service, self.tasks)
 
     def tearDown(self): pass
 
@@ -36,7 +36,7 @@ class TestSyncExporter(unittest.TestCase):
         self.tasks.add(task102)
 
         # tasks_list = [task100, task101, task102]
-        gtasks_list = self.exporter.convert()
+        gtasks_list = self.exporter.convert_to_gtasklist()
         self.assertTrue(len(gtasks_list) == 2)
 
 

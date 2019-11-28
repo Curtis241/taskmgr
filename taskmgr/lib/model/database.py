@@ -17,7 +17,7 @@ class Database(ABC):
 
     def __init__(self, db_name, ext):
 
-        resources_dir = CommonVariables.resources_dir
+        resources_dir = CommonVariables().resources_dir
         self.path = f"{resources_dir}{db_name}.{ext}"
 
         if not self.exists():

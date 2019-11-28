@@ -1,0 +1,47 @@
+import unittest
+
+from taskmgr.lib.variables import CommonVariables
+
+
+class TestVariables(unittest.TestCase):
+
+    def setUp(self) -> None:
+        self.vars = CommonVariables()
+
+    def test_dir_variables(self):
+        self.assertIsInstance(self.vars.log_dir, str)
+        self.assertIsInstance(self.vars.credentials_dir, str)
+        self.assertIsInstance(self.vars.resources_dir, str)
+
+    def test_date_time_variables(self):
+        self.assertIsInstance(self.vars.date_format, str)
+        self.assertIsInstance(self.vars.date_time_format, str)
+        self.assertIsInstance(self.vars.time_format, str)
+        self.assertIsInstance(self.vars.rfc3339_date_time_format, str)
+        self.assertIsInstance(self.vars.file_name_timestamp, str)
+
+    def test_task_variables(self):
+        self.assertIsInstance(self.vars.default_label, str)
+        self.assertIsInstance(self.vars.default_project_name, str)
+        self.assertIsInstance(self.vars.default_text, str)
+        self.assertIsInstance(self.vars.recurring_month_limit, int)
+        self.assertIsInstance(self.vars.default_date_expression, str)
+        self.assertIsInstance(self.vars.default_text_field_length, int)
+
+    def test_set_variable(self):
+        self.vars.default_project_name = "work"
+        self.assertTrue(self.vars.default_project_name == "work")
+        self.vars.default_date_expression = "today"
+        self.assertTrue(self.vars.default_date_expression == "today")
+
+        vars = CommonVariables()
+        self.assertTrue(vars.default_project_name == "work")
+        self.assertTrue(vars.default_date_expression == "today")
+
+        vars.reset()
+        self.assertTrue(len(str(vars.default_project_name)) == 0)
+        self.assertTrue(str(vars.default_date_expression) == 'empty')
+
+
+if __name__ == '__main__':
+    unittest.main()

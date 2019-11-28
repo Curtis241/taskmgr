@@ -54,7 +54,7 @@ lint: ## check style with flake8
 	flake8 taskmgr tests
 
 test: ## run tests quickly with the default Python
-	py.test
+	. venv3/bin/activate; python3 -m pytest; deactivate
 
 test-all: ## run tests on every Python version with tox
 	tox

@@ -1,4 +1,4 @@
-class MockTasksService():
+class MockTasksService:
 
     def __init__(self):
         self.tasklist = {'kind': 'tasks#taskLists',

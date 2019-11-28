@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-sudo apt-get install python3-setuptools python3-dev build-essential virtualenv
+sudo apt-get install python3-setuptools python3-dev build-essential virtualenv python-pytest
 
 rm -rf venv3/
 virtualenv -p python3 venv3
