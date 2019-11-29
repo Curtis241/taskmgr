@@ -127,7 +127,7 @@ class Client:
 
     def copy_tasks(self, index_tuple) -> list:
         """
-        Adds the current due date to the tasks
+        Copies tasks from the past into the present.
         :param index_tuple: int tuple
         :return: list
         """
@@ -135,7 +135,7 @@ class Client:
         for index in index_tuple:
             task = self.__tasks.get_task_by_index(index)
             if task is not None:
-                results.append(self.__tasks.copy(task.id))
+                results.append(self.__tasks.reset(task.id))
             else:
                 self.display_invalid_index_error(index)
         return results
@@ -191,7 +191,7 @@ class Client:
         start_datetime = datetime.now()
 
         self.logger.info(f"Starting import")
-        import_task_list = google_tasks_importer.convert_to_gtasklist()
+        import_task_list = google_tasks_importer.convert_to_task_list()
         self.logger.info(f"Retrieved {len(import_task_list)} tasks from service")
         sync_results = google_tasks_importer.import_tasks(import_task_list)
         self.logger.info(f"Import summary: {sync_results.get_summary()}")

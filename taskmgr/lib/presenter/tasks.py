@@ -112,7 +112,12 @@ class Tasks(Model):
         else:
             raise TaskKeyError()
 
-    def copy(self, task_id) -> Task:
+    def reset(self, task_id) -> Task:
+        """
+        Resets the due date on the selected task to today
+        :param task_id:
+        :return:
+        """
         assert type(task_id) is str
 
         task = self.get_task_by_id(task_id)
