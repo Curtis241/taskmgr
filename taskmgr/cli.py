@@ -112,14 +112,15 @@ def export_tasks():
     cli_client.export_tasks(GoogleTasksExporter(GoogleTasksService(), tasks))
 
 
-@cli.command("set_default", help="Sets the parameter defaults used by the add command")
+@cli.command("defaults", help="Sets the default variables")
 @click.option('--default_date_expression', help="Sets the default date expression (ie. today, empty)", default=None)
 @click.option('--default_project_name', help="Sets the default project name", default=None)
 @click.option('--default_label', help="Sets the default label", default=None)
 @click.option('--default_text_field_length', help="Sets the default text field length", default=None)
 @click.option('--recurring_month_limit', help="Sets the recurring month limit", default=None)
 def set_defaults(**kwargs):
-    cli_client.set_defaults_and_display(**kwargs)
+    cli_client.set_default_variables(**kwargs)
+    cli_client.list_default_variables()
 
 
 if __name__ == "__main__":

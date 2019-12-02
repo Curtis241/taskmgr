@@ -5,6 +5,7 @@ from taskmgr.lib.variables import CommonVariables
 from taskmgr.lib.view.client import Client
 from taskmgr.lib.view.snapshot_console_table import SnapshotConsoleTable
 from taskmgr.lib.view.task_console_table import TaskConsoleTable
+from taskmgr.lib.view.variables_console_table import VariablesConsoleTable
 
 
 class CliClient(Client):
@@ -24,6 +25,7 @@ class CliClient(Client):
         self.__calendar = Calendar()
         self.task_table = TaskConsoleTable()
         self.snapshots_table = SnapshotConsoleTable()
+        self.variables_table = VariablesConsoleTable()
 
         # Maps the available group and filter options to the appropriate methods. This makes it easy to
         # add filter or group methods that only do one thing only. Using the single responsibility principle
@@ -95,11 +97,13 @@ class CliClient(Client):
         """
         print("Projects: {}".format(self.get_unique_project_list()))
 
-    def set_defaults_and_display(self, **kwargs):
+    def set_default_variables(self, **kwargs):
         self.set_defaults(kwargs)
-        print("------------ Default Variables ------------")
+
+    def list_default_variables(self):
         for key, value in dict(CommonVariables()).items():
-            print(f"{key}={value}")
+            self.variables_table.add_row([key, value])
+        self.variables_table.print()
 
     # Private methods
     def __group_by_label(self):
