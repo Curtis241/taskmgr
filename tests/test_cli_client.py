@@ -33,7 +33,7 @@ class TestCliClient(unittest.TestCase):
 
     def tearDown(self):
         self.client.remove_all_tasks()
-        self.db.remove()
+        self.db.clear()
 
     def test_add_task(self):
         self.client.add_task("Clean garage", "", "home", "empty")
@@ -69,7 +69,7 @@ class TestCliClient(unittest.TestCase):
         self.assertIsInstance(date_object, datetime)
 
     def test_edit_task(self):
-        task = self.client.edit_task(0, "text_value", "", "all", "apr 14")
+        task = self.client.edit_task(1, "text_value", "", "all", "apr 14")
         self.assertEqual(task.text, 'text_value')
         self.assertEqual(task.label, "all")
         self.assertEqual(task.deleted, False)
@@ -110,7 +110,7 @@ class TestCliClient(unittest.TestCase):
         self.assertTrue(len(list(rows)) == 2)
 
     def test_delete(self):
-        task_list = self.client.delete_tasks((0, 1,))
+        task_list = self.client.delete_tasks((1, 2,))
         self.assertTrue(len(task_list) == 2)
 
         self.assertTrue(task_list[0].deleted)

@@ -407,7 +407,7 @@ class GoogleTasksImporter:
             action = ImportAction(local_task, remote_task)
 
             if action.can_delete():
-                self.__tasks.delete(local_task.id)
+                self.__tasks.delete(local_task.unique_id)
                 sync_results.append(SyncAction.DELETED)
 
             elif action.can_update():
@@ -447,7 +447,7 @@ class GoogleTasksExporter:
         """
 
         gtasks_list = list()
-        tasks_list = self.__tasks.get_list()
+        tasks_list = self.__tasks.get_object_list()
         if len(tasks_list) > 0:
 
             for project in set([t.project for t in tasks_list]):

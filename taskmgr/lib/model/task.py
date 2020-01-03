@@ -1,22 +1,23 @@
-import uuid
-
+from taskmgr.lib.model.database import DatabaseObject
 from taskmgr.lib.presenter.date_generator import DateGenerator, DueDate
 from taskmgr.lib.variables import CommonVariables
 
 
-class Task(object):
+class Task(DatabaseObject):
+    """
+    Contains the properties that are needed to represent a task. The DatabaseObject
+    contains only the properties that are used to maintain consistent data.
+    """
 
-    def __init__(self, text, date_generator=None):
+    def __init__(self, text="default", date_generator=None):
+        super().__init__(self.__class__.__name__)
         self.vars = CommonVariables()
-        self.__id = uuid.uuid4().hex
-        self.__index = int()
         self.__external_id = str()
         self.__text = text
         self.__label = self.vars.default_label
         self.__deleted = False
         self.__priority = 1
         self.__project = self.vars.default_project_name
-        self.__last_updated = str()
 
         if date_generator is None:
             self.date_generator = DateGenerator()
@@ -78,22 +79,6 @@ class Task(object):
                 return [due_date_list[0].date_string, due_date_list[-1].date_string]
 
     @property
-    def id(self):
-        return self.__id
-
-    @id.setter
-    def id(self, id):
-        self.__id = id
-
-    @property
-    def index(self):
-        return self.__index
-
-    @index.setter
-    def index(self, index):
-        self.__index = int(index)
-
-    @property
     def external_id(self):
         return self.__external_id
 
@@ -146,19 +131,18 @@ class Task(object):
         assert type(priority) is int
         self.__priority = priority
 
-    @property
-    def last_updated(self):
-        return self.__last_updated
-
-    @last_updated.setter
-    def last_updated(self, last_updated):
-        assert type(last_updated) is str
-        self.__last_updated = last_updated
+    def deserialize(self, obj_dict):
+        for key, value in obj_dict.items():
+            if type(value) is list:
+                self.due_dates = [DueDate().from_dict(due_date_dict) for due_date_dict in value]
+            else:
+                setattr(self, key, value)
+        return self
 
     def __iter__(self):
-        yield 'id', self.__id
+        yield 'unique_id', self.unique_id
         yield 'external_id', self.external_id
-        yield 'index', self.__index
+        yield 'index', self.index
         yield 'text', self.__text
         yield 'label', self.__label
         yield 'deleted', self.__deleted
@@ -166,4 +150,4 @@ class Task(object):
         yield 'project', self.__project
         yield 'date_expression', self.__date_expression
         yield 'due_dates', [due_date.to_dict() for due_date in self.due_dates]
-        yield 'last_updated', self.__last_updated
+        yield 'last_updated', self.last_updated

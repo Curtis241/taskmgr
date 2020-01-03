@@ -134,7 +134,6 @@ class Calendar:
         return date_list
 
     def is_past(self, due_date, current_day=Today()):
-
         if type(due_date) is DueDate and len(due_date.date_string) > 0:
             day = Day(datetime.strptime(due_date.date_string, self.vars.date_format))
             timedelta1 = day.to_date_time() - current_day.to_date_time()
@@ -143,20 +142,44 @@ class Calendar:
 
         return False
 
-    def contains_today(self, due_date_list, current_day=Today()):
+    def contains_month(self, due_date_list, selected_day=Today()):
+        for due_date in due_date_list:
+            day = Day(datetime.strptime(due_date.date_string, self.vars.date_format))
+            if day.month == selected_day.month:
+                return True
+        return False
+
+    def contains_week(self, due_date_list, selected_day=Today()):
+        for due_date in due_date_list:
+            day = Day(datetime.strptime(due_date.date_string, self.vars.date_format))
+            if day.week == selected_day.week:
+                return True
+        return False
+
+    @staticmethod
+    def contains_due_date(due_date_list, selected_day):
         """
         Looks for today's date in provided list of date strings
         :param due_date_list: ["2019-01-01"]
-        :param current_day: Day object
+        :param selected_day: Day object
         :return:
         Boolean value
         """
-        if len(due_date_list) != 0:
-            due_date = self.get_closest_due_date(due_date_list, current_day)
-            if due_date is not None:
-                if due_date.date_string == current_day.to_date_string():
-                    return True
+        for due_date in due_date_list:
+            if due_date.date_string == selected_day.to_date_string():
+                return True
+        return False
 
+    def contains_due_date_range(self, min_date_string, max_date_string, due_date_list):
+
+        for due_date in due_date_list:
+            min_day = Day(datetime.strptime(min_date_string, self.vars.date_format))
+            max_day = Day(datetime.strptime(max_date_string, self.vars.date_format))
+            if len(due_date.date_string) > 0:
+                day = Day(datetime.strptime(due_date.date_string, self.vars.date_format))
+
+                if min_day.to_date_time() < day.to_date_time() < max_day.to_date_time():
+                    return True
         return False
 
     def get_closest_due_date(self, due_date_list, current_day=None):
@@ -185,7 +208,6 @@ class Calendar:
                 for index, diff_num in enumerate(diff_list):
                     if diff_num >= 0:
                         return due_date_list[index]
-
         return None
 
     def get_weekday_number(self, day_abbrev):
@@ -228,12 +250,11 @@ class Calendar:
                 if t[0] > 12:
                     t[0] = (t[0] - 12)
                     t[1] = (t[1] + 1)
-
         return search_list
 
     def get_month_range(self, start_day, month_count):
         """
-        Retrieves a list of months for the current month for the provided number of months.
+        Retrieves a list of months from the current month for the provided number of months.
         :param start_day: Day object
         :param month_count: number of months
         :return:
@@ -277,7 +298,7 @@ class Calendar:
 
     def get_week_days(self, today, weekday_number, month_count):
         """
-        Returns all the date strings for the provided week day
+        Returns all the date strings for the provided week day in a month.
         :param today: Day object
         :param weekday_number: integer (ie. 0-6) m=0, su=6
         :param month_count: number of months
@@ -355,7 +376,7 @@ class Calendar:
                         remaining_days.append(day_tuple[1])
         return remaining_days
 
-    def get_first_day(self, start_day, month_count):
+    def get_first_day_of_month(self, start_day, month_count):
         """
         Returns a list containing the first day from each month.
         :param start_day:
@@ -365,7 +386,13 @@ class Calendar:
         return [day_tuple[0] for day_tuple in self.get_month_range(start_day, month_count) if
                 day_tuple[1].day == 1]
 
-    def get_last_day(self, start_day, month_count):
+    def get_last_day_of_month(self, start_day, month_count):
+        """
+        Returns a list containing the last day from each month
+        :param start_day:
+        :param month_count:
+        :return:
+        """
         last_day_list = list()
         for day_tuple in self.get_month_range(start_day, month_count):
             day = day_tuple[1]
@@ -457,7 +484,7 @@ class NormalLanguageDateHandler(Handler):
         if parser.expression == "next month":
             today = parser.today
             today.month = today.month + 1
-            parser.date_list = parser.calendar.get_first_day(today, 1)
+            parser.date_list = parser.calendar.get_first_day_of_month(today, 1)
 
     def validate(self, expression):
         return expression in self.expression_list

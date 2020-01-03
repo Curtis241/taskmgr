@@ -16,7 +16,8 @@ class TestSyncExporter(unittest.TestCase):
         self.tasks = Tasks(self.db)
         self.exporter = GoogleTasksExporter(self.service, self.tasks)
 
-    def tearDown(self): pass
+    def tearDown(self):
+        self.db.clear()
 
     def test_export_tasks(self):
         task100 = Task('Task100')

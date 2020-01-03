@@ -80,7 +80,7 @@ class Client:
         for index in index_tuple:
             task = self.__tasks.get_task_by_index(index)
             if task is not None:
-                results.append(self.__tasks.delete(task.id))
+                results.append(self.__tasks.delete(task.unique_id))
             else:
                 self.display_invalid_index_error(index)
         return results
@@ -106,7 +106,7 @@ class Client:
         if self.date_generator.validate_input(date_expression) is False:
             self.display_invalid_due_date_error(date_expression)
 
-        return self.__tasks.edit(task.id, text, label, project, date_expression)
+        return self.__tasks.edit(task.unique_id, text, label, project, date_expression)
 
     def complete_tasks(self, index_tuple) -> list:
         """
@@ -120,12 +120,12 @@ class Client:
             task = self.__tasks.get_task_by_index(index)
             if task is not None:
                 if task.is_completed() is False:
-                    results.append(self.__tasks.complete(task.id))
+                    results.append(self.__tasks.complete(task.unique_id))
             else:
                 self.display_invalid_index_error(index)
         return results
 
-    def copy_tasks(self, index_tuple) -> list:
+    def reset_tasks(self, index_tuple) -> list:
         """
         Copies tasks from the past into the present.
         :param index_tuple: int tuple
@@ -135,7 +135,7 @@ class Client:
         for index in index_tuple:
             task = self.__tasks.get_task_by_index(index)
             if task is not None:
-                results.append(self.__tasks.reset(task.id))
+                results.append(self.__tasks.reset(task.unique_id))
             else:
                 self.display_invalid_index_error(index)
         return results

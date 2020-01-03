@@ -1,7 +1,7 @@
 from taskmgr.lib.view.console_table import ConsoleTable
 
 
-class VariablesConsoleTable(ConsoleTable):
+class VariableConsoleTable(ConsoleTable):
 
     def __init__(self):
         super().__init__(["Name", "Value"])

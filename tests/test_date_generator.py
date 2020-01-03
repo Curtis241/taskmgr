@@ -114,15 +114,15 @@ class TestDateGenerator(unittest.TestCase):
         self.assertTrue(self.calendar.get_week_count(3, 2019) == 5)
 
     def test_get_last_day(self):
-        day_list = self.calendar.get_last_day(Day(self.march1), 1)
+        day_list = self.calendar.get_last_day_of_month(Day(self.march1), 1)
         self.assertListEqual(day_list, ['2019-03-31'])
 
     def test_get_last_day_for_three_months(self):
-        day_list = self.calendar.get_last_day(Day(self.dec1), 3)
+        day_list = self.calendar.get_last_day_of_month(Day(self.dec1), 3)
         self.assertListEqual(day_list, ['2019-12-31', '2020-01-31', '2020-02-29'])
 
     def test_get_first_day_for_three_months(self):
-        day_list = self.calendar.get_first_day(Day(self.dec1), 3)
+        day_list = self.calendar.get_first_day_of_month(Day(self.dec1), 3)
         self.assertListEqual(day_list, ['2019-12-01', '2020-01-01', '2020-02-01'])
 
     def test_get_weekday_number(self):
@@ -163,16 +163,16 @@ class TestDateGenerator(unittest.TestCase):
         self.assertTrue(len(month_list) == 31)
 
     def test_get_closest_date(self):
-        day_list = self.calendar.get_first_day(Day(self.march1), 10)
+        day_list = self.calendar.get_first_day_of_month(Day(self.march1), 10)
         due_date_list = self.from_date_string_list(day_list)
         current_date_time = datetime.strptime('2019-04-17', self.vars.date_format)
         due_date = self.calendar.get_closest_due_date(due_date_list, Day(current_date_time))
         self.assertTrue(due_date.date_string == "2019-05-01")
 
-    def test_contains_today(self):
-        day_list = self.calendar.get_first_day(Day(self.march1), 11)
+    def test_contains_day(self):
+        day_list = self.calendar.get_first_day_of_month(Day(self.march1), 11)
         due_date_list = self.from_date_string_list(day_list)
-        self.assertTrue(self.calendar.contains_today(due_date_list, Day(self.dec1)))
+        self.assertTrue(self.calendar.contains_due_date(due_date_list, Day(self.dec1)))
 
     def test_short_date(self):
         due_date_list = self.date_generator.get_due_dates("apr 14")

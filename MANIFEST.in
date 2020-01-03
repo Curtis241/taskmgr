@@ -3,7 +3,6 @@ include CONTRIBUTING.rst
 include HISTORY.rst
 include LICENSE
 include README.rst
-include taskmgr/lib/variables.ini
 
 recursive-include * lib/ *.py
 recursive-exclude * __pycache__

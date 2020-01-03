@@ -1,19 +1,43 @@
+import ast
 from configparser import RawConfigParser, NoSectionError
 from pathlib import Path
 
 
 class CommonVariables:
 
-    def __init__(self):
+    def __init__(self, ini_file_name=None):
         self.task_section = "task"
+        self.database_section = "database"
         self.default_section = "DEFAULT"
-        self.ini_file = "variables.ini"
+
+        if ini_file_name is None:
+            self.ini_file = "variables.ini"
+        else:
+            self.ini_file = ini_file_name
+
         self.cfg = RawConfigParser()
-        self.home_dir = Path.home()
+        self.create_file()
+
+    def create_file(self):
+        if not Path(self.__get_file_path()).exists():
+            self.cfg['DEFAULT'] = {'recurring_month_limit': 2,
+                                   'default_date_expression': 'empty',
+                                   'default_text_field_length': 50,
+                                   'date_format': '%Y-%m-%d',
+                                   'date_time_format': '%Y-%m-%d %H:%M:%S',
+                                   'time_format': '%H:%M:%S',
+                                   'rfc3339_date_time_format': '%Y-%m-%dT%H:%M:%S.%fZ',
+                                   'file_name_timestamp': '%Y%m%d_%H%M%S',
+                                   'default_project_name': '',
+                                   'default_label': '',
+                                   'default_text': '',
+                                   'enable_redis': False,
+                                   'redis_host': 'localhost',
+                                   'redis_port': 6379}
+            self.__save()
 
     def __get_file_path(self):
-        current_dir = str(Path(__file__)).rsplit("/", 1)[0]
-        return f"{current_dir}/{self.ini_file}"
+        return f"{self.resources_dir}/{self.ini_file}"
 
     def __read_file(self):
         path = self.__get_file_path()
@@ -133,9 +157,39 @@ class CommonVariables:
         if value is not None:
             self.__set("default_text_field_length", str(value), self.task_section)
 
+    @property
+    def enable_redis(self):
+        return ast.literal_eval(self.__get("enable_redis", self.database_section))
+
+    @enable_redis.setter
+    def enable_redis(self, value):
+        if value is not None:
+            self.__set("enable_redis", str(value), self.database_section)
+
+    @property
+    def redis_host(self):
+        return self.__get("redis_host", self.database_section)
+
+    @redis_host.setter
+    def redis_host(self, value):
+        if value is not None:
+            self.__set("redis_host", str(value), self.database_section)
+
+    @property
+    def redis_port(self):
+        return self.__getint("redis_port", self.database_section)
+
+    @redis_port.setter
+    def redis_port(self, value):
+        if value is not None:
+            self.__set("redis_port", int(value), self.database_section)
+
     def __iter__(self):
         yield 'default_text_field_length', self.default_text_field_length
         yield 'default_project_name', self.default_project_name
         yield 'default_label', self.default_label
         yield 'recurring_month_limit', self.recurring_month_limit
         yield 'default_date_expression', self.default_date_expression
+        yield 'enable_redis', self.enable_redis
+        yield 'redis_host', self.redis_host
+        yield 'redis_port', self.redis_port

@@ -1,11 +1,11 @@
 from taskmgr.lib.logger import AppLogger
-from taskmgr.lib.presenter.date_generator import Calendar
+from taskmgr.lib.presenter.date_generator import Calendar, Today
 from taskmgr.lib.presenter.tasks import SortType
 from taskmgr.lib.variables import CommonVariables
 from taskmgr.lib.view.client import Client
 from taskmgr.lib.view.snapshot_console_table import SnapshotConsoleTable
 from taskmgr.lib.view.task_console_table import TaskConsoleTable
-from taskmgr.lib.view.variables_console_table import VariablesConsoleTable
+from taskmgr.lib.view.variable_console_table import VariableConsoleTable
 
 
 class CliClient(Client):
@@ -25,7 +25,7 @@ class CliClient(Client):
         self.__calendar = Calendar()
         self.task_table = TaskConsoleTable()
         self.snapshots_table = SnapshotConsoleTable()
-        self.variables_table = VariablesConsoleTable()
+        self.variables_table = VariableConsoleTable()
 
         # Maps the available group and filter options to the appropriate methods. This makes it easy to
         # add filter or group methods that only do one thing only. Using the single responsibility principle
@@ -33,10 +33,10 @@ class CliClient(Client):
         self.__views = [{"action": "group", "sort_type": SortType.Label, "func": self.__group_by_label},
                         {"action": "group", "sort_type": None, "func": self.__display_all_tasks},
                         {"action": "group", "sort_type": SortType.Project, "func": self.__group_by_project},
-                        {"action": "filter", "sort_type": SortType.DueDate, "func": self.__filter_by_date},
-                        {"action": "filter", "sort_type": SortType.Incomplete,
-                         "func": self.__filter_by_incomplete_status},
-                        {"action": "filter", "sort_type": SortType.Complete, "func": self.__filter_by_complete_status},
+                        {"action": "filter", "sort_type": SortType.DueDate, "func": self.__filter_by_due_date},
+                        {"action": "filter", "sort_type": SortType.DueDateRange,
+                         "func": self.__filter_by_due_date_range},
+                        {"action": "filter", "sort_type": SortType.Status, "func": self.__filter_by_status},
                         {"action": "filter", "sort_type": SortType.Label, "func": self.__filter_by_label},
                         {"action": "filter", "sort_type": SortType.Project, "func": self.__filter_by_project},
                         {"action": "filter", "sort_type": SortType.Text, "func": self.__filter_by_text}]
@@ -138,7 +138,7 @@ class CliClient(Client):
             self.task_table.add_row(task)
         return self.task_table.print()
 
-    def __filter_by_date(self, **kwargs):
+    def __filter_by_due_date(self, **kwargs):
         """
         Filters the tasks that contain today's date.
         :param kwargs: kwargs[tasks] contains tasks_list
@@ -149,37 +149,54 @@ class CliClient(Client):
         tasks_list = kwargs.get("tasks")
         filtered_tasks_list = list()
         for task in tasks_list:
-            if self.__calendar.contains_today(task.due_dates):
+            if self.__calendar.contains_due_date(task.due_dates, selected_day=Today()):
                 filtered_tasks_list.append(task)
                 self.task_table.add_row(task)
         return self.task_table.print()
 
-    def __filter_by_incomplete_status(self, **kwargs):
+    def __filter_by_due_date_range(self, **kwargs):
         """
-        Filters tasks that are not complete
+        Filters the tasks that are between the min date and the max date
         :param kwargs: kwargs[tasks] contains tasks_list
         :return: task_list
         """
         assert "tasks" in kwargs
         self.task_table.clear()
         tasks_list = kwargs.get("tasks")
+        filtered_tasks_list = list()
+        min_date_string = kwargs.get("min_date")
+        max_date_string = kwargs.get("max_date")
         for task in tasks_list:
-            if not task.is_completed():
+            if self.__calendar.contains_due_date_range(min_date_string, max_date_string, task.due_dates):
+                filtered_tasks_list.append(task)
                 self.task_table.add_row(task)
         return self.task_table.print()
 
-    def __filter_by_complete_status(self, **kwargs):
+    def __filter_by_status(self, **kwargs):
         """
-        Filters tasks that are complete
+        Filters tasks by the status either complete or incomplete
         :param kwargs: kwargs[tasks] contains tasks_list
         :return: task_list
         """
         assert "tasks" in kwargs
         self.task_table.clear()
         tasks_list = kwargs.get("tasks")
-        for task in tasks_list:
-            if task.is_completed():
-                self.task_table.add_row(task)
+        status_type = kwargs.get("value")
+
+        if status_type == "incomplete":
+
+            for task in tasks_list:
+                if not task.is_completed():
+                    self.task_table.add_row(task)
+            return self.task_table.print()
+
+        elif status_type == "complete":
+
+            for task in tasks_list:
+                if task.is_completed():
+                    self.task_table.add_row(task)
+            return self.task_table.print()
+
         return self.task_table.print()
 
     def __filter_by_project(self, **kwargs):

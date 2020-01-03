@@ -69,61 +69,20 @@ class TestTasks(unittest.TestCase):
         self.tasks.add(self.task10)
 
     def tearDown(self):
-        self.tasks.clear()
-        self.db.remove()
-
-    def test_to_dict(self):
-        returned_result = self.tasks.to_dict()
-        self.assertTrue(type(returned_result) == list)
-        self.assertTrue(type(returned_result[0]) == dict)
-        self.assertTrue(type(returned_result[1]) == dict)
-        self.assertTrue(type(returned_result[2]) == dict)
-        self.assertTrue(type(returned_result[3]) == dict)
-        self.assertTrue(type(returned_result[4]) == dict)
-        self.assertTrue(type(returned_result[5]) == dict)
-        self.assertTrue(type(returned_result[6]) == dict)
-        self.assertTrue(type(returned_result[7]) == dict)
-        self.assertTrue(type(returned_result[8]) == dict)
-        self.assertTrue(type(returned_result[9]) == dict)
-
-    def test_from_dict(self):
-        tasks_dict_list = [
-            {'index': 1, 'text': 'Task1', 'label': '@waiting', 'completed': False, 'deleted': False, 'priority': 1,
-             'project': 'inbox', 'date_expression': 'mar 9',
-             'due_dates': [{"date_string": '2019-03-09', "completed": False}]},
-            {'index': 2, 'text': 'Task2', 'label': '@computer', 'completed': False, 'deleted': False, 'priority': 1,
-             'project': 'inbox', 'date_expression': 'mar 9',
-             'due_dates': [{"date_string": "2019-03-09", "completed": False}]}]
-
-        self.tasks.from_dict(tasks_dict_list)
-        tasks_list = self.tasks.get_list()
-        self.assertTrue(len(tasks_list) == 12)
-
-        task1 = tasks_list[10]
-        self.assertTrue(len(task1.due_dates) == 1)
-        self.assertTrue(task1.due_dates[0].date_string, '2019-03-09')
-        self.assertTrue(task1.text == "Task1")
-
-        task2 = tasks_list[11]
-        self.assertTrue(len(task2.due_dates) == 1)
-        self.assertTrue(task2.due_dates[0].date_string, '2019-03-09')
-        self.assertTrue(task2.text == "Task2")
+        self.db.clear()
 
     def test_add_task(self):
         task = Task("Task11")
         self.tasks.add(task)
-        task_list = self.tasks.get_list()
+        task_list = self.tasks.get_object_list()
         self.assertTrue(len(task_list) == 11)
 
-        self.assertTrue(task.date_expression == "empty")
-        self.assertFalse(task.is_completed())
-
     def test_deleted_task(self):
-        self.tasks.delete(self.task1.id)
-        task_list = self.tasks.get_list()
+        self.tasks.delete(self.task1.unique_id)
+        task_list = self.tasks.get_object_list()
         self.assertTrue(len(task_list) == 10)
         task = task_list[0]
-        self.assertEqual(task.id, self.task1.id)
+        self.assertEqual(task.unique_id, self.task1.unique_id)
         self.assertTrue(task.deleted)
 
     def test_complete_task(self):
@@ -208,13 +167,14 @@ class TestTasks(unittest.TestCase):
         self.assertEqual(task.text, "Task1")
 
     def test_copy(self):
-        task = self.tasks.get_task_by_name("Task10")
-        self.tasks.copy(task.id)
+        initial_task = self.tasks.get_task_by_name("Task10")
+        self.tasks.reset(initial_task.unique_id)
+        self.assertEqual(initial_task.due_dates[0].date_string, "2019-05-11")
 
-        self.assertTrue(len(task.due_dates) == 1)
-        due_date = task.due_dates[0]
+        modified_task = self.tasks.get_task_by_name("Task10")
+        self.assertTrue(len(modified_task.due_dates) == 1)
         current_date_string = Today().to_date_string()
-        self.assertTrue(due_date.date_string == current_date_string)
+        self.assertTrue(modified_task.due_dates[0].date_string == current_date_string)
 
 
 if __name__ == "__main__":

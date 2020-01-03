@@ -1,9 +1,9 @@
 import sys
-
+import re
 import click
 
 from taskmgr.lib.logger import AppLogger
-from taskmgr.lib.model.database import JsonFileDatabase
+from taskmgr.lib.model.database import DatabaseManager
 from taskmgr.lib.model.google_tasks_service import GoogleTasksService
 from taskmgr.lib.presenter.file_exporter import FileExporter
 from taskmgr.lib.presenter.snapshots import Snapshots
@@ -12,8 +12,11 @@ from taskmgr.lib.presenter.tasks import SortType, Tasks
 from taskmgr.lib.variables import CommonVariables
 from taskmgr.lib.view.cli_client import CliClient
 
-tasks = Tasks(JsonFileDatabase("tasks_db"))
-snapshots = Snapshots(JsonFileDatabase("snapshots_db"))
+mgr = DatabaseManager()
+tasks_db = mgr.get_database(DatabaseManager.TASKS_DB)
+snapshots_db = mgr.get_database(DatabaseManager.SNAPSHOT_DB)
+tasks = Tasks(tasks_db)
+snapshots = Snapshots(snapshots_db)
 cli_client = CliClient(tasks, snapshots, FileExporter())
 logger = AppLogger("cli").get_logger()
 vars = CommonVariables()
@@ -64,12 +67,59 @@ def list_tasks(**kwargs):
     cli_client.group(**kwargs)
 
 
-@cli.command("filter", help="Selects tasks using the filter type and provided value")
-@click.option('--type', '-t', 'filter', help="Filter tasks by complete status, project, text, and label",
-              metavar='<filter>', type=click.Choice(['incomplete', 'complete', 'project', 'label', 'text']))
-@click.option('--value', '-v', help="Label or project value", metavar='<value>')
-@click.option('--export_path', '-p', help="Destination path to save markdown file.", metavar='<export_path>')
-def filter_tasks(**kwargs):
+@cli.group("filter")
+def task_filter(): pass
+
+
+@task_filter.command("project", help="Filter tasks by project")
+@click.option('--value', help="Finds complete project name")
+def filter_tasks_by_project(**kwargs):
+    kwargs["filter"] = SortType.Project
+    cli_client.filter(**kwargs)
+
+
+@task_filter.command("status", help="Filter tasks by status")
+@click.option('--value', type=click.Choice(['incomplete', 'complete']))
+def filter_tasks_by_status(**kwargs):
+    kwargs["filter"] = SortType.Status
+    cli_client.filter(**kwargs)
+
+
+@task_filter.command("text", help="Filter tasks by text")
+@click.option('--value', help="Finds complete or partial string")
+def filter_tasks_by_text(**kwargs):
+    kwargs["filter"] = SortType.Text
+    cli_client.filter(**kwargs)
+
+
+@task_filter.command("label", help="Filter tasks by label")
+@click.option('--value', help='Finds complete label string')
+def filter_tasks_by_label(**kwargs):
+    kwargs["filter"] = SortType.Label
+    cli_client.filter(**kwargs)
+
+
+class DateFormatString(click.ParamType):
+    name = 'date-format'
+
+    def convert(self, value, param, ctx):
+        found = re.match(r'\d{4}-\d{2}-\d{2}', value)
+
+        if not found:
+            self.fail(
+                f'{value} is not a date string (ie. 2019-01-21)',
+                param,
+                ctx,
+            )
+
+        return value
+
+
+@task_filter.command("due_dates", help="Filter tasks by date range")
+@click.option('--min_date', help='Minimum date', type=DateFormatString())
+@click.option('--max_date', help='Maximum date', type=DateFormatString())
+def filter_tasks_by_date_range(**kwargs):
+    kwargs["filter"] = SortType.DueDateRange
     cli_client.filter(**kwargs)
 
 
@@ -91,10 +141,10 @@ def complete_task(**kwargs):
     cli_client.complete_tasks(kwargs.get("index"))
 
 
-@cli.command("copy", help="Duplicates a task and resets the done status")
+@cli.command("reset", help="Resets the done status")
 @click.argument('index', nargs=-1, required=True, type=int)
 def pick_task(**kwargs):
-    cli_client.copy_tasks(kwargs.get("index"))
+    cli_client.reset_tasks(kwargs.get("index"))
 
 
 @cli.command("count", help="Counts the tasks")
@@ -113,11 +163,16 @@ def export_tasks():
 
 
 @cli.command("defaults", help="Sets the default variables")
-@click.option('--default_date_expression', help="Sets the default date expression (ie. today, empty)", default=None)
-@click.option('--default_project_name', help="Sets the default project name", default=None)
-@click.option('--default_label', help="Sets the default label", default=None)
-@click.option('--default_text_field_length', help="Sets the default text field length", default=None)
-@click.option('--recurring_month_limit', help="Sets the recurring month limit", default=None)
+@click.option('--default_date_expression', help="Sets the default date expression (ie. today, empty)",
+              type=click.Choice(['today', 'empty']))
+@click.option('--default_project_name', help="Sets the default project name", type=str, default=None)
+@click.option('--default_label', help="Sets the default label", type=str, default=None)
+@click.option('--default_text_field_length', help="Sets the default text field length", type=str, default=None)
+@click.option('--recurring_month_limit', help="Sets the recurring month limit", type=int, default=None)
+@click.option('--enable_redis', help="Enables connection to the local redis database",
+              type=click.Choice(['True', 'False']))
+@click.option('--redis_port', help="Port for redis database", type=int, default=None)
+@click.option('--redis_host', help="IPv4 address for redis database", type=str, default=None)
 def set_defaults(**kwargs):
     cli_client.set_default_variables(**kwargs)
     cli_client.list_default_variables()

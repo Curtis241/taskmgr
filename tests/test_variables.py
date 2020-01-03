@@ -6,7 +6,7 @@ from taskmgr.lib.variables import CommonVariables
 class TestVariables(unittest.TestCase):
 
     def setUp(self) -> None:
-        self.vars = CommonVariables()
+        self.vars = CommonVariables('test_variables.ini')
 
     def test_dir_variables(self):
         self.assertIsInstance(self.vars.log_dir, str)
@@ -28,13 +28,18 @@ class TestVariables(unittest.TestCase):
         self.assertIsInstance(self.vars.default_date_expression, str)
         self.assertIsInstance(self.vars.default_text_field_length, int)
 
+    def test_redisdb_variables(self):
+        self.assertIsInstance(self.vars.redis_port, int)
+        self.assertIsInstance(self.vars.enable_redis, bool)
+        self.assertIsInstance(self.vars.redis_host, str)
+
     def test_set_variable(self):
         self.vars.default_project_name = "work"
         self.assertTrue(self.vars.default_project_name == "work")
         self.vars.default_date_expression = "today"
         self.assertTrue(self.vars.default_date_expression == "today")
 
-        vars = CommonVariables()
+        vars = CommonVariables('test_variables.ini')
         self.assertTrue(vars.default_project_name == "work")
         self.assertTrue(vars.default_date_expression == "today")
 

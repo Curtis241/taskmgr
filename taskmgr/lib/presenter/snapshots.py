@@ -7,18 +7,15 @@ from taskmgr.lib.presenter.tasks import Tasks, SortType
 
 
 class Snapshots(Model):
-    logger = AppLogger("project_summaries").get_logger()
+    logger = AppLogger("snapshots").get_logger()
 
-    def __init__(self, file_database):
-        super().__init__(file_database)
+    def __init__(self, db):
+        super().__init__(db, Snapshot())
 
     def add(self, obj):
         assert type(obj) is Snapshot
-        obj.timestamp = self.get_date_time_string()
-        obj.index = self.get_index()
-        self.append(obj)
+        self.append_object(obj)
         self.logger.debug(f"Added {dict(obj)}")
-        self.save()
         return obj
 
     def count_tasks(self, tasks) -> List[Snapshot]:
@@ -38,14 +35,14 @@ class Snapshots(Model):
             summary.count = len(tasks_list)
             self.add(summary)
 
-        return self.get_list()
+        return self.get_object_list()
 
-    def from_dict(self, dict_list):
-        assert type(dict_list) is list
-
-        for index, obj_dict in enumerate(dict_list):
-            obj = Snapshot()
-            for key, value in obj_dict.items():
-                setattr(obj, key, value)
-            self.append(obj)
-        return self.get_list()
+    # def from_dict(self, dict_list):
+    #     assert type(dict_list) is list
+    #
+    #     for index, obj_dict in enumerate(dict_list):
+    #         obj = Snapshot()
+    #         for key, value in obj_dict.items():
+    #             setattr(obj, key, value)
+    #         self.append(obj)
+    #     return self.get_list()

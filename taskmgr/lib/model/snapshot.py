@@ -1,30 +1,20 @@
-class Snapshot:
+from taskmgr.lib.model.database import DatabaseObject
+
+
+class Snapshot(DatabaseObject):
+    """
+    Contains properties needed to define a data Snapshot. The DatabaseObject
+    contains only the properties that are used to maintain consistent data.
+    """
 
     def __init__(self):
-        self.__index = 0
+        super().__init__(self.__class__.__name__)
         self.__count = 0
         self.__completed = 0
         self.__incomplete = 0
         self.__deleted = 0
-        self.__timestamp = str()
         self.__project = "local"
         self.__location = str()
-
-    @property
-    def index(self):
-        return self.__index
-
-    @index.setter
-    def index(self, value):
-        self.__index = value
-
-    @property
-    def timestamp(self):
-        return self.__timestamp
-
-    @timestamp.setter
-    def timestamp(self, timestamp):
-        self.__timestamp = timestamp
 
     @property
     def project(self):
@@ -78,9 +68,15 @@ class Snapshot:
     def entity_kind(self):
         return self.__class__.__name__
 
+    def deserialize(self, obj_dict):
+        assert type(obj_dict) is list
+        for key, value in obj_dict.items():
+            setattr(self, key, value)
+        return self
+
     def __iter__(self):
-        yield 'index', self.__index
-        yield 'timestamp', self.__timestamp
+        yield 'index', self.index
+        yield 'unique_id', self.unique_id
         yield 'count', self.__count
         yield 'completed', self.__completed
         yield 'incomplete', self.__incomplete

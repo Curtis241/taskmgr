@@ -16,8 +16,7 @@ class TestSyncImporter(unittest.TestCase):
         self.importer = GoogleTasksImporter(self.service, self.tasks)
 
     def tearDown(self):
-        self.db.remove()
-        self.tasks.clear()
+        self.db.clear()
 
     def test_convert_datetime(self):
         date_string = self.importer.convert_rfc3339_to_date_string("2019-05-25T00:00:00.000Z")
