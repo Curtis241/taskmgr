@@ -36,13 +36,3 @@ class Snapshots(Model):
             self.add(summary)
 
         return self.get_object_list()
-
-    # def from_dict(self, dict_list):
-    #     assert type(dict_list) is list
-    #
-    #     for index, obj_dict in enumerate(dict_list):
-    #         obj = Snapshot()
-    #         for key, value in obj_dict.items():
-    #             setattr(obj, key, value)
-    #         self.append(obj)
-    #     return self.get_list()

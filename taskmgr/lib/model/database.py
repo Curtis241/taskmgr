@@ -2,7 +2,7 @@ import json
 import os
 import uuid
 from abc import ABC, abstractmethod
-from copy import deepcopy
+from copy import copy
 from datetime import datetime
 from typing import List
 
@@ -142,7 +142,7 @@ class GenericDatabase(ABC):
 
             obj_list = list()
             for obj_dict in dict_list:
-                obj = deepcopy(obj)
+                obj = copy(obj)
                 obj = obj.deserialize(obj_dict)
                 obj_list.append(obj)
             return obj_list

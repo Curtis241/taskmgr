@@ -140,9 +140,7 @@ class Task(DatabaseObject):
         return self
 
     def __iter__(self):
-        yield 'unique_id', self.unique_id
         yield 'external_id', self.external_id
-        yield 'index', self.index
         yield 'text', self.__text
         yield 'label', self.__label
         yield 'deleted', self.__deleted
@@ -150,4 +148,6 @@ class Task(DatabaseObject):
         yield 'project', self.__project
         yield 'date_expression', self.__date_expression
         yield 'due_dates', [due_date.to_dict() for due_date in self.due_dates]
+        yield 'index', self.index
+        yield 'unique_id', self.unique_id
         yield 'last_updated', self.last_updated
