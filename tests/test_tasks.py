@@ -129,7 +129,8 @@ class TestTasks(unittest.TestCase):
 
         task.complete()
         self.assertTrue(task.is_completed())
-        self.assertIsNone(task.get_date_string_list())
+        date_string = task.get_date_string_list()
+        self.assertIsNone(date_string)
 
     def test_task_is_complete(self):
         task = Task("Simple task")
@@ -166,10 +167,10 @@ class TestTasks(unittest.TestCase):
         self.assertTrue(existing_task.deleted)
         self.assertEqual(task.text, "Task1")
 
-    def test_copy(self):
+    def test_reset(self):
         initial_task = self.tasks.get_task_by_name("Task10")
         self.tasks.reset(initial_task.unique_id)
-        self.assertEqual(initial_task.due_dates[0].date_string, "2019-05-11")
+        self.assertEqual(initial_task.due_dates[0].date_string, "2020-05-11")
 
         modified_task = self.tasks.get_task_by_name("Task10")
         self.assertTrue(len(modified_task.due_dates) == 1)

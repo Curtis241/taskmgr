@@ -78,7 +78,7 @@ class TestCliClient(unittest.TestCase):
         self.assertEqual(task.date_expression, 'apr 14')
         self.assertTrue(len(task.due_dates) == 1)
         due_date = task.due_dates[0]
-        self.assertEqual(due_date.date_string, '2019-04-14')
+        self.assertEqual(due_date.date_string, '2020-04-14')
         self.assertEqual(due_date.completed, False)
 
     def test_reschedule_tasks(self):
@@ -115,6 +115,16 @@ class TestCliClient(unittest.TestCase):
 
         self.assertTrue(task_list[0].deleted)
         self.assertTrue(task_list[1].deleted)
+
+    def test_complete(self):
+        task = self.client.add_task("task1", "home", "home", "every m")
+        index_tuple = (task.index,)
+        for _ in task.due_dates:
+            self.client.complete_tasks(index_tuple)
+
+        kwargs = {"group": None}
+        rows = self.client.group(**kwargs)
+        self.assertTrue(len(rows) == 1)
 
 
 if __name__ == "__main__":

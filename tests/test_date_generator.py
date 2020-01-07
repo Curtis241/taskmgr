@@ -176,7 +176,7 @@ class TestDateGenerator(unittest.TestCase):
 
     def test_short_date(self):
         due_date_list = self.date_generator.get_due_dates("apr 14")
-        self.assertTrue(self.get_first_date_string(due_date_list) == '2019-04-14')
+        self.assertTrue(self.get_first_date_string(due_date_list) == '2020-04-14')
 
     def test_validate_input(self):
         self.assertTrue(self.date_generator.validate_input("every weekday"))

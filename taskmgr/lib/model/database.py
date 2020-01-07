@@ -115,7 +115,7 @@ class GenericDatabase(ABC):
         pass
 
     @staticmethod
-    def contains_dict(dict_list):
+    def contains_dict(dict_list) -> bool:
         if dict_list is not None:
             assert type(dict_list) is list
             if len(dict_list) >= 1:
@@ -124,7 +124,7 @@ class GenericDatabase(ABC):
         return False
 
     @staticmethod
-    def contains_database_object(obj_list):
+    def contains_database_object(obj_list) -> bool:
         if obj_list is not None:
             assert type(obj_list) is list
             if len(obj_list) >= 1:
@@ -135,7 +135,7 @@ class GenericDatabase(ABC):
         return False
 
     @staticmethod
-    def to_object_list(dict_list, obj):
+    def to_object_list(dict_list, obj) -> List:
         if dict_list is not None:
             assert isinstance(obj, DatabaseObject)
             assert GenericDatabase.contains_dict(dict_list)
@@ -150,7 +150,7 @@ class GenericDatabase(ABC):
             return []
 
     @staticmethod
-    def to_dict_list(obj_list):
+    def to_dict_list(obj_list) -> List:
         if obj_list is not None:
             assert GenericDatabase.contains_database_object(obj_list)
             try:
@@ -170,17 +170,17 @@ class GenericDatabase(ABC):
             raise ex
 
     @staticmethod
-    def get_last_updated():
+    def get_last_updated() -> str:
         return datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S")
 
-    def get_file_path(self, db_name, file_ext):
+    def get_file_path(self, db_name, file_ext) -> str:
         path = f"{self.resources_dir}{db_name}.{file_ext}"
         if not self.file_exists(path):
             os.makedirs(self.resources_dir, 0o777, exist_ok=True)
         return path
 
     @staticmethod
-    def file_exists(path):
+    def file_exists(path) -> bool:
         return os.path.exists(path)
 
     def remove_file(self, path):
@@ -200,7 +200,7 @@ class GenericDatabase(ABC):
             return index_list[0]
 
     @staticmethod
-    def set_unique_id(obj):
+    def set_unique_id(obj) -> DatabaseObject:
         """
         A unique id should only be assigned once when the object is appended or replaced.
         :param obj:
@@ -212,7 +212,7 @@ class GenericDatabase(ABC):
         return obj
 
     @staticmethod
-    def get_last_index(dict_list):
+    def get_last_index(dict_list) -> int:
         if dict_list is not None:
             count = len(dict_list)
             if count > 0:
@@ -275,6 +275,7 @@ class JsonFileDatabase(GenericDatabase):
             self.logger.debug("Retrieved json database")
             with open(self.path, 'r') as infile:
                 return ujson.load(infile)
+        return []
 
     def exists(self) -> bool:
         return self.file_exists(self.path)
@@ -342,6 +343,7 @@ class YamlFileDatabase(GenericDatabase):
             self.logger.debug("Retrieved yaml database")
             with open(self.path, 'r') as infile:
                 return yaml.load(infile)
+        return []
 
     def exists(self) -> bool:
         return self.file_exists(self.path)

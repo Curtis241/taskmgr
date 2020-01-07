@@ -52,6 +52,7 @@ class TaskConsoleTable(ConsoleTable):
             completed_text = fg('blue') + str(is_completed)
 
         row = [task.index, completed_text, text, task.project, task.label]
-        row.extend(task.get_date_string_list())
+        date_string_list = task.get_date_string_list()
+        row.extend(date_string_list)
 
         return row
