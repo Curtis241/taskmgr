@@ -153,13 +153,15 @@ def count():
 
 
 @cli.command("import", help="Imports the tasks from the Google Tasks service")
-def import_tasks():
-    cli_client.import_tasks(GoogleTasksImporter(GoogleTasksService(), tasks))
+@click.option('--project', '-p', help="project for task", type=str, metavar='<project>')
+def import_tasks(**kwargs):
+    cli_client.import_tasks(GoogleTasksImporter(GoogleTasksService(), tasks), kwargs.get("project"))
 
 
 @cli.command("export", help="Exports the tasks to the Google Tasks service")
-def export_tasks():
-    cli_client.export_tasks(GoogleTasksExporter(GoogleTasksService(), tasks))
+@click.option('--project', '-p', help="project for task", type=str, metavar='<project>')
+def export_tasks(**kwargs):
+    cli_client.export_tasks(GoogleTasksExporter(GoogleTasksService(), tasks), kwargs.get("project"))
 
 
 @cli.command("defaults", help="Sets the default variables")

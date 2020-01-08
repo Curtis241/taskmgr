@@ -182,33 +182,35 @@ class Client:
     def import_snapshots(self):
         pass
 
-    def import_tasks(self, google_tasks_importer):
+    def import_tasks(self, google_tasks_importer, project):
         """
         Imports tasks from the Google Tasks service
         :param google_tasks_importer: GoogleTasksImporter class
+        :param project: Local task project
         :return: None
         """
         start_datetime = datetime.now()
 
         self.logger.info(f"Starting import")
-        import_task_list = google_tasks_importer.convert_to_task_list()
+        import_task_list = google_tasks_importer.convert_to_task_list(project)
         self.logger.info(f"Retrieved {len(import_task_list)} tasks from service")
         sync_results = google_tasks_importer.import_tasks(import_task_list)
         self.logger.info(f"Import summary: {sync_results.get_summary()}")
 
         self.logger.info(f"Import complete: Duration: {self.get_duration(start_datetime)}")
 
-    def export_tasks(self, google_tasks_exporter):
+    def export_tasks(self, google_tasks_exporter, project):
         """
         Exports tasks to the Google Tasks service
         :param google_tasks_exporter: GoogleTasksExporter class
+        :param project: Local task project
         :return: None
         """
         start_datetime = datetime.now()
 
         self.logger.info(f"Starting export")
         self.logger.info(f"Preparing tasks for export")
-        gtasks_list = google_tasks_exporter.convert_to_gtasklist()
+        gtasks_list = google_tasks_exporter.convert_to_gtasklist(project)
         self.logger.info(f"Exporting tasks to service")
         sync_results = google_tasks_exporter.export_tasks(gtasks_list)
         self.logger.info(f"Export summary: {sync_results.get_summary()}")

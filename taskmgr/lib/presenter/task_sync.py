@@ -362,33 +362,43 @@ class GoogleTasksImporter:
         dt = datetime.strptime(rfc3339_string, CommonVariables().rfc3339_date_time_format)
         return Day(dt).to_date_string()
 
-    def convert_to_task_list(self) -> list:
+    def get_projects(self):
+        return self.__tasks_list_api.list()
+
+    def convert_to_task_list(self, project) -> list:
+        """
+        Converts local tasks to Google Tasks List
+        :param project:
+        :return:
+        """
+        assert type(project) is str
+
         task_list = list()
-        for google_taskslist in self.__tasks_list_api.list():
-            self.logger.info(f"Working on tasks in {google_taskslist.title}")
-            for gtask in GTasksAPI(google_taskslist.id, self.__google_tasks_service).list():
-                if len(gtask.title) != 0:
-                    self.logger.debug(f"{gtask.title}")
-                    t = Task(gtask.title)
-                    t.external_id = gtask.id
-                    t.deleted = gtask.deleted
-                    t.label = gtask.notes
-                    t.project = google_taskslist.title
+        google_taskslist = self.__tasks_list_api.get(project)
+        self.logger.info(f"Working on tasks in {google_taskslist.title}")
+        for gtask in GTasksAPI(google_taskslist.id, self.__google_tasks_service).list():
+            if len(gtask.title) != 0:
+                self.logger.debug(f"{gtask.title}")
+                t = Task(gtask.title)
+                t.external_id = gtask.id
+                t.deleted = gtask.deleted
+                t.label = gtask.notes
+                t.project = google_taskslist.title
 
-                    due_date = DueDate()
-                    if len(gtask.due) != 0:
-                        due_date.completed = bool(gtask.is_completed)
-                        due_date.date_string = self.convert_rfc3339_to_date_string(gtask.due)
+                due_date = DueDate()
+                if len(gtask.due) != 0:
+                    due_date.completed = bool(gtask.is_completed)
+                    due_date.date_string = self.convert_rfc3339_to_date_string(gtask.due)
 
-                    elif len(gtask.completed) != 0:
-                        due_date.completed = bool(gtask.is_completed)
-                        due_date.date_string = self.convert_rfc3339_to_date_string(gtask.completed)
+                elif len(gtask.completed) != 0:
+                    due_date.completed = bool(gtask.is_completed)
+                    due_date.date_string = self.convert_rfc3339_to_date_string(gtask.completed)
 
-                    else:
-                        due_date.completed = False
-                        due_date.date_string = str()
-                    t.due_dates = [due_date]
-                    task_list.append(t)
+                else:
+                    due_date.completed = False
+                    due_date.date_string = str()
+                t.due_dates = [due_date]
+                task_list.append(t)
 
         return task_list
 
@@ -440,34 +450,37 @@ class GoogleTasksExporter:
             return dt.strftime(self.vars.rfc3339_date_time_format)
         return date_string
 
-    def convert_to_gtasklist(self) -> list:
+    def get_projects(self):
+        return set([t.project for t in self.__tasks.get_object_list()])
+
+    def convert_to_gtasklist(self, project) -> list:
         """
         Prepares local Task objects for export
         :return:
         """
+        assert type(project) is str
 
         gtasks_list = list()
         tasks_list = self.__tasks.get_object_list()
         if len(tasks_list) > 0:
+            gtasks = GTaskList()
+            gtasks.title = project
+            self.logger.info(f"Working on tasks in {project}")
 
-            for project in set([t.project for t in tasks_list]):
-                gtasks = GTaskList()
-                gtasks.title = project
+            for task in tasks_list:
+                if task.project == project:
+                    gtask = GTask()
+                    gtask.title = task.text
+                    gtask.notes = task.label
+                    gtask.deleted = task.deleted
+                    gtask.id = task.external_id
 
-                for task in tasks_list:
-                    if task.project == project:
-                        gtask = GTask()
-                        gtask.title = task.text
-                        gtask.notes = task.label
-                        gtask.deleted = task.deleted
-                        gtask.id = task.external_id
+                    if len(task.due_dates) >= 1:
+                        gtask.due = self.convert_date_string_to_rfc3339(task.due_dates[0].date_string)
 
-                        if len(task.due_dates) >= 1:
-                            gtask.due = self.convert_date_string_to_rfc3339(task.due_dates[0].date_string)
-
-                        gtask.is_completed(task.is_completed())
-                        gtasks.append(gtask)
-                gtasks_list.append(gtasks)
+                    gtask.is_completed(task.is_completed())
+                    gtasks.append(gtask)
+            gtasks_list.append(gtasks)
         return gtasks_list
 
     def export_tasks(self, task_list) -> SyncResultsList:

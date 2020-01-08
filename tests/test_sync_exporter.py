@@ -37,7 +37,7 @@ class TestSyncExporter(unittest.TestCase):
         self.tasks.add(task102)
 
         # tasks_list = [task100, task101, task102]
-        gtasks_list = self.exporter.convert_to_gtasklist()
-        self.assertTrue(len(gtasks_list) == 2)
+        gtasks_list = self.exporter.convert_to_gtasklist("home")
+        self.assertTrue(len(gtasks_list) == 1)
 
 
