@@ -115,7 +115,7 @@ class DateFormatString(click.ParamType):
         return value
 
 
-@task_filter.command("due_dates", help="Filter tasks by date range")
+@task_filter.command("date_range", help="Filter tasks by date range")
 @click.option('--min_date', help='Minimum date', type=DateFormatString())
 @click.option('--max_date', help='Maximum date', type=DateFormatString())
 def filter_tasks_by_date_range(**kwargs):
@@ -123,10 +123,17 @@ def filter_tasks_by_date_range(**kwargs):
     cli_client.filter(**kwargs)
 
 
+@task_filter.command("date", help="Filter tasks by provided date")
+@click.argument('date', type=DateFormatString(), required=True, metavar="<date>")
+def filter_tasks_by_date(**kwargs):
+    kwargs["filter"] = SortType.DueDate
+    cli_client.filter(**kwargs)
+
+
 @cli.command("today", help="Lists only the tasks that have today's date")
 @click.option('--export_path', '-p', help="Destination path to save markdown file.", metavar='<export_path>')
 def today(**kwargs):
-    kwargs["filter"] = SortType.DueDate
+    kwargs["filter"] = SortType.Today
     cli_client.filter(**kwargs)
 
 
@@ -153,13 +160,13 @@ def count():
 
 
 @cli.command("import", help="Imports the tasks from the Google Tasks service")
-@click.option('--project', '-p', help="project for task", type=str, metavar='<project>')
+@click.argument('project', type=str, required=True, metavar="<project>")
 def import_tasks(**kwargs):
     cli_client.import_tasks(GoogleTasksImporter(GoogleTasksService(), tasks), kwargs.get("project"))
 
 
 @cli.command("export", help="Exports the tasks to the Google Tasks service")
-@click.option('--project', '-p', help="project for task", type=str, metavar='<project>')
+@click.argument('project', type=str, required=True, metavar="<project>")
 def export_tasks(**kwargs):
     cli_client.export_tasks(GoogleTasksExporter(GoogleTasksService(), tasks), kwargs.get("project"))
 

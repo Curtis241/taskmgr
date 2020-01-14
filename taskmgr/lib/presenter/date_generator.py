@@ -157,16 +157,19 @@ class Calendar:
         return False
 
     @staticmethod
-    def contains_due_date(due_date_list, selected_day):
+    def contains_due_date(due_date_list, date_string):
         """
         Looks for today's date in provided list of date strings
-        :param due_date_list: ["2019-01-01"]
-        :param selected_day: Day object
+        :param due_date_list: ["2019-01-01", "2019-01-02", "2019-01-03"]
+        :param date_string: "2019-01-02"
         :return:
         Boolean value
         """
+        assert type(due_date_list) is list
+        assert type(date_string) is str
+
         for due_date in due_date_list:
-            if due_date.date_string == selected_day.to_date_string():
+            if due_date.date_string == date_string:
                 return True
         return False
 

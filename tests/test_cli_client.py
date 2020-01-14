@@ -124,7 +124,7 @@ class TestCliClient(unittest.TestCase):
 
         kwargs = {"group": None}
         rows = self.client.group(**kwargs)
-        self.assertTrue(len(rows) == 1)
+        self.assertTrue(len(rows) == 10)
 
 
 if __name__ == "__main__":

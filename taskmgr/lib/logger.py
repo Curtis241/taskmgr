@@ -1,4 +1,5 @@
 import logging
+from logging.handlers import RotatingFileHandler
 import os
 import sys
 
@@ -14,13 +15,17 @@ class MyFilter(object):
 
 
 class AppLogger:
+    """
+    The log messages with an INFO level are only written to the console. All log messages
+    are written to the log file.
+    """
 
     def __init__(self, name):
         self.logger = logging.getLogger(name)
         self.logger.setLevel(logging.DEBUG)
 
         log_dir = AppLogger.get_dir()
-        file_handler = logging.FileHandler(f"{log_dir}/taskmgr.log")
+        file_handler = RotatingFileHandler(f"{log_dir}/taskmgr.log", maxBytes=50000000, backupCount=10)
         file_formatter = logging.Formatter('%(asctime)s : %(levelname)s : %(name)s : %(message)s')
         file_handler.setFormatter(file_formatter)
 

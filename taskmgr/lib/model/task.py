@@ -77,6 +77,8 @@ class Task(DatabaseObject):
             # If there are completed due_dates; then get the first .
             if len(due_date_list) > 0:
                 return [due_date_list[0].date_string, due_date_list[-1].date_string]
+            else:
+                return ["",""]
 
     @property
     def external_id(self):

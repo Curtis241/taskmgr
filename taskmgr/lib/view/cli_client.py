@@ -34,6 +34,7 @@ class CliClient(Client):
                         {"action": "group", "sort_type": None, "func": self.__display_all_tasks},
                         {"action": "group", "sort_type": SortType.Project, "func": self.__group_by_project},
                         {"action": "filter", "sort_type": SortType.DueDate, "func": self.__filter_by_due_date},
+                        {"action": "filter", "sort_type": SortType.Today, "func": self.__filter_by_today},
                         {"action": "filter", "sort_type": SortType.DueDateRange,
                          "func": self.__filter_by_due_date_range},
                         {"action": "filter", "sort_type": SortType.Status, "func": self.__filter_by_status},
@@ -138,6 +139,23 @@ class CliClient(Client):
             self.task_table.add_row(task)
         return self.task_table.print()
 
+    def __filter_by_today(self, **kwargs):
+        """
+        Filters the tasks that contain today's date.
+        :param kwargs: kwargs[tasks] contains tasks_list
+        :return: task_list
+        """
+        assert "tasks" in kwargs
+        self.task_table.clear()
+        tasks_list = kwargs.get("tasks")
+
+        filtered_tasks_list = list()
+        for task in tasks_list:
+            if self.__calendar.contains_due_date(task.due_dates, date_string=Today().to_date_string()):
+                filtered_tasks_list.append(task)
+                self.task_table.add_row(task)
+        return self.task_table.print()
+
     def __filter_by_due_date(self, **kwargs):
         """
         Filters the tasks that contain today's date.
@@ -147,9 +165,11 @@ class CliClient(Client):
         assert "tasks" in kwargs
         self.task_table.clear()
         tasks_list = kwargs.get("tasks")
+        date_string = kwargs.get("date")
+
         filtered_tasks_list = list()
         for task in tasks_list:
-            if self.__calendar.contains_due_date(task.due_dates, selected_day=Today()):
+            if self.__calendar.contains_due_date(task.due_dates, date_string=date_string):
                 filtered_tasks_list.append(task)
                 self.task_table.add_row(task)
         return self.task_table.print()

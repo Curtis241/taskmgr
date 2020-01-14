@@ -16,6 +16,7 @@ class TaskKeyError(IndexError):
 
 
 class SortType:
+    Today = "today"
     Status = "status"
     Label = "label"
     Project = "project"
