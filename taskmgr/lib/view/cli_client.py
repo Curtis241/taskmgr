@@ -14,8 +14,8 @@ class CliClient(Client):
     """
     logger = AppLogger("cli_client").get_logger()
 
-    def __init__(self, tasks, snapshots, file_exporter):
-        super().__init__(tasks, snapshots)
+    def __init__(self, db_manager, file_exporter):
+        super().__init__(db_manager)
 
         self.__file_exporter = file_exporter
 
@@ -45,7 +45,7 @@ class CliClient(Client):
     def count(self):
         for snapshot in self.count_tasks():
             self.snapshots_table.add_row(snapshot)
-        self.snapshots_table.print()
+        return self.snapshots_table.print()
 
     def group(self, **kwargs):
         """

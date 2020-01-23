@@ -69,7 +69,6 @@ class Snapshot(DatabaseObject):
         return self.__class__.__name__
 
     def deserialize(self, obj_dict):
-        assert type(obj_dict) is list
         for key, value in obj_dict.items():
             setattr(self, key, value)
         return self
@@ -83,3 +82,4 @@ class Snapshot(DatabaseObject):
         yield 'deleted', self.__deleted
         yield 'project', self.__project
         yield 'location', self.__location
+        yield 'timestamp', self.last_updated

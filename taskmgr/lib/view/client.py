@@ -2,11 +2,11 @@ from datetime import datetime
 from typing import List
 
 from taskmgr.lib.logger import AppLogger
+from taskmgr.lib.model.database_manager import DatabaseManager
 from taskmgr.lib.model.snapshot import Snapshot
 from taskmgr.lib.model.task import Task
 from taskmgr.lib.presenter.date_generator import Today, DateGenerator
-from taskmgr.lib.presenter.snapshots import Snapshots
-from taskmgr.lib.presenter.tasks import SortType, Tasks
+from taskmgr.lib.presenter.tasks import SortType
 from taskmgr.lib.variables import CommonVariables
 
 
@@ -16,11 +16,10 @@ class Client:
     """
     logger = AppLogger("client").get_logger()
 
-    def __init__(self, tasks, snapshots):
-        assert type(tasks) is Tasks
-        assert type(snapshots) is Snapshots
-        self.__tasks = tasks
-        self.__snapshots = snapshots
+    def __init__(self, db_manager):
+        assert type(db_manager) is DatabaseManager
+        self.__tasks = db_manager.get_tasks_model()
+        self.__snapshots = db_manager.get_snapshots_model()
         self.date_generator = DateGenerator()
 
     def get_unique_label_list(self):

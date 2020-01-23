@@ -12,6 +12,7 @@ class Model:
         assert isinstance(db, GenericDatabase)
         assert isinstance(db_object, DatabaseObject)
         self.__db = db
+        self.__db.initialize(db_object)
         self.__db_object = db_object
 
     def replace_object(self, index, obj):

@@ -12,7 +12,8 @@ class TestSyncExporter(unittest.TestCase):
 
     def setUp(self):
         self.service = MockTasksService()
-        self.db = JsonFileDatabase(db_name="test_sync_exporter_test_db")
+        self.db = JsonFileDatabase()
+        self.db.initialize(Task())
         self.tasks = Tasks(self.db)
         self.exporter = GoogleTasksExporter(self.service, self.tasks)
 

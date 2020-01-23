@@ -20,9 +20,8 @@ class MissingSubclass:
 class TestYamlDatabase(unittest.TestCase):
 
     def setUp(self) -> None:
-        db_name = "test_json_file_db"
-        self.yaml_db = YamlFileDatabase(db_name)
-        self.yaml_db.clear()
+        self.yaml_db = YamlFileDatabase()
+        self.yaml_db.initialize(Task())
 
         self.task1 = Task("task1")
         self.task1.index = 1

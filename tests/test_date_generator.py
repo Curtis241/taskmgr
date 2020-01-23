@@ -172,7 +172,7 @@ class TestDateGenerator(unittest.TestCase):
     def test_contains_day(self):
         day_list = self.calendar.get_first_day_of_month(Day(self.march1), 11)
         due_date_list = self.from_date_string_list(day_list)
-        self.assertTrue(self.calendar.contains_due_date(due_date_list, Day(self.dec1)))
+        self.assertTrue(self.calendar.contains_due_date(due_date_list, Day(self.dec1).to_date_string()))
 
     def test_short_date(self):
         due_date_list = self.date_generator.get_due_dates("apr 14")

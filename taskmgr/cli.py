@@ -1,25 +1,20 @@
-import sys
 import re
+import sys
+
 import click
 
 from taskmgr.lib.logger import AppLogger
-from taskmgr.lib.model.database import DatabaseManager
+from taskmgr.lib.model.database_manager import DatabaseManager
 from taskmgr.lib.model.google_tasks_service import GoogleTasksService
 from taskmgr.lib.presenter.file_exporter import FileExporter
-from taskmgr.lib.presenter.snapshots import Snapshots
 from taskmgr.lib.presenter.task_sync import GoogleTasksImporter, GoogleTasksExporter
-from taskmgr.lib.presenter.tasks import SortType, Tasks
+from taskmgr.lib.presenter.tasks import SortType
 from taskmgr.lib.variables import CommonVariables
 from taskmgr.lib.view.cli_client import CliClient
 
-mgr = DatabaseManager()
-tasks_db = mgr.get_database(DatabaseManager.TASKS_DB)
-snapshots_db = mgr.get_database(DatabaseManager.SNAPSHOT_DB)
-tasks = Tasks(tasks_db)
-snapshots = Snapshots(snapshots_db)
-cli_client = CliClient(tasks, snapshots, FileExporter())
+cli_client = CliClient(DatabaseManager(), FileExporter())
 logger = AppLogger("cli").get_logger()
-vars = CommonVariables()
+variables = CommonVariables()
 
 
 @click.group()
@@ -29,11 +24,11 @@ def cli():
 
 @cli.command("add", help="Appends a task using the provided or default parameters")
 @click.argument('text')
-@click.option('--label', '-l', help="label for task", default=vars.default_label, type=str,
+@click.option('--label', '-l', help="label for task", default=variables.default_label, type=str,
               metavar='<label>')
-@click.option('--project', '-p', help="project for task", default=vars.default_project_name,
+@click.option('--project', '-p', help="project for task", default=variables.default_project_name,
               type=str, metavar='<project>')
-@click.option('--due_date', '-d', help="due date for task", default=vars.default_date_expression,
+@click.option('--due_date', '-d', help="due date for task", default=variables.default_date_expression,
               type=str, metavar='<due_date>')
 def add_task(**kwargs):
     cli_client.add_task(kwargs["text"], kwargs["label"], kwargs["project"], kwargs["due_date"])
@@ -41,12 +36,12 @@ def add_task(**kwargs):
 
 @cli.command("edit", help="Replaces the task parameters with the provided parameters")
 @click.argument('index', type=int)
-@click.option('--text', '-t', help="text for task", default=vars.default_text, type=str, metavar='<text>')
-@click.option('--label', '-l', help="label for task", default=vars.default_label,
+@click.option('--text', '-t', help="text for task", default=variables.default_text, type=str, metavar='<text>')
+@click.option('--label', '-l', help="label for task", default=variables.default_label,
               type=str, metavar='<label>')
-@click.option('--project', '-p', help="project for task", default=vars.default_project_name,
+@click.option('--project', '-p', help="project for task", default=variables.default_project_name,
               type=str, metavar='<project>')
-@click.option('--due_date', '-d', help="due date for task", default=vars.default_date_expression,
+@click.option('--due_date', '-d', help="due date for task", default=variables.default_date_expression,
               type=str, metavar='<due_date>')
 def edit_task(**kwargs):
     cli_client.edit_task(kwargs.get("index"), kwargs.get("text"), kwargs.get("project"),
@@ -162,13 +157,15 @@ def count():
 @cli.command("import", help="Imports the tasks from the Google Tasks service")
 @click.argument('project', type=str, required=True, metavar="<project>")
 def import_tasks(**kwargs):
-    cli_client.import_tasks(GoogleTasksImporter(GoogleTasksService(), tasks), kwargs.get("project"))
+    mgr = DatabaseManager()
+    cli_client.import_tasks(GoogleTasksImporter(GoogleTasksService(), mgr.get_tasks_model()), kwargs.get("project"))
 
 
 @cli.command("export", help="Exports the tasks to the Google Tasks service")
 @click.argument('project', type=str, required=True, metavar="<project>")
 def export_tasks(**kwargs):
-    cli_client.export_tasks(GoogleTasksExporter(GoogleTasksService(), tasks), kwargs.get("project"))
+    mgr = DatabaseManager()
+    cli_client.export_tasks(GoogleTasksExporter(GoogleTasksService(), mgr.get_tasks_model()), kwargs.get("project"))
 
 
 @cli.command("defaults", help="Sets the default variables")

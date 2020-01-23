@@ -15,7 +15,8 @@ class TestTasks(unittest.TestCase):
         return [due_date for due_date in due_dates if due_date.completed]
 
     def setUp(self):
-        self.db = JsonFileDatabase(db_name="test_tasks_file_db")
+        self.db = JsonFileDatabase()
+        self.db.initialize(Task())
         self.tasks = Tasks(self.db)
         self.task1 = Task("Task1")
         self.task1.label = "waiting"
@@ -130,7 +131,7 @@ class TestTasks(unittest.TestCase):
         task.complete()
         self.assertTrue(task.is_completed())
         date_string = task.get_date_string_list()
-        self.assertIsNone(date_string)
+        self.assertListEqual(date_string, ['',''])
 
     def test_task_is_complete(self):
         task = Task("Simple task")

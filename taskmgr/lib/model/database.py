@@ -66,6 +66,16 @@ class GenericDatabase(ABC):
         self.resources_dir = CommonVariables().resources_dir
 
     @abstractmethod
+    def initialize(self, obj):
+        """
+        Executes initialization activities such as constructing the file name if it is a
+        file database or selects the logical redis database
+        :param obj: Object that subclasses DatabaseObject
+        :return: None
+        """
+        pass
+
+    @abstractmethod
     def replace(self, obj):
         """
         Replaces specific object using obj.index.
@@ -173,8 +183,9 @@ class GenericDatabase(ABC):
     def get_last_updated() -> str:
         return datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S")
 
-    def get_file_path(self, db_name, file_ext) -> str:
-        path = f"{self.resources_dir}{db_name}.{file_ext}"
+    def get_file_path(self, obj, file_ext) -> str:
+        assert isinstance(obj, DatabaseObject)
+        path = f"{self.resources_dir}{str(obj.object_name).lower()}_db.{file_ext}"
         if not self.file_exists(path):
             os.makedirs(self.resources_dir, 0o777, exist_ok=True)
         return path
@@ -203,7 +214,7 @@ class GenericDatabase(ABC):
     def set_unique_id(obj) -> DatabaseObject:
         """
         A unique id should only be assigned once when the object is appended or replaced.
-        :param obj:
+        :param obj: Object that subclasses DatabaseObject
         :return:
         """
         assert isinstance(obj, DatabaseObject)
@@ -229,9 +240,17 @@ class JsonFileDatabase(GenericDatabase):
 
     logger = AppLogger("json_file_database").get_logger()
 
-    def __init__(self, db_name):
+    def __init__(self):
         super().__init__()
-        self.path = self.get_file_path(db_name, "json")
+        self.path = None
+
+    def initialize(self, obj):
+        """
+        Constructs the db file path
+        :param obj: Class object that implements DatabaseObject
+        :return: None
+        """
+        self.path = self.get_file_path(obj, "json")
 
     def replace(self, obj):
         assert isinstance(obj, DatabaseObject)
@@ -281,7 +300,8 @@ class JsonFileDatabase(GenericDatabase):
         return self.file_exists(self.path)
 
     def clear(self):
-        self.remove_file(self.path)
+        if self.exists():
+            self.remove_file(self.path)
 
 
 class YamlFileDatabase(GenericDatabase):
@@ -290,11 +310,21 @@ class YamlFileDatabase(GenericDatabase):
     located in the resource directory. Retrieve method should be called
     before save to maintain a consistent state.
     """
+
     logger = AppLogger("yaml_file_database").get_logger()
 
-    def __init__(self, db_name):
+    def __init__(self):
         super().__init__()
-        self.path = self.get_file_path(db_name, "yaml")
+        self.path = None
+
+    def initialize(self, obj):
+        """
+        Constructs the db file path
+        :param obj: Class object that implements DatabaseObject
+        :param test_mode: Causes a file to be created with unique_id
+        :return: None
+        """
+        self.path = self.get_file_path(obj, "yaml")
 
     def replace(self, obj):
         assert isinstance(obj, DatabaseObject)
@@ -333,7 +363,7 @@ class YamlFileDatabase(GenericDatabase):
     def set(self, obj_list):
         """
         Overwrites the contents of the yaml file using the obj_list.
-        :param obj_list:
+        :param obj_list: List of class objects
         :return:
         """
         self.save(self.to_dict_list(obj_list))
@@ -349,7 +379,8 @@ class YamlFileDatabase(GenericDatabase):
         return self.file_exists(self.path)
 
     def clear(self):
-        self.remove_file(self.path)
+        if self.exists():
+            self.remove_file(self.path)
 
 
 class RedisDatabase(GenericDatabase):
@@ -364,7 +395,45 @@ class RedisDatabase(GenericDatabase):
         super().__init__()
         self.host = host
         self.port = port
-        self.db = redis.Redis(host=host, port=port, db=0)
+        self.db = None
+
+    def build_db_list(self):
+        # Max number of keys is redis logical databases is 16. Scan all
+        # logical databases to identify what object belongs in each.
+        db_list = []
+        for index in range(0, 16):
+            db = redis.Redis(host=self.host, port=self.port, db=index)
+            keys = db.keys("1:*")
+            if len(keys) == 1:
+                key = str(keys[0].decode("utf-8")).lstrip("1:")
+                db_list.append((db, key))
+            else:
+                db_list.append((db, None))
+        return db_list
+
+    def initialize(self, obj, test_mode=False):
+        """
+        Connects to each redis logical database and looks for the
+        key that matches the name of the object. The key structure is defined
+        in the __key(obj) method.
+        :param obj: Object that subclasses DatabaseObject
+        :param test_mode: Unsupported
+        :return: None
+        """
+
+        def get_db_item(items, value):
+            items = [i for i in items if i[1] == value]
+            if len(items) >= 1:
+                return items[0][0]
+
+        db_list = self.build_db_list()
+        # Find the db that contains the matching key
+        db = get_db_item(db_list, obj.object_name)
+        if db is not None:
+            self.db = db
+        else:
+            # Get an empty db
+            self.db = get_db_item(db_list, None)
 
     @staticmethod
     def __key(obj):
@@ -383,8 +452,8 @@ class RedisDatabase(GenericDatabase):
         """
         Updates or inserts new objects that inherit from DatabaseObject. When key matches existing key an update
         occurs, but if there is no match then a new key is created.
-        :param obj_list:
-        :return:
+        :param obj_list: List containing class objects
+        :return: None
         """
         assert self.contains_database_object(obj_list)
         if self.exists():
@@ -398,31 +467,16 @@ class RedisDatabase(GenericDatabase):
                 self.db.hset(self.__key(obj), "data", self.to_json(obj))
 
     def get(self) -> List[dict]:
-        return [json.loads(self.db.hget(key, "data")) for key in sorted(self.db.keys())]
+        if self.db is not None:
+            return [json.loads(self.db.hget(key, "data")) for key in sorted(self.db.keys())]
+        else:
+            return []
 
     def exists(self):
-        return self.db.ping()
+        db = redis.Redis(host=self.host, port=self.port, db=0)
+        return db.ping()
 
     def clear(self):
-        for key in self.db.keys():
-            self.db.delete(key)
-
-
-class DatabaseManager:
-    SNAPSHOT_DB = "snapshot_db"
-    TASKS_DB = "tasks_db"
-
-    logger = AppLogger("database_manager").get_logger()
-
-    @staticmethod
-    def get_database(database_name):
-        variables = CommonVariables()
-        if variables.enable_redis:
-            redis_db = RedisDatabase(variables.redis_host, variables.redis_port)
-            if redis_db.exists():
-                DatabaseManager.logger.debug("Connecting to redis")
-                return redis_db
-            else:
-                DatabaseManager.logger.info("Failed to connect to redis. Check redis host and port")
-
-        return JsonFileDatabase(database_name)
+        for db_item in self.build_db_list():
+            for key in db_item[0].keys():
+                db_item[0].delete(key)

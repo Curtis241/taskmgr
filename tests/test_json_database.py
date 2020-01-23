@@ -20,8 +20,8 @@ class MissingSubclass:
 class TestJsonDatabase(unittest.TestCase):
 
     def setUp(self) -> None:
-        db_name = "test_json_file_db"
-        self.json_db = JsonFileDatabase(db_name)
+        self.json_db = JsonFileDatabase()
+        self.json_db.initialize(Task())
 
         self.task1 = Task("task1")
         self.task1.index = 1

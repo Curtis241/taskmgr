@@ -1,6 +1,7 @@
 import unittest
 from datetime import datetime, timedelta
 
+from taskmgr.lib.model.database_manager import DatabaseManager
 from taskmgr.lib.presenter.snapshots import Snapshots
 from taskmgr.lib.view.cli_client import CliClient
 from taskmgr.lib.model.database import JsonFileDatabase
@@ -17,10 +18,9 @@ class MockFileExporter(FileExporter):
 class TestCliClient(unittest.TestCase):
 
     def setUp(self):
-        self.db = JsonFileDatabase("test_cli_client_file_db")
-        self.tasks = Tasks(self.db)
-        snapshots = Snapshots(JsonFileDatabase("test_snapshots_db"))
-        self.client = CliClient(self.tasks, snapshots, MockFileExporter())
+        mgr = DatabaseManager()
+        self.tasks = mgr.get_tasks_model()
+        self.client = CliClient(mgr, MockFileExporter())
         self.task1 = self.client.add_task("Clean car", "@waiting_on", "home", "today")
         self.task2 = self.client.add_task("Clean bathroom", "", "home", "tomorrow")
         self.task3 = self.client.add_task("Book flight to New York", "@at_computer", "work", "m")
@@ -33,7 +33,6 @@ class TestCliClient(unittest.TestCase):
 
     def tearDown(self):
         self.client.remove_all_tasks()
-        self.db.clear()
 
     def test_add_task(self):
         self.client.add_task("Clean garage", "", "home", "empty")
@@ -56,11 +55,6 @@ class TestCliClient(unittest.TestCase):
         kwargs = {'group': SortType.Project}
         rows = self.client.group(**kwargs)
         self.assertTrue(len(rows) == 9)
-
-    def test_list_tasks_by_date(self):
-        kwargs = {'filter': SortType.DueDate}
-        rows = self.client.filter(**kwargs)
-        self.assertTrue(len(rows) == 1)
 
     def test_encoding_decoding_date_string(self):
         now = datetime.now()
@@ -105,7 +99,7 @@ class TestCliClient(unittest.TestCase):
     def test_today(self):
         self.client.add_task("task1", "home", "home", "empty")
         self.client.add_task("task2", "home", "home", "today")
-        kwargs = {"filter": SortType.DueDate}
+        kwargs = {"filter": SortType.Today}
         rows = self.client.filter(**kwargs)
         self.assertTrue(len(list(rows)) == 2)
 
@@ -125,6 +119,10 @@ class TestCliClient(unittest.TestCase):
         kwargs = {"group": None}
         rows = self.client.group(**kwargs)
         self.assertTrue(len(rows) == 10)
+
+    def test_count(self):
+        summary_list = self.client.count()
+        self.assertIsNotNone(summary_list)
 
 
 if __name__ == "__main__":
