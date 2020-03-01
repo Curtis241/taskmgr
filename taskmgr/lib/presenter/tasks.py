@@ -1,9 +1,11 @@
-from typing import Set
+from datetime import datetime
+from typing import Set, List
 
 from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.model.model import Model
 from taskmgr.lib.model.task import Task
 from taskmgr.lib.presenter.date_generator import Calendar, Day, DueDate, Today
+from taskmgr.lib.variables import CommonVariables
 
 
 class TaskKeyError(IndexError):
@@ -15,20 +17,6 @@ class TaskKeyError(IndexError):
         self.logger.error(self.msg)
 
 
-class SortType:
-    Today = "today"
-    Status = "status"
-    Label = "label"
-    Project = "project"
-    DueDate = "due_date"
-    DueDateRange = "due_date_range"
-    Text = "text"
-
-    @staticmethod
-    def contains(value):
-        return value in SortType.__dict__.values()
-
-
 class Tasks(Model):
     """
     Main entry point for querying and managing local tasks.
@@ -38,16 +26,37 @@ class Tasks(Model):
     def __init__(self, database):
         super().__init__(database, Task())
         self.__calendar = Calendar()
+        self.vars = CommonVariables()
 
     def add(self, obj):
         assert type(obj) is Task
         return self.append_object(obj)
+
+    def contains_due_date_range(self, task, min_date_string, max_date_string):
+        for due_date in task.due_dates:
+            min_day = Day(datetime.strptime(min_date_string, self.vars.date_format))
+            max_day = Day(datetime.strptime(max_date_string, self.vars.date_format))
+            if len(due_date.date_string) > 0:
+                day = Day(datetime.strptime(due_date.date_string, self.vars.date_format))
+
+                if min_day.to_date_time() < day.to_date_time() < max_day.to_date_time():
+                    return task
 
     def get_task(self, func) -> Task:
         for task in self.get_object_list():
             if func(task) is not None:
                 self.logger.debug(f"Retrieved task by index: {task.index}, text: {task.text}")
                 return task
+
+    def get_tasks_by_text(self, value) -> List[Task]:
+        """
+        Wrapped the get_list_by_type method because "text" is parameter in Task object
+        :param value:
+        :return: list of Task
+        """
+        assert type(value) is str
+        return [task for task in self.get_filtered_list()
+                if str(value).lower() in str(task.text).lower()]
 
     def get_task_by_index(self, index) -> Task:
         assert type(index) is int
@@ -65,18 +74,35 @@ class Tasks(Model):
         assert type(task_name) is str
         return self.get_task(lambda task: task if task.text == task_name else None)
 
-    def get_list_by_type(self, sort_type, value, include_deleted=False):
-        assert SortType.contains(sort_type)
-        assert type(value) == str
+    def get_tasks_by_date(self, date_string) -> List[Task]:
+        assert type(date_string) is str
+        return [task for task in self.get_object_list() for due_date in task.due_dates
+                if due_date.date_string == date_string]
 
+    def get_tasks_within_date_range(self, min_date_string, max_date_string) -> List[Task]:
+        assert type(min_date_string) is str
+        assert type(max_date_string) is str
+        return [task for task in self.get_object_list()
+                if self.contains_due_date_range(task, min_date_string, max_date_string)]
+
+    def get_tasks_by_status(self, is_completed) -> List[Task]:
+        if is_completed:
+            return [task for task in self.get_filtered_list() if task.is_completed()]
+        else:
+            return [task for task in self.get_filtered_list() if not task.is_completed()]
+
+    def get_tasks_by_project(self, project, include_deleted) -> List[Task]:
         if include_deleted:
             task_list = self.get_object_list()
         else:
             task_list = self.get_filtered_list()
+        return self.get_list_by_type("project", project, task_list)
 
-        return list(filter(lambda t: getattr(t, sort_type) == value, task_list))
+    def get_tasks_by_label(self, label) -> List[Task]:
+        task_list = self.get_filtered_list()
+        return self.get_list_by_type("label", label, task_list)
 
-    def get_filtered_list(self):
+    def get_filtered_list(self) -> List[Task]:
         return [task for task in self.get_object_list() if not task.deleted]
 
     def delete(self, task_id) -> Task:
@@ -151,19 +177,33 @@ class Tasks(Model):
                     due_date.date_string = today.to_date_string()
         self.update_objects(task_list)
 
-    def sort(self, sort_type):
-        assert SortType.contains(sort_type)
-        return [t for t in sorted(self.get_object_list(), key=lambda t: getattr(t, sort_type))]
+    @staticmethod
+    def get_list_by_type(parameter_name: str, value: str, task_list: list) -> list:
+        """
+        Returns list of tasks when a task parameter (ie. project, text, label) matches
+        a single value.
+        :param parameter_name:
+        :param value:
+        :param task_list:
+        :return:
+        """
+        return list(filter(lambda t: getattr(t, parameter_name) == value, task_list))
 
-    def unique(self, sort_type, include_deleted=False) -> Set[Task]:
-        assert SortType.contains(sort_type)
+    def __sort(self, parameter_name):
+        assert type(parameter_name) is str
+        return [t for t in sorted(self.get_object_list(), key=lambda t: getattr(t, parameter_name))]
 
-        if include_deleted:
-            task_list = self.get_object_list()
-        else:
-            task_list = self.get_filtered_list()
+    def get_label_set(self) -> Set[Task]:
+        return self.unique("label", self.get_filtered_list())
 
-        return set([getattr(t, sort_type) for t in task_list])
+    def get_project_set(self) -> Set[Task]:
+        return self.unique("project", self.get_filtered_list())
+
+    @staticmethod
+    def unique(parameter_name, task_list) -> Set[Task]:
+        assert type(parameter_name) is str
+        assert type(task_list) is list
+        return set([getattr(t, parameter_name) for t in task_list])
 
     def clear(self):
         self.clear_objects()

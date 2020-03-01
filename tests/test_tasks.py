@@ -4,7 +4,7 @@ from datetime import datetime
 from taskmgr.lib.model.database import JsonFileDatabase
 from taskmgr.lib.presenter.date_generator import DateGenerator, Day, Today
 from taskmgr.lib.model.task import Task
-from taskmgr.lib.presenter.tasks import Tasks, SortType
+from taskmgr.lib.presenter.tasks import Tasks
 from taskmgr.lib.variables import CommonVariables
 
 
@@ -142,22 +142,18 @@ class TestTasks(unittest.TestCase):
         self.assertTrue(task.is_completed())
 
     def test_sorting_by_label(self):
-        task_list = self.tasks.sort(SortType.Label)
+        task_list = self.tasks.get_tasks_by_label("call")
         self.assertTrue(type(task_list), list)
-        self.assertTrue(len(task_list) == 10)
+        self.assertTrue(len(task_list) == 2)
         first_task = task_list[0]
         self.assertTrue(first_task.label == "call")
 
     def test_get_unique_labels(self):
-        unique_label_set = self.tasks.unique(SortType.Label)
+        unique_label_set = self.tasks.get_label_set()
         self.assertSetEqual(unique_label_set, {'office', 'waiting', 'call', 'computer'})
 
-    def test_contains_sort_type(self):
-        self.assertTrue(SortType().contains("project"))
-        self.assertTrue(SortType().contains("label"))
-
     def test_get_list_by_type(self):
-        returned_result = self.tasks.get_list_by_type(SortType.Label, "call")
+        returned_result = self.tasks.get_list_by_type("label", "call", self.tasks.get_object_list())
         self.assertTrue(len(returned_result) == 2)
 
     def test_replace(self):

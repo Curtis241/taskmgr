@@ -2,12 +2,9 @@ import unittest
 from datetime import datetime, timedelta
 
 from taskmgr.lib.model.database_manager import DatabaseManager
-from taskmgr.lib.presenter.snapshots import Snapshots
-from taskmgr.lib.view.cli_client import CliClient
-from taskmgr.lib.model.database import JsonFileDatabase
 from taskmgr.lib.presenter.date_generator import Today, Day
 from taskmgr.lib.presenter.file_exporter import FileExporter
-from taskmgr.lib.presenter.tasks import SortType, Tasks
+from taskmgr.lib.view.cli_client import CliClient
 
 
 class MockFileExporter(FileExporter):
@@ -36,24 +33,20 @@ class TestCliClient(unittest.TestCase):
 
     def test_add_task(self):
         self.client.add_task("Clean garage", "", "home", "empty")
-        kwargs = {"group": None}
-        self.client.group(**kwargs)
+        self.client.display_all_tasks()
         row_count = len(self.client.task_table.get_table())
         self.assertTrue(row_count == 10)
 
     def test_list_all_tasks(self):
-        kwargs = {"group": None}
-        rows = self.client.group(**kwargs)
+        rows = self.client.display_all_tasks()
         self.assertTrue(len(rows) == 9)
 
     def test_list_tasks_by_label(self):
-        kwargs = {'group': SortType.Label}
-        rows = self.client.group(**kwargs)
+        rows = self.client.group_by_label()
         self.assertTrue(len(rows) == 9)
 
     def test_list_tasks_by_project(self):
-        kwargs = {'group': SortType.Project}
-        rows = self.client.group(**kwargs)
+        rows = self.client.group_by_project()
         self.assertTrue(len(rows) == 9)
 
     def test_encoding_decoding_date_string(self):
@@ -77,8 +70,7 @@ class TestCliClient(unittest.TestCase):
 
     def test_reschedule_tasks(self):
         today = Today()
-        kwargs = {"group": None}
-        task_list = self.client.group(**kwargs)
+        task_list = self.client.display_all_tasks()
         self.assertTrue(len(task_list) > 0)
         task1 = task_list[0]
         self.assertIsNotNone(task1)
@@ -89,7 +81,7 @@ class TestCliClient(unittest.TestCase):
         future_day = Day(future_day)
         self.client.reschedule_tasks(future_day)
 
-        task_list = self.client.group(**kwargs)
+        task_list = self.client.display_all_tasks()
         self.assertTrue(len(task_list) > 0)
         task1 = task_list[0]
         self.assertIsNotNone(task1)
@@ -99,8 +91,7 @@ class TestCliClient(unittest.TestCase):
     def test_today(self):
         self.client.add_task("task1", "home", "home", "empty")
         self.client.add_task("task2", "home", "home", "today")
-        kwargs = {"filter": SortType.Today}
-        rows = self.client.filter(**kwargs)
+        rows = self.client.filter_by_today()
         self.assertTrue(len(list(rows)) == 2)
 
     def test_delete(self):
@@ -116,12 +107,11 @@ class TestCliClient(unittest.TestCase):
         for _ in task.due_dates:
             self.client.complete_tasks(index_tuple)
 
-        kwargs = {"group": None}
-        rows = self.client.group(**kwargs)
+        rows = self.client.display_all_tasks()
         self.assertTrue(len(rows) == 10)
 
     def test_count(self):
-        summary_list = self.client.count()
+        summary_list = self.client.count_all_tasks()
         self.assertIsNotNone(summary_list)
 
 

@@ -57,6 +57,9 @@ class DatabaseObject(ABC):
     @abstractmethod
     def deserialize(self, obj_dict): pass
 
+    @abstractmethod
+    def get_redis_db_id(self): pass
+
 
 class GenericDatabase(ABC):
     """Generic base class to support Yaml, Json file databases and redis."""
@@ -398,7 +401,7 @@ class RedisDatabase(GenericDatabase):
         self.db = None
 
     def build_db_list(self):
-        # Max number of keys is redis logical databases is 16. Scan all
+        # Max number of keys in a redis logical databases is 16. Scan all
         # logical databases to identify what object belongs in each.
         db_list = []
         for index in range(0, 16):
@@ -413,27 +416,12 @@ class RedisDatabase(GenericDatabase):
 
     def initialize(self, obj, test_mode=False):
         """
-        Connects to each redis logical database and looks for the
-        key that matches the name of the object. The key structure is defined
-        in the __key(obj) method.
+        Retrieves the redis db id from the object so it can be saved or updated.
         :param obj: Object that subclasses DatabaseObject
         :param test_mode: Unsupported
         :return: None
         """
-
-        def get_db_item(items, value):
-            items = [i for i in items if i[1] == value]
-            if len(items) >= 1:
-                return items[0][0]
-
-        db_list = self.build_db_list()
-        # Find the db that contains the matching key
-        db = get_db_item(db_list, obj.object_name)
-        if db is not None:
-            self.db = db
-        else:
-            # Get an empty db
-            self.db = get_db_item(db_list, None)
+        self.db = redis.Redis(host=self.host, port=self.port, db=obj.get_redis_db_id())
 
     @staticmethod
     def __key(obj):

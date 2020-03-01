@@ -60,11 +60,8 @@ class TestSnapshots(unittest.TestCase):
         tasks.add(task2)
         tasks.add(task3)
 
-        snapshot_list = self.snapshots.count_tasks(tasks)
-        self.assertIsNotNone(snapshot_list)
-        self.assertTrue(len(snapshot_list) == 1)
-        snapshot = snapshot_list[0]
-
+        snapshot = self.snapshots.count_tasks("work", tasks.get_object_list())
+        self.assertIsNotNone(snapshot)
         self.assertTrue(snapshot.count == 3)
         self.assertTrue(snapshot.deleted == 1)
         self.assertTrue(snapshot.incomplete == 1)

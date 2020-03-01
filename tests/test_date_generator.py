@@ -169,11 +169,6 @@ class TestDateGenerator(unittest.TestCase):
         due_date = self.calendar.get_closest_due_date(due_date_list, Day(current_date_time))
         self.assertTrue(due_date.date_string == "2019-05-01")
 
-    def test_contains_day(self):
-        day_list = self.calendar.get_first_day_of_month(Day(self.march1), 11)
-        due_date_list = self.from_date_string_list(day_list)
-        self.assertTrue(self.calendar.contains_due_date(due_date_list, Day(self.dec1).to_date_string()))
-
     def test_short_date(self):
         due_date_list = self.date_generator.get_due_dates("apr 14")
         self.assertTrue(self.get_first_date_string(due_date_list) == '2020-04-14')

@@ -27,6 +27,9 @@ class Task(DatabaseObject):
         self.__date_expression = self.vars.default_date_expression
         self.__due_dates = [DueDate()]
 
+    def get_redis_db_id(self):
+        return 0
+
     @property
     def date_expression(self):
         return self.__date_expression

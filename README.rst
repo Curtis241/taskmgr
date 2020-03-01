@@ -38,24 +38,41 @@ backend storage for the Android Google Tasks app.
     * Short date - jan-dec 1-31
 * Attractive table structure provided by the BeautifulTable library https://pypi.org/project/beautifultable/
 * Import / Export of tasks to Google Tasks service
-* The list task feature displays all tasks and list that groups tasks by project and label
+* The list task feature displays all tasks that have not been deleted.
+* The group command orders tasks by project and label. The results can be exported to a csv file.
 * The filter command selects tasks by the status, project, complete/incomplete status, and label.
-* The count command summarizes and displays the number of tasks in each project by complete, incomplete, and deleted states.
+* The count command summarizes and displays the number of tasks in each project by date, date_range, label, project, and
+status. When the all command is used both the deleted and un-deleted tasks are included. The data is persisted to the
+selected database.
+* Added export of tasks to a csv file on results that are filtered. In addition to the csv file, the today command can
+also export to a markdown file.
+* Added support for a json or redis database. The database type can be configured using the default command.
 
-The commands available in version 0.1.2.
-  add           Appends a task using the provided or default parameters
-  complete      Marks the task as done
-  copy          Duplicates a task and resets the done status
-  count         Counts the tasks
-  delete        Toggles the delete parameter but keeps the object in the file database
-  edit          Replaces the task parameters with the provided parameters
-  export_tasks  Exports the tasks to the Google Tasks service
-  filter        Selects tasks using the filter type and provided value
-  import_tasks  Imports the tasks from the Google Tasks service
-  list          Displays all tasks by index order
-  reschedule    Moves all tasks from the past to today
-  set_defaults  Sets the parameter defaults used by the add command
-  today         Lists only the tasks that have today's date
+
+The commands available in version 0.1.4.
+Usage: tm [OPTIONS] COMMAND [ARGS]...
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  add         Appends a task using the provided or default parameters
+  complete    Marks the task as done
+  count       Displays task count
+  defaults    Sets the default variables
+  delete      Toggles the delete parameter but keeps the object in the...
+  edit        Replaces the task parameters with the provided parameters
+  export      Exports the tasks to the Google Tasks service
+  filter      Filters tasks
+  group       Groups tasks
+  import      Imports the tasks from the Google Tasks service
+  list        Lists all un-deleted tasks
+  reschedule  Moves all tasks from the past to today
+  reset       Resets the done status
+  today       Lists only the tasks that have today's date
+
+
+
 
 Credits
 -------

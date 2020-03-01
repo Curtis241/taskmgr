@@ -15,6 +15,10 @@ class Snapshot(DatabaseObject):
         self.__deleted = 0
         self.__project = "local"
         self.__location = str()
+        self.__timestamp = str()
+
+    def get_redis_db_id(self):
+        return 1
 
     @property
     def project(self):
@@ -60,6 +64,14 @@ class Snapshot(DatabaseObject):
     def deleted(self):
         return self.__deleted
 
+    @property
+    def timestamp(self):
+        return self.__timestamp
+
+    @timestamp.setter
+    def timestamp(self, value):
+        self.__timestamp = value
+
     @deleted.setter
     def deleted(self, deleted):
         self.__deleted = deleted
@@ -82,4 +94,5 @@ class Snapshot(DatabaseObject):
         yield 'deleted', self.__deleted
         yield 'project', self.__project
         yield 'location', self.__location
-        yield 'timestamp', self.last_updated
+        yield 'last_updated', self.last_updated
+        yield 'timestamp', self.__timestamp

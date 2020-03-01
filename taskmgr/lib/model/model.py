@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from typing import List
 
 from taskmgr.lib.model.database import GenericDatabase, DatabaseObject

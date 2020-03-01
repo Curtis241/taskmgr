@@ -8,13 +8,28 @@ from taskmgr.lib.model.database_manager import DatabaseManager
 from taskmgr.lib.model.google_tasks_service import GoogleTasksService
 from taskmgr.lib.presenter.file_exporter import FileExporter
 from taskmgr.lib.presenter.task_sync import GoogleTasksImporter, GoogleTasksExporter
-from taskmgr.lib.presenter.tasks import SortType
 from taskmgr.lib.variables import CommonVariables
 from taskmgr.lib.view.cli_client import CliClient
 
 cli_client = CliClient(DatabaseManager(), FileExporter())
 logger = AppLogger("cli").get_logger()
 variables = CommonVariables()
+
+
+class DateFormatString(click.ParamType):
+    name = 'date-format'
+
+    def convert(self, value, param, ctx):
+        found = re.match(r'\d{4}-\d{2}-\d{2}', value)
+
+        if not found:
+            self.fail(
+                f'{value} is not a date string (ie. 2019-01-21)',
+                param,
+                ctx,
+            )
+
+        return value
 
 
 @click.group()
@@ -55,81 +70,122 @@ def delete_task(**kwargs):
     cli_client.delete_tasks(kwargs.get("index"))
 
 
-@cli.command("list", help="Displays all tasks by index order")
-@click.option('--group', '-g', help="Groups tasks by label or project", metavar='<group>',
-              type=click.Choice(['label', 'project']))
+@cli.command("list", help="Lists all un-deleted tasks")
+@click.option('--export', type=click.Choice([FileExporter.CSV]), metavar="<export>")
+@click.option('--all', is_flag=True)
 def list_tasks(**kwargs):
-    cli_client.group(**kwargs)
+    cli_client.display_all_tasks(**kwargs)
 
 
-@cli.group("filter")
+@cli.group("group", help="Groups tasks")
+def task_group(): pass
+
+
+@task_group.command("label")
+@click.option('--export', type=click.Choice([FileExporter.CSV]), metavar="<export>")
+def task_group_by_label(**kwargs):
+    cli_client.group_by_label(**kwargs)
+
+
+@task_group.command("project")
+@click.option('--export', type=click.Choice([FileExporter.CSV]), metavar="<export>")
+def task_group_by_project(**kwargs):
+    cli_client.group_by_project(**kwargs)
+
+
+@cli.group("filter", help="Filters tasks")
 def task_filter(): pass
 
 
-@task_filter.command("project", help="Filter tasks by project")
-@click.option('--value', help="Finds complete project name")
+@task_filter.command("project")
+@click.argument('project', type=str, required=True, metavar="<project>")
+@click.option('--export', type=click.Choice([FileExporter.CSV]), metavar="<export>")
 def filter_tasks_by_project(**kwargs):
-    kwargs["filter"] = SortType.Project
-    cli_client.filter(**kwargs)
+    cli_client.filter_by_project(**kwargs)
 
 
-@task_filter.command("status", help="Filter tasks by status")
-@click.option('--value', type=click.Choice(['incomplete', 'complete']))
+@task_filter.command("status")
+@click.argument('status', type=click.Choice(['incomplete', 'complete']), required=True, metavar="<status>")
+@click.option('--export', type=click.Choice([FileExporter.CSV]), metavar="<export>")
 def filter_tasks_by_status(**kwargs):
-    kwargs["filter"] = SortType.Status
-    cli_client.filter(**kwargs)
+    cli_client.filter_by_status(**kwargs)
 
 
-@task_filter.command("text", help="Filter tasks by text")
-@click.option('--value', help="Finds complete or partial string")
+@task_filter.command("text")
+@click.argument('text', type=str, required=True, metavar="<text>")
+@click.option('--export', type=click.Choice([FileExporter.CSV]), metavar="<export>")
 def filter_tasks_by_text(**kwargs):
-    kwargs["filter"] = SortType.Text
-    cli_client.filter(**kwargs)
+    cli_client.filter_by_text(**kwargs)
 
 
-@task_filter.command("label", help="Filter tasks by label")
-@click.option('--value', help='Finds complete label string')
+@task_filter.command("label")
+@click.argument('label', type=str,  required=True, metavar="<label>")
+@click.option('--export', type=click.Choice([FileExporter.CSV]), metavar="<export>")
 def filter_tasks_by_label(**kwargs):
-    kwargs["filter"] = SortType.Label
-    cli_client.filter(**kwargs)
+    cli_client.filter_by_label(**kwargs)
 
 
-class DateFormatString(click.ParamType):
-    name = 'date-format'
-
-    def convert(self, value, param, ctx):
-        found = re.match(r'\d{4}-\d{2}-\d{2}', value)
-
-        if not found:
-            self.fail(
-                f'{value} is not a date string (ie. 2019-01-21)',
-                param,
-                ctx,
-            )
-
-        return value
-
-
-@task_filter.command("date_range", help="Filter tasks by date range")
-@click.option('--min_date', help='Minimum date', type=DateFormatString())
-@click.option('--max_date', help='Maximum date', type=DateFormatString())
+@task_filter.command("date_range")
+@click.option('--min_date', required=True, help='Minimum date', type=DateFormatString())
+@click.option('--max_date', required=True, help='Maximum date', type=DateFormatString())
+@click.option('--export', type=click.Choice([FileExporter.CSV]), metavar="<export>")
 def filter_tasks_by_date_range(**kwargs):
-    kwargs["filter"] = SortType.DueDateRange
-    cli_client.filter(**kwargs)
+    cli_client.filter_by_due_date_range(**kwargs)
 
 
-@task_filter.command("date", help="Filter tasks by provided date")
+@task_filter.command("date")
 @click.argument('date', type=DateFormatString(), required=True, metavar="<date>")
+@click.option('--export', type=click.Choice([FileExporter.CSV]), metavar="<export>")
 def filter_tasks_by_date(**kwargs):
-    kwargs["filter"] = SortType.DueDate
-    cli_client.filter(**kwargs)
+    cli_client.filter_by_due_date(**kwargs)
 
 
 @cli.command("today", help="Lists only the tasks that have today's date")
-@click.option('--export_path', '-p', help="Destination path to save markdown file.", metavar='<export_path>')
+@click.option('--export', type=click.Choice([FileExporter.CSV, FileExporter.MARKDOWN]), metavar="<export>")
 def today(**kwargs):
-    kwargs["filter"] = SortType.Today
-    cli_client.filter(**kwargs)
+    cli_client.filter_by_today(**kwargs)
+
+
+@cli.group("count", help="Displays task count")
+def task_count(): pass
+
+
+@task_count.command("all")
+@click.option('--export', type=click.Choice([FileExporter.CSV]), metavar="<export>",
+              help="Counts the deleted and un-deleted tasks")
+def count_all_tasks(**kwargs):
+    cli_client.count_all_tasks(**kwargs)
+
+
+@task_count.command("date")
+@click.argument('date', type=DateFormatString(), required=True, metavar="<date>")
+def count_tasks_by_date(**kwargs):
+    cli_client.count_by_due_date(**kwargs)
+
+
+@task_count.command("date_range")
+@click.option('--min_date', required=True, type=DateFormatString())
+@click.option('--max_date', required=True, type=DateFormatString())
+def count_tasks_by_date_range(**kwargs):
+    cli_client.count_by_due_date_range(**kwargs)
+
+
+@task_count.command("project")
+@click.argument('project', type=str, required=True, metavar="<project>")
+def count_tasks_by_project(**kwargs):
+    cli_client.count_by_project(**kwargs)
+
+
+@task_count.command("status")
+@click.argument('status', type=click.Choice(['incomplete', 'complete']), required=True, metavar="<status>")
+def count_tasks_by_status(**kwargs):
+    cli_client.count_by_status(**kwargs)
+
+
+@task_count.command("label")
+@click.argument('label', type=str, required=True, metavar="<label>")
+def count_tasks_by_label(**kwargs):
+    cli_client.count_by_label(**kwargs)
 
 
 @cli.command("reschedule", help="Moves all tasks from the past to today")
@@ -145,13 +201,8 @@ def complete_task(**kwargs):
 
 @cli.command("reset", help="Resets the done status")
 @click.argument('index', nargs=-1, required=True, type=int)
-def pick_task(**kwargs):
+def reset_task(**kwargs):
     cli_client.reset_tasks(kwargs.get("index"))
-
-
-@cli.command("count", help="Counts the tasks")
-def count():
-    cli_client.count()
 
 
 @cli.command("import", help="Imports the tasks from the Google Tasks service")

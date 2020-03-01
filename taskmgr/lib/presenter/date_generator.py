@@ -156,35 +156,6 @@ class Calendar:
                 return True
         return False
 
-    @staticmethod
-    def contains_due_date(due_date_list, date_string):
-        """
-        Looks for today's date in provided list of date strings
-        :param due_date_list: ["2019-01-01", "2019-01-02", "2019-01-03"]
-        :param date_string: "2019-01-02"
-        :return:
-        Boolean value
-        """
-        assert type(due_date_list) is list
-        assert type(date_string) is str
-
-        for due_date in due_date_list:
-            if due_date.date_string == date_string:
-                return True
-        return False
-
-    def contains_due_date_range(self, min_date_string, max_date_string, due_date_list):
-
-        for due_date in due_date_list:
-            min_day = Day(datetime.strptime(min_date_string, self.vars.date_format))
-            max_day = Day(datetime.strptime(max_date_string, self.vars.date_format))
-            if len(due_date.date_string) > 0:
-                day = Day(datetime.strptime(due_date.date_string, self.vars.date_format))
-
-                if min_day.to_date_time() < day.to_date_time() < max_day.to_date_time():
-                    return True
-        return False
-
     def get_closest_due_date(self, due_date_list, current_day=None):
         """
         Returns a future date string that is the closest to the current day
