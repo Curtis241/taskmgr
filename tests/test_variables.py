@@ -47,6 +47,12 @@ class TestVariables(unittest.TestCase):
         self.assertTrue(len(str(vars.default_project_name)) == 0)
         self.assertTrue(str(vars.default_date_expression) == 'empty')
 
+    def test_date_format_validation(self):
+        self.assertTrue(self.vars.validate_date_format('2020-01-01'))
+        self.assertFalse(self.vars.validate_date_format('2020-01-011'))
+        self.assertFalse(self.vars.validate_date_format('20201-01-01'))
+        self.assertFalse(self.vars.validate_date_format('01-01-2020'))
+
 
 if __name__ == '__main__':
     unittest.main()

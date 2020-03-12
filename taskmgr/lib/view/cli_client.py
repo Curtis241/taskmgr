@@ -41,10 +41,17 @@ class CliClient(Client):
             self.variables_table.add_row([key, value])
         self.variables_table.print()
 
-    def __print_tasks_table(self, task_list):
+    def __print_tasks_table(self, task_list, show_deleted=False):
         self.task_table.clear()
-        for task in task_list:
-            self.task_table.add_row(task)
+
+        if show_deleted:
+            for task in task_list:
+                self.task_table.add_row(task)
+        else:
+            for task in task_list:
+                if task.deleted is False:
+                    self.task_table.add_row(task)
+
         return self.task_table.print()
 
     def __print_snapshots_table(self, snapshot_list):
@@ -89,13 +96,9 @@ class CliClient(Client):
         Simple list of all tasks without any sorting applied.
         :return: task_list
         """
-        if kwargs.get("all"):
-            task_list = self.get_all_task_list()
-        else:
-            task_list = self.get_filtered_task_list()
-
+        task_list = self.get_task_list()
         self.__export_tasks(task_list, **kwargs)
-        return self.__print_tasks_table(task_list)
+        return self.__print_tasks_table(task_list, kwargs.get("all"))
 
     def filter_by_today(self, **kwargs):
         """
@@ -193,16 +196,18 @@ class CliClient(Client):
         return self.__print_tasks_table(task_list)
 
     def count_all_tasks(self, **kwargs):
-        assert "export" in kwargs
 
-        tasks_list = self.get_all_task_list()
+        tasks_list = self.get_task_list()
         snapshot_list = self.count_tasks(tasks_list)
         self.save_snapshots(snapshot_list)
 
         if kwargs.get("export") is not None:
-            self.__file_exporter.save_snapshots(self.get_all_snapshot_list())
+            self.__file_exporter.save_snapshots(self.get_snapshot_list())
 
-        return self.__print_snapshots_table(snapshot_list)
+        if kwargs.get("silent") is False:
+            tasks_list = self.__print_snapshots_table(snapshot_list)
+
+        return tasks_list
 
     def count_by_due_date_range(self, **kwargs):
         assert "min_date" in kwargs

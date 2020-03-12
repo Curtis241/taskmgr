@@ -55,7 +55,7 @@ class Tasks(Model):
         :return: list of Task
         """
         assert type(value) is str
-        return [task for task in self.get_filtered_list()
+        return [task for task in self.get_object_list()
                 if str(value).lower() in str(task.text).lower()]
 
     def get_task_by_index(self, index) -> Task:
@@ -87,20 +87,15 @@ class Tasks(Model):
 
     def get_tasks_by_status(self, is_completed) -> List[Task]:
         if is_completed:
-            return [task for task in self.get_filtered_list() if task.is_completed()]
+            return [task for task in self.get_object_list() if task.is_completed()]
         else:
-            return [task for task in self.get_filtered_list() if not task.is_completed()]
+            return [task for task in self.get_object_list() if not task.is_completed()]
 
-    def get_tasks_by_project(self, project, include_deleted) -> List[Task]:
-        if include_deleted:
-            task_list = self.get_object_list()
-        else:
-            task_list = self.get_filtered_list()
-        return self.get_list_by_type("project", project, task_list)
+    def get_tasks_by_project(self, project) -> List[Task]:
+        return self.get_list_by_type("project", project)
 
     def get_tasks_by_label(self, label) -> List[Task]:
-        task_list = self.get_filtered_list()
-        return self.get_list_by_type("label", label, task_list)
+        return self.get_list_by_type("label", label)
 
     def get_filtered_list(self) -> List[Task]:
         return [task for task in self.get_object_list() if not task.deleted]
@@ -177,8 +172,7 @@ class Tasks(Model):
                     due_date.date_string = today.to_date_string()
         self.update_objects(task_list)
 
-    @staticmethod
-    def get_list_by_type(parameter_name: str, value: str, task_list: list) -> list:
+    def get_list_by_type(self, parameter_name: str, value: str, task_list=None) -> list:
         """
         Returns list of tasks when a task parameter (ie. project, text, label) matches
         a single value.
@@ -187,6 +181,9 @@ class Tasks(Model):
         :param task_list:
         :return:
         """
+        if task_list is None:
+            task_list = self.get_object_list()
+
         return list(filter(lambda t: getattr(t, parameter_name) == value, task_list))
 
     def __sort(self, parameter_name):
@@ -194,10 +191,10 @@ class Tasks(Model):
         return [t for t in sorted(self.get_object_list(), key=lambda t: getattr(t, parameter_name))]
 
     def get_label_set(self) -> Set[Task]:
-        return self.unique("label", self.get_filtered_list())
+        return self.unique("label", self.get_object_list())
 
     def get_project_set(self) -> Set[Task]:
-        return self.unique("project", self.get_filtered_list())
+        return self.unique("project", self.get_object_list())
 
     @staticmethod
     def unique(parameter_name, task_list) -> Set[Task]:

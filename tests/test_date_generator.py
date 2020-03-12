@@ -86,8 +86,17 @@ class TestDateGenerator(unittest.TestCase):
         due_date_list = self.date_generator.get_due_dates("every day")
         self.assertTrue(len(due_date_list) == 60)
 
-    def test_get_date_when_every_weekday(self):
+    def test_get_date_count_when_every_weekday(self):
         self.assertTrue(self.get_date_count('2019-03-01', 'every weekday') == 43)
+
+    def test_get_date_when_every_weekday(self):
+        self.date_generator.current_day = Day(self.march1)
+        due_date_list = self.date_generator.get_due_dates("every weekday")
+        self.assertTrue(len(due_date_list) == 43)
+        self.assertTrue(due_date_list[0].date_string == "2019-03-01")
+        self.assertTrue(due_date_list[1].date_string == "2019-03-04")
+        self.assertTrue(due_date_list[2].date_string == "2019-03-05")
+        self.assertTrue(due_date_list[3].date_string == "2019-03-06")
 
     def test_get_date_when_every_sunday(self):
         self.assertTrue(self.get_date_count('2019-03-01', 'every su') == 9)
@@ -190,6 +199,16 @@ class TestDateGenerator(unittest.TestCase):
         due_date = due_date_list[0]
         self.assertEqual(due_date.date_string, "")
         self.assertFalse(due_date.completed)
+
+    def test_year_month_date_handler(self):
+        due_date_list = self.date_generator.get_due_dates("2019-03-019")
+        self.assertTrue(len(due_date_list) == 1)
+        self.assertFalse(due_date_list[0].completed)
+
+        due_date_list = self.date_generator.get_due_dates("2019-03-01")
+        self.assertTrue(len(due_date_list) == 1)
+        self.assertFalse(due_date_list[0].completed)
+        self.assertTrue(due_date_list[0].date_string == "2019-03-01")
 
 
 if __name__ == "__main__":

@@ -258,7 +258,7 @@ class Calendar:
         date_list = list()
         for i in [0, 1, 2, 3, 4]:
             date_list.extend(self.get_week_days(today, i, month_count))
-        return date_list
+        return sorted(date_list)
 
     def get_months(self, start_day, month_count=1):
         """
@@ -531,6 +531,26 @@ class ShortDateHandler(Handler):
             return False
 
 
+class YearMonthDateHandler(Handler):
+
+    def __init__(self):
+        super().__init__()
+        self.vars = CommonVariables()
+
+    def validate(self, expression):
+        return self.vars.validate_date_format(expression)
+
+    def parse_expression(self, parser):
+        parser.handler_name = YearMonthDateHandler.__name__
+        parser.date_list = [parser.expression]
+
+    def handle(self, parser):
+        if self.validate(parser.expression):
+            self.parse_expression(parser)
+        else:
+            super(YearMonthDateHandler, self).handle(parser)
+
+
 class EmptyDateHandler(Handler):
 
     def __init__(self):
@@ -570,8 +590,10 @@ class DateGenerator(object):
         self.handler_2 = NormalLanguageDateHandler()
         self.handler_3 = RecurringDateHandler()
         self.handler_4 = ShortDateHandler()
-        self.handler_5 = EmptyDateHandler()
-        self.handler_list = [self.handler_1, self.handler_2, self.handler_3, self.handler_4, self.handler_5]
+        self.handler_5 = YearMonthDateHandler()
+        self.handler_6 = EmptyDateHandler()
+        self.handler_list = [self.handler_1, self.handler_2, self.handler_3, self.handler_4,
+                             self.handler_5, self.handler_6]
 
     @property
     def current_day(self):
@@ -584,8 +606,7 @@ class DateGenerator(object):
     def current_day(self, current_day):
         self.__current_day = current_day
 
-    def get_due_dates(self, expression):
-
+    def get_due_dates(self, expression:str) -> list:
         assert type(expression) is str
         parser = DateParser(expression, self.current_day)
 
@@ -593,7 +614,8 @@ class DateGenerator(object):
         self.handler_2.next_handler = self.handler_3
         self.handler_3.next_handler = self.handler_4
         self.handler_4.next_handler = self.handler_5
-        self.handler_5.next_handler = ErrorHandler()
+        self.handler_5.next_handler = self.handler_6
+        self.handler_6.next_handler = ErrorHandler()
         self.handler_1.handle(parser)
 
         due_date_list = list()
@@ -611,10 +633,9 @@ class DateGenerator(object):
 
         return due_date_list
 
-    def validate_input(self, date_expression):
-
+    def validate_input(self, date_expression:str) -> bool:
+        assert type(date_expression) is str
         for handler in self.handler_list:
             if handler.validate(date_expression):
                 return True
-
         return False

@@ -33,10 +33,10 @@ class Client:
         """Returns list of project names from the tasks. """
         return list(self.__tasks.get_project_set())
 
-    def get_tasks_by_project(self, project: str, include_deleted=False) -> List[Task]:
+    def get_tasks_by_project(self, project: str) -> List[Task]:
         """Returns list of tasks that match the provided project name. """
         assert type(project) is str
-        return self.__tasks.get_tasks_by_project(project, include_deleted)
+        return self.__tasks.get_tasks_by_project(project)
 
     def get_tasks_by_label(self, label: str) -> List[Task]:
         """Returns list of tasks that match the provided label. """
@@ -53,15 +53,11 @@ class Client:
         assert type(is_completed) is bool
         return self.__tasks.get_tasks_by_status(is_completed)
 
-    def get_filtered_task_list(self) -> List[Task]:
-        """Returns list of tasks that are not deleted. """
-        return self.__tasks.get_filtered_list()
-
-    def get_all_task_list(self) -> List[Task]:
-        """Returns all tasks, even the deleted ones"""
+    def get_task_list(self) -> List[Task]:
+        """Returns all tasks"""
         return self.__tasks.get_object_list()
 
-    def get_all_snapshot_list(self) -> List[Snapshot]:
+    def get_snapshot_list(self) -> List[Snapshot]:
         return self.__snapshots.get_snapshot_list()
 
     def get_tasks_for_today(self) -> List[Task]:

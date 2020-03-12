@@ -49,7 +49,9 @@ also export to a markdown file.
 * Added support for a json or redis database. The database type can be configured using the default command.
 
 
+
 The commands available in version 0.1.4.
+
 Usage: tm [OPTIONS] COMMAND [ARGS]...
 
 Options:

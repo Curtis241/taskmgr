@@ -1,4 +1,5 @@
 import ast
+import re
 from configparser import RawConfigParser, NoSectionError
 from pathlib import Path
 
@@ -91,6 +92,10 @@ class CommonVariables:
     @property
     def date_format(self):
         return self.__get("date_format", self.default_section)
+
+    @staticmethod
+    def validate_date_format(date_string:str) -> bool:
+        return re.match(r'^\d{4}-\d{2}-\d{2}$', date_string) is not None
 
     @property
     def date_time_format(self):

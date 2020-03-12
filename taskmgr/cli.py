@@ -1,4 +1,3 @@
-import re
 import sys
 
 import click
@@ -20,11 +19,9 @@ class DateFormatString(click.ParamType):
     name = 'date-format'
 
     def convert(self, value, param, ctx):
-        found = re.match(r'\d{4}-\d{2}-\d{2}', value)
-
-        if not found:
+        if variables.validate_date_format(value):
             self.fail(
-                f'{value} is not a date string (ie. 2019-01-21)',
+                f'{value} date string is not valid',
                 param,
                 ctx,
             )
@@ -152,7 +149,8 @@ def task_count(): pass
 
 @task_count.command("all")
 @click.option('--export', type=click.Choice([FileExporter.CSV]), metavar="<export>",
-              help="Counts the deleted and un-deleted tasks")
+              help="Exports tasks to csv file")
+@click.option('--silent', is_flag=True, help="Saves task count without displaying table")
 def count_all_tasks(**kwargs):
     cli_client.count_all_tasks(**kwargs)
 
