@@ -43,7 +43,6 @@ class CliClient(Client):
 
     def __print_tasks_table(self, task_list, show_deleted=False):
         self.task_table.clear()
-
         if show_deleted:
             for task in task_list:
                 self.task_table.add_row(task)
@@ -51,7 +50,6 @@ class CliClient(Client):
             for task in task_list:
                 if task.deleted is False:
                     self.task_table.add_row(task)
-
         return self.task_table.print()
 
     def __print_snapshots_table(self, snapshot_list):

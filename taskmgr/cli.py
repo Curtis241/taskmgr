@@ -19,7 +19,7 @@ class DateFormatString(click.ParamType):
     name = 'date-format'
 
     def convert(self, value, param, ctx):
-        if variables.validate_date_format(value):
+        if variables.validate_date_format(value) is False:
             self.fail(
                 f'{value} date string is not valid',
                 param,
