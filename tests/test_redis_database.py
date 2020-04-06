@@ -23,6 +23,7 @@ class TestRedisDatabase(unittest.TestCase):
 
     def setUp(self) -> None:
         self.redis_db = RedisDatabase("localhost", 6379)
+        self.redis_db.clear()
         self.task1 = Task("task1")
         self.task1.index = 1
         self.task2 = Task("task2")

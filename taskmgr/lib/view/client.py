@@ -5,7 +5,8 @@ from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.model.database_manager import DatabaseManager
 from taskmgr.lib.model.snapshot import Snapshot
 from taskmgr.lib.model.task import Task
-from taskmgr.lib.presenter.date_generator import Today, DateGenerator
+from taskmgr.lib.presenter.date_generator import DateGenerator
+from taskmgr.lib.model.calendar import Today
 from taskmgr.lib.presenter.task_sync import GoogleTasksImporter, GoogleTasksExporter
 from taskmgr.lib.variables import CommonVariables
 
@@ -19,7 +20,7 @@ class Client:
     logger = AppLogger("client").get_logger()
 
     def __init__(self, db_manager):
-        assert type(db_manager) is DatabaseManager
+        assert isinstance(db_manager, DatabaseManager)
         self.__tasks = db_manager.get_tasks_model()
         self.__snapshots = db_manager.get_snapshots_model()
         self.__date_generator = DateGenerator()
@@ -44,9 +45,9 @@ class Client:
         return self.__tasks.get_tasks_by_label(label)
 
     def get_tasks_by_text(self, text: str) -> List[Task]:
-        """Returns list of tasks that match the provided text string. """
+        """Returns list of tasks that contain the provided text string. """
         assert type(text) is str
-        return self.__tasks.get_tasks_by_text(text)
+        return self.__tasks.get_tasks_containing_text(text)
 
     def get_tasks_by_status(self, is_completed: bool) -> List[Task]:
         """Returns list of tasks that are either completed/incomplete"""
@@ -72,7 +73,7 @@ class Client:
         assert type(max_date_string) is str
         return self.__tasks.get_tasks_within_date_range(min_date_string, max_date_string)
 
-    def add_task(self, text: str, label: str, project: str, date_expression: str) -> Task:
+    def add_task(self, text: str, label: str, project: str, date_expression: str) -> List[Task]:
         """
         Adds a task
         :param text: text string describing the task
@@ -80,23 +81,15 @@ class Client:
         :param project: project name for the task
         :param date_expression: Must be one of [today, tomorrow, m-s, every *, month / day, etc]. For complete
         list see the expression_lists in handler objects in date_generator.py
-        :return: Task
+        :return: list of Task
         """
         assert type(text) is str
         assert type(label) is str
         assert type(project) is str
         assert type(date_expression) is str
-        if self.__date_generator.validate_input(date_expression):
-            task = Task(text)
-            task.label = label
-            task.project = project
-            task.date_expression = date_expression
-            self.__tasks.add(task)
-            return task
-        else:
-            self.display_invalid_due_date_error(date_expression)
+        return self.__tasks.add(text, label, project, date_expression)
 
-    def delete_tasks(self, index_tuple: tuple) -> list:
+    def delete_tasks_by_index(self, index_tuple: tuple) -> list:
         assert type(index_tuple) is tuple
         results = list()
         for index in index_tuple:
@@ -105,6 +98,14 @@ class Client:
                 results.append(self.__tasks.delete(task.unique_id))
             else:
                 self.display_invalid_index_error(index)
+        return results
+
+    def delete_tasks_by_text(self, text: str) -> list:
+        assert type(text) is str
+        results = list()
+        task_list = self.__tasks.get_tasks_matching_text(text)
+        for task in task_list:
+            results.append(self.__tasks.delete(task.unique_id))
         return results
 
     def edit_task(self, index: int, text: str, project: str, label: str, date_expression: str) -> Task:
@@ -130,7 +131,7 @@ class Client:
             self.display_invalid_index_error(index)
 
         if self.__date_generator.validate_input(date_expression) is False:
-            self.display_invalid_due_date_error(date_expression)
+            self.logger.info(f"Provided due date {date_expression} is invalid")
 
         return self.__tasks.edit(task.unique_id, text, label, project, date_expression)
 
@@ -261,10 +262,6 @@ class Client:
     def display_invalid_index_error(self, index: int):
         assert type(index) is int
         self.logger.info(f"Provided index {index} is invalid")
-
-    def display_invalid_due_date_error(self, date_expression: str):
-        assert type(date_expression) is str
-        self.logger.info(f"Provided due date {date_expression} is invalid")
 
     @staticmethod
     def get_variables_list():

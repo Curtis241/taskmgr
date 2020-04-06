@@ -77,10 +77,9 @@ class TestSyncImporter(unittest.TestCase):
         task_list = self.importer.convert_to_task_list("My Tasks")
         self.assertTrue(len(task_list) == 1)
         task1 = task_list[0]
-        self.assertTrue(len(task1.due_dates) == 1)
-        due_date = task1.due_dates[0]
-        due_date.date_string = '2019-08-11'
-        self.assertTrue(due_date.completed)
+        self.assertIsNotNone(task1.due_date)
+        task1.due_date.date_string = '2019-08-11'
+        self.assertTrue(task1.due_date.completed)
 
     def test_import_tasks(self):
         task100 = Task('Task100')

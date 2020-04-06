@@ -262,3 +262,5 @@ class CliClient(Client):
         task_list = self.get_tasks_by_label(label)
         snapshot_list = self.count_tasks(task_list)
         return self.__print_snapshots_table(snapshot_list)
+
+

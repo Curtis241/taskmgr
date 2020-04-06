@@ -25,7 +25,6 @@ class DateFormatString(click.ParamType):
                 param,
                 ctx,
             )
-
         return value
 
 
@@ -60,18 +59,27 @@ def edit_task(**kwargs):
                          kwargs.get("label"), kwargs.get("due_date"))
 
 
-@cli.command("delete", help="Toggles the delete parameter but keeps the object in the database. "
-                            "Deleted tasks are hidden and do not appear in the lists.")
-@click.argument('index', nargs=-1, required=True, type=int)
-def delete_task(**kwargs):
-    cli_client.delete_tasks(kwargs.get("index"))
-
-
 @cli.command("list", help="Lists all un-deleted tasks")
 @click.option('--export', type=click.Choice([FileExporter.CSV]), metavar="<export>")
 @click.option('--all', is_flag=True)
 def list_tasks(**kwargs):
     cli_client.display_all_tasks(**kwargs)
+
+
+@cli.group("delete", help="Soft delete")
+def task_delete(): pass
+
+
+@task_delete.command('index')
+@click.argument('index', nargs=-1, required=True, type=int)
+def delete_task_by_index(**kwargs):
+    cli_client.delete_tasks_by_index(kwargs.get("index"))
+
+
+@task_delete.command('text')
+@click.argument('text', type=str, required=True, metavar="<text>")
+def delete_task_by_text(**kwargs):
+    cli_client.delete_tasks_by_text(kwargs.get("text"))
 
 
 @cli.group("group", help="Groups tasks")
@@ -116,7 +124,7 @@ def filter_tasks_by_text(**kwargs):
 
 
 @task_filter.command("label")
-@click.argument('label', type=str,  required=True, metavar="<label>")
+@click.argument('label', type=str, required=True, metavar="<label>")
 @click.option('--export', type=click.Choice([FileExporter.CSV]), metavar="<export>")
 def filter_tasks_by_label(**kwargs):
     cli_client.filter_by_label(**kwargs)
@@ -215,6 +223,13 @@ def import_tasks(**kwargs):
 def export_tasks(**kwargs):
     mgr = DatabaseManager()
     cli_client.export_tasks(GoogleTasksExporter(GoogleTasksService(), mgr.get_tasks_model()), kwargs.get("project"))
+
+
+@cli.command("repair", help="Checks redis db for issues")
+@click.option('--ok', is_flag=True)
+def repair_db(**kwargs):
+    from taskmgr.scripts.repair_db import RepairDb
+    RepairDb().fix(kwargs.get("ok"))
 
 
 @cli.command("defaults", help="Sets the default variables")

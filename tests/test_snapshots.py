@@ -25,6 +25,7 @@ class TestSnapshots(unittest.TestCase):
         self.db.clear()
 
     def test_add_snapshot(self):
+        self.snapshots.clear_objects()
         self.snapshots.add(self.snapshot1)
         snapshot_list = self.snapshots.get_object_list()
         self.assertIsNotNone(snapshot_list)
@@ -56,9 +57,9 @@ class TestSnapshots(unittest.TestCase):
         task3.deleted = True
         task3.priority = 1
 
-        tasks.add(task1)
-        tasks.add(task2)
-        tasks.add(task3)
+        tasks.append(task1)
+        tasks.append(task2)
+        tasks.append(task3)
 
         snapshot = self.snapshots.count_tasks("work", tasks.get_object_list())
         self.assertIsNotNone(snapshot)

@@ -1,7 +1,7 @@
 import unittest
 
 from taskmgr.lib.model.database import JsonFileDatabase
-from taskmgr.lib.presenter.date_generator import DueDate
+from taskmgr.lib.model.due_date import DueDate
 from taskmgr.lib.model.task import Task
 from taskmgr.lib.presenter.task_sync import GoogleTasksExporter
 from taskmgr.lib.presenter.tasks import Tasks
@@ -27,15 +27,15 @@ class TestSyncExporter(unittest.TestCase):
         due_date.completed = False
         due_date.date_string = '2019-04-17'
         task100.due_dates = [due_date]
-        self.tasks.add(task100)
+        self.tasks.append(task100)
 
         task101 = Task('Task101')
         task101.project = "home"
-        self.tasks.add(task101)
+        self.tasks.append(task101)
 
         task102 = Task('Task102')
         task102.project = "work"
-        self.tasks.add(task102)
+        self.tasks.append(task102)
 
         # tasks_list = [task100, task101, task102]
         gtasks_list = self.exporter.convert_to_gtasklist("home")

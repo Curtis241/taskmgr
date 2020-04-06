@@ -397,7 +397,7 @@ class GoogleTasksImporter:
                 else:
                     due_date.completed = False
                     due_date.date_string = str()
-                t.due_dates = [due_date]
+                t.due_date = due_date
                 task_list.append(t)
 
         return task_list
@@ -425,7 +425,7 @@ class GoogleTasksImporter:
                 sync_results.append(SyncAction.UPDATED)
 
             elif action.can_insert():
-                self.__tasks.add(remote_task)
+                self.__tasks.append(remote_task)
                 sync_results.append(SyncAction.ADDED)
 
             else:

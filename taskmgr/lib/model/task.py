@@ -1,5 +1,8 @@
+from datetime import datetime
+
 from taskmgr.lib.model.database import DatabaseObject
-from taskmgr.lib.presenter.date_generator import DateGenerator, DueDate
+from taskmgr.lib.model.due_date import DueDate
+from taskmgr.lib.model.day import Day
 from taskmgr.lib.variables import CommonVariables
 
 
@@ -9,7 +12,7 @@ class Task(DatabaseObject):
     contains only the properties that are used to maintain consistent data.
     """
 
-    def __init__(self, text="default", date_generator=None):
+    def __init__(self, text="default"):
         super().__init__(self.__class__.__name__)
         self.vars = CommonVariables()
         self.__external_id = str()
@@ -18,14 +21,9 @@ class Task(DatabaseObject):
         self.__deleted = False
         self.__priority = 1
         self.__project = self.vars.default_project_name
-
-        if date_generator is None:
-            self.date_generator = DateGenerator()
-        else:
-            self.date_generator = date_generator
-
         self.__date_expression = self.vars.default_date_expression
         self.__due_dates = [DueDate()]
+        self.__due_date = DueDate()
 
     def get_redis_db_id(self):
         return 0
@@ -37,51 +35,28 @@ class Task(DatabaseObject):
     @date_expression.setter
     def date_expression(self, expression):
         assert type(expression) is str
-        if len(str(expression)) > 0:
-            self.__date_expression = expression
-            due_dates = self.date_generator.get_due_dates(expression)
-            self.__due_dates = due_dates
+        self.__date_expression = expression
 
     @property
     def due_dates(self):
         return self.__due_dates
 
     @due_dates.setter
-    def due_dates(self, due_date_list):
-        assert type(due_date_list) is list
-        if len(due_date_list) > 1:
-            assert type(due_date_list[0]) is DueDate
-        self.__due_dates = due_date_list
+    def due_dates(self, due_dates):
+        assert type(due_dates) is list
+        self.__due_dates = due_dates
+
+    @property
+    def due_date(self):
+        return self.__due_date
+
+    @due_date.setter
+    def due_date(self, due_date):
+        self.__due_date = due_date
 
     def complete(self) -> list:
-        if len(self.__due_dates) > 0:
-            due_date_list = [due_date for due_date in self.__due_dates if not due_date.completed]
-            due_date_list[0].completed = True
-            return due_date_list
-        return list()
-
-    def is_completed(self) -> bool:
-        completed_tasks: int = len(list(filter(lambda d: d.completed is True, self.__due_dates)))
-        total_tasks: int = len(self.__due_dates)
-        if completed_tasks == 0 and total_tasks == 0:
-            return False
-        else:
-            return completed_tasks == total_tasks
-
-    def get_date_string_list(self) -> list:
-        # If there is only 1 due_date then get the last object
-        if len(self.due_dates) == 1:
-            due_date = self.due_dates[-1]
-            return [due_date.date_string, ""]
-
-        elif len(self.due_dates) > 1:
-            due_date_list = list(filter(lambda d: d.completed is False, self.due_dates))
-
-            # If there are completed due_dates; then get the first .
-            if len(due_date_list) > 0:
-                return [due_date_list[0].date_string, due_date_list[-1].date_string]
-            else:
-                return ["",""]
+        self.due_date.completed = True
+        return self.__due_dates
 
     @property
     def external_id(self):
@@ -136,10 +111,16 @@ class Task(DatabaseObject):
         assert type(priority) is int
         self.__priority = priority
 
+    def is_completed(self):
+        return self.due_date.completed is True
+
     def deserialize(self, obj_dict):
         for key, value in obj_dict.items():
             if type(value) is list:
-                self.due_dates = [DueDate().from_dict(due_date_dict) for due_date_dict in value]
+                if key == "due_dates":
+                    self.due_dates = [DueDate().from_dict(due_date_dict) for due_date_dict in value]
+                if key == "due_date" and len(value) == 1:
+                    self.due_date = DueDate().from_dict(value[0])
             else:
                 setattr(self, key, value)
         return self
@@ -152,7 +133,12 @@ class Task(DatabaseObject):
         yield 'priority', self.__priority
         yield 'project', self.__project
         yield 'date_expression', self.__date_expression
+        yield 'due_date', [self.__due_date.to_dict()]
         yield 'due_dates', [due_date.to_dict() for due_date in self.due_dates]
         yield 'index', self.index
         yield 'unique_id', self.unique_id
         yield 'last_updated', self.last_updated
+
+
+
+

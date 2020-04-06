@@ -8,7 +8,7 @@ from string import Template
 from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.model.snapshot import Snapshot
 from taskmgr.lib.model.task import Task
-from taskmgr.lib.presenter.date_generator import Today
+from taskmgr.lib.model.calendar import Today
 from taskmgr.lib.variables import CommonVariables
 
 

@@ -4,7 +4,12 @@ from typing import Set, List
 from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.model.model import Model
 from taskmgr.lib.model.task import Task
-from taskmgr.lib.presenter.date_generator import Calendar, Day, DueDate, Today
+
+from taskmgr.lib.model.calendar import Calendar, Today
+from taskmgr.lib.model.day import Day
+from taskmgr.lib.model.due_date import DueDate
+from taskmgr.lib.presenter.date_generator import DateGenerator
+
 from taskmgr.lib.variables import CommonVariables
 
 
@@ -26,21 +31,44 @@ class Tasks(Model):
     def __init__(self, database):
         super().__init__(database, Task())
         self.__calendar = Calendar()
-        self.vars = CommonVariables()
+        self.__vars = CommonVariables()
+        self.__date_generator = DateGenerator()
 
-    def add(self, obj):
-        assert type(obj) is Task
+    def add(self, text, label, project, date_expression) -> List[Task]:
+        assert type(text) is str
+        assert type(label) is str
+        assert type(project) is str
+        assert type(date_expression) is str
+        if self.__date_generator.validate_input(date_expression):
+            task_list = list()
+
+            for due_date in self.__date_generator.get_due_dates(date_expression):
+                task = Task(text)
+                task.label = label
+                task.project = project
+                task.date_expression = date_expression
+                task.due_date = due_date
+                self.append(task)
+                task_list.append(task)
+            return task_list
+        else:
+            self.logger.info(f"Provided due date {date_expression} is invalid")
+
+    def append(self, obj):
+        assert isinstance(obj, Task)
         return self.append_object(obj)
 
     def contains_due_date_range(self, task, min_date_string, max_date_string):
-        for due_date in task.due_dates:
-            min_day = Day(datetime.strptime(min_date_string, self.vars.date_format))
-            max_day = Day(datetime.strptime(max_date_string, self.vars.date_format))
-            if len(due_date.date_string) > 0:
-                day = Day(datetime.strptime(due_date.date_string, self.vars.date_format))
+        assert isinstance(task, Task)
+        assert type(min_date_string) and type(max_date_string) is str
 
-                if min_day.to_date_time() < day.to_date_time() < max_day.to_date_time():
-                    return task
+        min_day = Day(datetime.strptime(min_date_string, self.__vars.date_format))
+        max_day = Day(datetime.strptime(max_date_string, self.__vars.date_format))
+        if len(task.due_date.date_string) > 0:
+            day = Day(datetime.strptime(task.due_date.date_string, self.__vars.date_format))
+
+            if min_day.to_date_time() < day.to_date_time() < max_day.to_date_time():
+                return task
 
     def get_task(self, func) -> Task:
         for task in self.get_object_list():
@@ -48,15 +76,25 @@ class Tasks(Model):
                 self.logger.debug(f"Retrieved task by index: {task.index}, text: {task.text}")
                 return task
 
-    def get_tasks_by_text(self, value) -> List[Task]:
+    def get_tasks_containing_text(self, value) -> List[Task]:
         """
-        Wrapped the get_list_by_type method because "text" is parameter in Task object
+        Selects all tasks that with a text value that contain the provided value
         :param value:
         :return: list of Task
         """
         assert type(value) is str
         return [task for task in self.get_object_list()
                 if str(value).lower() in str(task.text).lower()]
+
+    def get_tasks_matching_text(self, value) -> List[Task]:
+        """
+        Selects all tasks with a text value that matches the provided value
+        :param value:
+        :return:
+        """
+        assert type(value) is str
+        return [task for task in self.get_object_list()
+                if str(value.lower() == str(task.text).lower())]
 
     def get_task_by_index(self, index) -> Task:
         assert type(index) is int
@@ -76,8 +114,7 @@ class Tasks(Model):
 
     def get_tasks_by_date(self, date_string) -> List[Task]:
         assert type(date_string) is str
-        return [task for task in self.get_object_list() for due_date in task.due_dates
-                if due_date.date_string == date_string]
+        return [task for task in self.get_object_list() if task.due_date.date_string == date_string]
 
     def get_tasks_within_date_range(self, min_date_string, max_date_string) -> List[Task]:
         assert type(min_date_string) is str
@@ -86,15 +123,19 @@ class Tasks(Model):
                 if self.contains_due_date_range(task, min_date_string, max_date_string)]
 
     def get_tasks_by_status(self, is_completed) -> List[Task]:
+        assert type(is_completed) is bool
+
         if is_completed:
             return [task for task in self.get_object_list() if task.is_completed()]
         else:
             return [task for task in self.get_object_list() if not task.is_completed()]
 
     def get_tasks_by_project(self, project) -> List[Task]:
+        assert type(project) is str
         return self.get_list_by_type("project", project)
 
     def get_tasks_by_label(self, label) -> List[Task]:
+        assert type(label) is str
         return self.get_list_by_type("label", label)
 
     def get_filtered_list(self) -> List[Task]:
@@ -135,15 +176,15 @@ class Tasks(Model):
             due_date = DueDate()
             due_date.completed = False
             due_date.date_string = Today().to_date_string()
-            task.due_dates = [due_date]
+            task.due_date = due_date
             self.replace_object(task.index, task)
             return task
         else:
             raise TaskKeyError()
 
     def replace(self, local_task, remote_task) -> Task:
-        assert type(remote_task) is Task
-        assert type(local_task) is Task
+        assert isinstance(remote_task, Task)
+        assert isinstance(local_task, Task)
 
         if local_task is not None:
             remote_task.index = local_task.index
@@ -152,13 +193,24 @@ class Tasks(Model):
             return remote_task
 
     def edit(self, task_id, text, label, project, date_expression) -> Task:
+        assert type(task_id) is str
+        assert type(text) is str
+        assert type(label) is str
+        assert type(project) is str
+        assert type(date_expression) is str
         task = self.get_task_by_id(task_id)
         if task is not None:
-            task.text = text
-            task.label = label
-            task.project = project
-            task.date_expression = date_expression
-            self.replace_object(task.index, task)
+            due_dates = self.__date_generator.get_due_dates(date_expression)
+            if len(due_dates) == 1:
+                task.text = text
+                task.label = label
+                task.project = project
+                task.date_expression = date_expression
+                task.due_date = due_dates[0]
+                self.replace_object(task.index, task)
+            else:
+                self.logger.info(f"Provided date expression {date_expression} is invalid when editing task, "
+                                 f"but is supported by the add task command")
             return task
         else:
             raise TaskKeyError()
@@ -167,9 +219,8 @@ class Tasks(Model):
         assert type(today) is Today or Day
         task_list = self.get_object_list()
         for task in task_list:
-            for due_date in task.due_dates:
-                if self.__calendar.is_past(due_date, today) and due_date.completed is False:
-                    due_date.date_string = today.to_date_string()
+            if self.__calendar.is_past(task.due_date, today) and task.due_date.completed is False:
+                task.due_date.date_string = today.to_date_string()
         self.update_objects(task_list)
 
     def get_list_by_type(self, parameter_name: str, value: str, task_list=None) -> list:
@@ -181,8 +232,13 @@ class Tasks(Model):
         :param task_list:
         :return:
         """
+        assert type(parameter_name) is str
+        assert type(value) is str
+
         if task_list is None:
             task_list = self.get_object_list()
+        else:
+            assert type(task_list) is list
 
         return list(filter(lambda t: getattr(t, parameter_name) == value, task_list))
 

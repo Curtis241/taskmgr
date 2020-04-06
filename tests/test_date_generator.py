@@ -1,7 +1,9 @@
 import unittest
 from datetime import datetime
 
-from taskmgr.lib.presenter.date_generator import DateGenerator, Day, Calendar, Today
+from taskmgr.lib.presenter.date_generator import DateGenerator
+from taskmgr.lib.model.day import Day
+from taskmgr.lib.model.calendar import Calendar, Today
 from taskmgr.lib.model.task import DueDate
 from taskmgr.lib.variables import CommonVariables
 
