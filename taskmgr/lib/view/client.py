@@ -100,12 +100,15 @@ class Client:
                 self.display_invalid_index_error(index)
         return results
 
-    def delete_tasks_by_text(self, text: str) -> list:
-        assert type(text) is str
+    def undelete_tasks_by_index(self, index_tuple: tuple) -> list:
+        assert type(index_tuple) is tuple
         results = list()
-        task_list = self.__tasks.get_tasks_matching_text(text)
-        for task in task_list:
-            results.append(self.__tasks.delete(task.unique_id))
+        for index in index_tuple:
+            task = self.__tasks.get_task_by_index(index)
+            if task is not None:
+                results.append(self.__tasks.undelete(task.unique_id))
+            else:
+                self.display_invalid_index_error(index)
         return results
 
     def edit_task(self, index: int, text: str, project: str, label: str, date_expression: str) -> Task:

@@ -66,20 +66,16 @@ def list_tasks(**kwargs):
     cli_client.display_all_tasks(**kwargs)
 
 
-@cli.group("delete", help="Soft delete")
-def task_delete(): pass
-
-
-@task_delete.command('index')
+@cli.command("delete", help="Soft delete")
 @click.argument('index', nargs=-1, required=True, type=int)
-def delete_task_by_index(**kwargs):
+def delete_task(**kwargs):
     cli_client.delete_tasks_by_index(kwargs.get("index"))
 
 
-@task_delete.command('text')
-@click.argument('text', type=str, required=True, metavar="<text>")
-def delete_task_by_text(**kwargs):
-    cli_client.delete_tasks_by_text(kwargs.get("text"))
+@cli.command("undelete", help="Reverts deleted tasks")
+@click.argument('index', nargs=-1, required=True, type=int)
+def undelete_task(**kwargs):
+    cli_client.undelete_tasks_by_index(kwargs.get("index"))
 
 
 @cli.group("group", help="Groups tasks")

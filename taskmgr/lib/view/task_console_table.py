@@ -48,4 +48,7 @@ class TaskConsoleTable(ConsoleTable):
         else:
             completed_text = fg('blue') + str(task.due_date.completed)
 
+        if task.deleted:
+            text = fg('red') + str(text)
+
         return [task.index, completed_text, text, task.project, task.label, task.due_date.date_string]

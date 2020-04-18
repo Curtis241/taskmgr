@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 from taskmgr.lib.model.day import Day
 from taskmgr.lib.model.due_date import DueDate
 
-
 from taskmgr.lib.variables import CommonVariables
 
 
@@ -151,38 +150,40 @@ class Calendar:
 
         return month_list
 
-    def get_work_week_dates(self, today, month_count):
-        """
-        Gets all date strings within a work week from today until the end of the month
-        :param today: Day object
-        :return: list of date strings
-        """
-        date_list = list()
-        for i in [0, 1, 2, 3, 4]:
-            date_list.extend(self.get_week_days(today, i, month_count))
-        return sorted(date_list)
-
-    def get_months(self, start_day, month_count=1):
+    def get_week_days(self, start_day, month_count=1):
         """
         Gets all the date strings from today until the end of the month.
         :param month_count: number of months
         :param start_day: Day object
-        :return: list of date strings
+        :return: list of date string
         """
         return [day_tuple[0] for day_tuple in self.get_month_range(start_day, month_count) if
                 day_tuple[1].to_date_time() > start_day.to_date_time()]
 
-    def get_week_days(self, today, weekday_number, month_count):
+    def get_week_day_list(self, start_day, weekday_number, month_count):
         """
         Returns all the date strings for the provided week day in a month.
-        :param today: Day object
-        :param weekday_number: integer (ie. 0-6) m=0, su=6
+        :param start_day: Day object
+        :param weekday_number: integer (ie. 0-6) m=0 and su=6
         :param month_count: number of months
         :return:
         list of date strings yyyy-mm-dd
         """
-        return [day_tuple[0] for day_tuple in self.get_month_range(today, month_count) if
-                day_tuple[1].weekday_number == weekday_number]
+        return [day_tuple[0] for day_tuple in self.get_month_range(start_day, month_count) if
+                day_tuple[1].weekday_number == weekday_number and day_tuple[1].to_date_time() > start_day.to_date_time()]
+
+    def get_work_week_dates(self, start_day, month_count):
+        """
+        Gets all date strings within a work week from today until the end of the month
+        :param start_day: Day object
+        :param month_count: number of months
+        :return: list of date strings
+        """
+        date_list = list()
+        for i in [0, 1, 2, 3, 4]:
+            for date_string in self.get_week_day_list(start_day, i, month_count):
+                date_list.append(date_string)
+        return sorted(date_list)
 
     @staticmethod
     def get_week_count(month, year):
@@ -280,4 +281,3 @@ class Calendar:
     @staticmethod
     def get_day_count(day):
         return calendar.monthrange(day.year, day.month)[1]
-

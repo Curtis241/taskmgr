@@ -111,7 +111,7 @@ class RecurringDateHandler(Handler):
     def parse_expression(self, parser):
         parser.handler_name = RecurringDateHandler.__name__
         if parser.expression == "every day":
-            date_list = parser.calendar.get_months(parser.today, self.vars.recurring_month_limit)
+            date_list = parser.calendar.get_week_days(parser.today, self.vars.recurring_month_limit)
             parser.date_list = date_list
 
         elif parser.expression == "every weekday":
@@ -121,8 +121,8 @@ class RecurringDateHandler(Handler):
             expression = str(parser.expression).split(" ")
             if expression[1] in self.week_abbrev_list:
                 weekday_number = parser.calendar.get_weekday_number(expression[1])
-                parser.date_list = parser.calendar.get_week_days(parser.today, weekday_number,
-                                                                 self.vars.recurring_month_limit)
+                parser.date_list = parser.calendar.get_week_day_list(parser.today, weekday_number,
+                                                                     self.vars.recurring_month_limit)
 
     def validate(self, expression):
         return expression in self.expression_list
@@ -235,7 +235,7 @@ class DateGenerator(object):
     def current_day(self, current_day):
         self.__current_day = current_day
 
-    def get_due_dates(self, expression:str) -> list:
+    def get_due_dates(self, expression: str) -> list:
         assert type(expression) is str
         parser = DateParser(expression, self.current_day)
 
@@ -262,10 +262,9 @@ class DateGenerator(object):
 
         return due_date_list
 
-    def validate_input(self, date_expression:str) -> bool:
+    def validate_input(self, date_expression: str) -> bool:
         assert type(date_expression) is str
         for handler in self.handler_list:
             if handler.validate(date_expression):
                 return True
         return False
-

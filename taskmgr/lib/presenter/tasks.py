@@ -152,6 +152,17 @@ class Tasks(Model):
         else:
             raise TaskKeyError()
 
+    def undelete(self, task_id) -> Task:
+        assert type(task_id) is str
+
+        task = self.get_task_by_id(task_id)
+        if task is not None:
+            task.deleted = False
+            self.replace_object(task.index, task)
+            return task
+        else:
+            raise TaskKeyError()
+
     def complete(self, task_id) -> Task:
         assert type(task_id) is str
 

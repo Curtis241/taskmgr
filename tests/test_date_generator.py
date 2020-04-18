@@ -89,16 +89,17 @@ class TestDateGenerator(unittest.TestCase):
         self.assertTrue(len(due_date_list) == 60)
 
     def test_get_date_count_when_every_weekday(self):
-        self.assertTrue(self.get_date_count('2019-03-01', 'every weekday') == 43)
+        self.assertTrue(self.get_date_count('2019-03-01', 'every weekday') == 42)
 
     def test_get_date_when_every_weekday(self):
         self.date_generator.current_day = Day(self.march1)
         due_date_list = self.date_generator.get_due_dates("every weekday")
-        self.assertTrue(len(due_date_list) == 43)
-        self.assertTrue(due_date_list[0].date_string == "2019-03-01")
-        self.assertTrue(due_date_list[1].date_string == "2019-03-04")
-        self.assertTrue(due_date_list[2].date_string == "2019-03-05")
-        self.assertTrue(due_date_list[3].date_string == "2019-03-06")
+        self.assertTrue(len(due_date_list) == 42)
+        self.assertTrue(due_date_list[0].date_string == "2019-03-04")
+        self.assertTrue(due_date_list[1].date_string == "2019-03-05")
+        self.assertTrue(due_date_list[2].date_string == "2019-03-06")
+        self.assertTrue(due_date_list[3].date_string == "2019-03-07")
+        self.assertTrue(due_date_list[4].date_string == "2019-03-08")
 
     def test_get_date_when_every_sunday(self):
         self.assertTrue(self.get_date_count('2019-03-01', 'every su') == 9)
@@ -116,7 +117,7 @@ class TestDateGenerator(unittest.TestCase):
         self.assertTrue(self.get_date_count('2019-03-01', 'every th') == 8)
 
     def test_get_date_when_every_friday(self):
-        self.assertTrue(self.get_date_count('2019-03-01', 'every f') == 9)
+        self.assertTrue(self.get_date_count('2019-03-01', 'every f') == 8)
 
     def test_get_date_when_every_saturday(self):
         self.assertTrue(self.get_date_count('2019-03-01', 'every sa') == 9)
@@ -149,7 +150,7 @@ class TestDateGenerator(unittest.TestCase):
         self.assertTrue(len(date_list) == 365)
 
     def test_get_month(self):
-        date_list = self.calendar.get_months(Day(self.dec1))
+        date_list = self.calendar.get_week_days(Day(self.dec1))
         self.assertTrue(len(date_list) == 30)
 
     def test_get_month_range(self):
