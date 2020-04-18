@@ -89,28 +89,6 @@ class Client:
         assert type(date_expression) is str
         return self.__tasks.add(text, label, project, date_expression)
 
-    def delete_tasks_by_index(self, index_tuple: tuple) -> list:
-        assert type(index_tuple) is tuple
-        results = list()
-        for index in index_tuple:
-            task = self.__tasks.get_task_by_index(index)
-            if task is not None:
-                results.append(self.__tasks.delete(task.unique_id))
-            else:
-                self.display_invalid_index_error(index)
-        return results
-
-    def undelete_tasks_by_index(self, index_tuple: tuple) -> list:
-        assert type(index_tuple) is tuple
-        results = list()
-        for index in index_tuple:
-            task = self.__tasks.get_task_by_index(index)
-            if task is not None:
-                results.append(self.__tasks.undelete(task.unique_id))
-            else:
-                self.display_invalid_index_error(index)
-        return results
-
     def edit_task(self, index: int, text: str, project: str, label: str, date_expression: str) -> Task:
         """
         Edits an existing task by replacing string values. None are allowed
@@ -155,6 +133,29 @@ class Client:
             else:
                 self.display_invalid_index_error(index)
         return results
+
+    def delete_tasks(self, index_tuple: tuple) -> list:
+        assert type(index_tuple) is tuple
+        results = list()
+        for index in index_tuple:
+            task = self.__tasks.get_task_by_index(index)
+            if task is not None:
+                results.append(self.__tasks.delete(task.unique_id))
+            else:
+                self.display_invalid_index_error(index)
+        return results
+
+    def undelete_tasks(self, index_tuple: tuple) -> list:
+        assert type(index_tuple) is tuple
+        results = list()
+        for index in index_tuple:
+            task = self.__tasks.get_task_by_index(index)
+            if task is not None:
+                results.append(self.__tasks.undelete(task.unique_id))
+            else:
+                self.display_invalid_index_error(index)
+        return results
+
 
     def reset_tasks(self, index_tuple: tuple) -> list:
         """

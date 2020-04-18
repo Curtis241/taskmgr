@@ -69,13 +69,13 @@ def list_tasks(**kwargs):
 @cli.command("delete", help="Soft delete")
 @click.argument('index', nargs=-1, required=True, type=int)
 def delete_task(**kwargs):
-    cli_client.delete_tasks_by_index(kwargs.get("index"))
+    cli_client.delete_tasks(kwargs.get("index"))
 
 
 @cli.command("undelete", help="Reverts deleted tasks")
 @click.argument('index', nargs=-1, required=True, type=int)
 def undelete_task(**kwargs):
-    cli_client.undelete_tasks_by_index(kwargs.get("index"))
+    cli_client.undelete_tasks(kwargs.get("index"))
 
 
 @cli.group("group", help="Groups tasks")

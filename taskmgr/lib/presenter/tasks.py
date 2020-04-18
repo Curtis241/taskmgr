@@ -35,10 +35,8 @@ class Tasks(Model):
         self.__date_generator = DateGenerator()
 
     def add(self, text, label, project, date_expression) -> List[Task]:
-        assert type(text) is str
-        assert type(label) is str
-        assert type(project) is str
-        assert type(date_expression) is str
+        assert type(text) and type(label) and type(project)\
+               and type(date_expression) is str
         if self.__date_generator.validate_input(date_expression):
             task_list = list()
 
@@ -54,7 +52,7 @@ class Tasks(Model):
         else:
             self.logger.info(f"Provided due date {date_expression} is invalid")
 
-    def append(self, obj):
+    def append(self, obj: Task):
         assert isinstance(obj, Task)
         return self.append_object(obj)
 
@@ -152,7 +150,7 @@ class Tasks(Model):
         else:
             raise TaskKeyError()
 
-    def undelete(self, task_id) -> Task:
+    def undelete(self, task_id: str) -> Task:
         assert type(task_id) is str
 
         task = self.get_task_by_id(task_id)
@@ -163,7 +161,7 @@ class Tasks(Model):
         else:
             raise TaskKeyError()
 
-    def complete(self, task_id) -> Task:
+    def complete(self, task_id: str) -> Task:
         assert type(task_id) is str
 
         task = self.get_task_by_id(task_id)
@@ -174,7 +172,7 @@ class Tasks(Model):
         else:
             raise TaskKeyError()
 
-    def reset(self, task_id) -> Task:
+    def reset(self, task_id: str) -> Task:
         """
         Resets the due date to today on the selected task
         :param task_id:
@@ -193,7 +191,7 @@ class Tasks(Model):
         else:
             raise TaskKeyError()
 
-    def replace(self, local_task, remote_task) -> Task:
+    def replace(self, local_task: Task, remote_task: Task) -> Task:
         assert isinstance(remote_task, Task)
         assert isinstance(local_task, Task)
 
@@ -203,12 +201,10 @@ class Tasks(Model):
             self.logger.debug(f"Replaced local_task: {dict(local_task)} with remote_task: {dict(remote_task)}")
             return remote_task
 
-    def edit(self, task_id, text, label, project, date_expression) -> Task:
-        assert type(task_id) is str
-        assert type(text) is str
-        assert type(label) is str
-        assert type(project) is str
+    def edit(self, task_id: str, text: str, label: str, project: str, date_expression: str) -> Task:
+        assert type(task_id) and type(text) and type(label) and type(project) is str
         assert type(date_expression) is str
+
         task = self.get_task_by_id(task_id)
         if task is not None:
             due_dates = self.__date_generator.get_due_dates(date_expression)
@@ -253,7 +249,7 @@ class Tasks(Model):
 
         return list(filter(lambda t: getattr(t, parameter_name) == value, task_list))
 
-    def __sort(self, parameter_name):
+    def __sort(self, parameter_name: str) -> list:
         assert type(parameter_name) is str
         return [t for t in sorted(self.get_object_list(), key=lambda t: getattr(t, parameter_name))]
 
@@ -264,7 +260,7 @@ class Tasks(Model):
         return self.unique("project", self.get_object_list())
 
     @staticmethod
-    def unique(parameter_name, task_list) -> Set[Task]:
+    def unique(parameter_name: str, task_list: list) -> Set[Task]:
         assert type(parameter_name) is str
         assert type(task_list) is list
         return set([getattr(t, parameter_name) for t in task_list])

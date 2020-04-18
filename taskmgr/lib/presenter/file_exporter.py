@@ -132,14 +132,16 @@ class CsvTasksFile(File):
 
     @staticmethod
     def __get_field_names():
-        return ["index", "done", "text", "project", "label", "due_date", "until", "last_updated", "deleted"]
+        return ["index", "done", "text", "project", "label", "due_date", "last_updated", "deleted"]
 
     @staticmethod
     def __write_row(task):
-        due_date = task.get_date_string_list()
-        return {"index": task.index, "done": task.is_completed(), "text": task.text, "project": task.project,
+        return {"index": task.index,
+                "done": task.is_completed(),
+                "text": task.text,
+                "project": task.project,
                 "label": task.label,
-                "due_date": due_date[0], "until": due_date[1],
+                "due_date": task.due_date.date_string,
                 "last_updated": task.last_updated,
                 "deleted": task.deleted}
 
