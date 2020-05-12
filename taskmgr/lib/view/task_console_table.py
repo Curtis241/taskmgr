@@ -28,6 +28,7 @@ class TaskConsoleTable(ConsoleTable):
             return self.__task_list
         else:
             print("No rows to display. Use add command.")
+            return []
 
     def clear(self):
         self.get_table().clear()

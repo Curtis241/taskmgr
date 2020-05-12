@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import List
 
 from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.model.model import Model
@@ -21,17 +22,21 @@ class Snapshots(Model):
         return self.get_object_list()
 
     @staticmethod
-    def count_tasks(project_name: str, tasks_list: list) -> Snapshot:
+    def total_count(context: str, project_name: str, task_list: list) -> Snapshot:
 
         snapshot = Snapshot()
         snapshot.project = project_name
+        snapshot.context = context
         snapshot.timestamp = datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S")
-        for task in tasks_list:
+        for task in task_list:
             if task.deleted:
                 snapshot.deleted += 1
             elif task.is_completed():
                 snapshot.completed += 1
             else:
                 snapshot.incomplete += 1
-        snapshot.count = len(tasks_list)
+        snapshot.count = len(task_list)
         return snapshot
+
+
+

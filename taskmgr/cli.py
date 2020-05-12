@@ -78,6 +78,20 @@ def undelete_task(**kwargs):
     cli_client.undelete_tasks(kwargs.get("index"))
 
 
+@cli.group("unique", help="Displays unique tasks")
+def unique(): pass
+
+
+@unique.command("label")
+def unique_label_list():
+    cli_client.list_labels()
+
+
+@unique.command("project")
+def unique_project_list():
+    cli_client.list_projects()
+
+
 @cli.group("group", help="Groups tasks")
 def task_group(): pass
 
@@ -92,6 +106,12 @@ def task_group_by_label(**kwargs):
 @click.option('--export', type=click.Choice([FileExporter.CSV]), metavar="<export>")
 def task_group_by_project(**kwargs):
     cli_client.group_by_project(**kwargs)
+
+
+@task_group.command("due_date")
+@click.option('--export', type=click.Choice([FileExporter.CSV]), metavar="<export>")
+def task_group_by_project(**kwargs):
+    cli_client.group_by_due_date(**kwargs)
 
 
 @cli.group("filter", help="Filters tasks")
@@ -154,18 +174,22 @@ def task_count(): pass
 @task_count.command("all")
 @click.option('--export', type=click.Choice([FileExporter.CSV]), metavar="<export>",
               help="Exports tasks to csv file")
-@click.option('--silent', is_flag=True, help="Saves task count without displaying table")
+@click.option('--due_date', is_flag=True, help="Displays task count by due date")
 def count_all_tasks(**kwargs):
     cli_client.count_all_tasks(**kwargs)
 
 
 @task_count.command("date")
+@click.option('--export', type=click.Choice([FileExporter.CSV]), metavar="<export>",
+              help="Exports tasks to csv file")
 @click.argument('date', type=DateFormatString(), required=True, metavar="<date>")
 def count_tasks_by_date(**kwargs):
     cli_client.count_by_due_date(**kwargs)
 
 
 @task_count.command("date_range")
+@click.option('--export', type=click.Choice([FileExporter.CSV]), metavar="<export>",
+              help="Exports tasks to csv file")
 @click.option('--min_date', required=True, type=DateFormatString())
 @click.option('--max_date', required=True, type=DateFormatString())
 def count_tasks_by_date_range(**kwargs):
@@ -173,18 +197,24 @@ def count_tasks_by_date_range(**kwargs):
 
 
 @task_count.command("project")
+@click.option('--export', type=click.Choice([FileExporter.CSV]), metavar="<export>",
+              help="Exports tasks to csv file")
 @click.argument('project', type=str, required=True, metavar="<project>")
 def count_tasks_by_project(**kwargs):
     cli_client.count_by_project(**kwargs)
 
 
 @task_count.command("status")
+@click.option('--export', type=click.Choice([FileExporter.CSV]), metavar="<export>",
+              help="Exports tasks to csv file")
 @click.argument('status', type=click.Choice(['incomplete', 'complete']), required=True, metavar="<status>")
 def count_tasks_by_status(**kwargs):
     cli_client.count_by_status(**kwargs)
 
 
 @task_count.command("label")
+@click.option('--export', type=click.Choice([FileExporter.CSV]), metavar="<export>",
+              help="Exports tasks to csv file")
 @click.argument('label', type=str, required=True, metavar="<label>")
 def count_tasks_by_label(**kwargs):
     cli_client.count_by_label(**kwargs)
@@ -201,7 +231,7 @@ def complete_task(**kwargs):
     cli_client.complete_tasks(kwargs.get("index"))
 
 
-@cli.command("reset", help="Resets the done status")
+@cli.command("incomplete", help="Marks the task as not done")
 @click.argument('index', nargs=-1, required=True, type=int)
 def reset_task(**kwargs):
     cli_client.reset_tasks(kwargs.get("index"))

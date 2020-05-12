@@ -34,6 +34,10 @@ class Client:
         """Returns list of project names from the tasks. """
         return list(self.__tasks.get_project_set())
 
+    def get_unique_due_date_list(self) -> List[str]:
+        """Returns list of due_date strings from the tasks."""
+        return list(sorted(self.__tasks.get_due_date_set()))
+
     def get_tasks_by_project(self, project: str) -> List[Task]:
         """Returns list of tasks that match the provided project name. """
         assert type(project) is str
@@ -60,9 +64,6 @@ class Client:
 
     def get_snapshot_list(self) -> List[Snapshot]:
         return self.__snapshots.get_snapshot_list()
-
-    def get_tasks_for_today(self) -> List[Task]:
-        return self.__tasks.get_tasks_by_date(Today().to_date_string())
 
     def get_tasks_by_date(self, date_string: str):
         assert type(date_string) is str
@@ -156,7 +157,6 @@ class Client:
                 self.display_invalid_index_error(index)
         return results
 
-
     def reset_tasks(self, index_tuple: tuple) -> list:
         """
         Copies tasks from the past into the present.
@@ -206,20 +206,31 @@ class Client:
         minutes, seconds = divmod(remainder, 60)
         return '{:02}m:{:02}s'.format(int(minutes), int(seconds))
 
-    def count_tasks(self, task_list) -> List[Snapshot]:
+    def count_total_tasks(self, context, task_list) -> List[Snapshot]:
+        assert type(context) is str
         assert type(task_list) is list
 
         snapshot_list = list()
         for index, project in enumerate(self.__tasks.unique("project", task_list), start=1):
-            tasks = self.__tasks.get_list_by_type("project", project, task_list)
-            snapshot = self.__snapshots.count_tasks(project, tasks)
+            task_list = self.__tasks.get_list_by_type("project", project, task_list)
+            snapshot = self.__snapshots.total_count(context, project, task_list)
             snapshot.index = index
             snapshot_list.append(snapshot)
 
         return snapshot_list
 
-    def save_snapshots(self, snapshots: list):
-        for snapshot in snapshots:
+    def count_tasks_by_date(self, task_list) -> List[Snapshot]:
+        assert type(task_list) is list
+
+        snapshot_list = list()
+        for index, due_date_string in enumerate(self.get_unique_due_date_list(), start=1):
+            task_list = self.__tasks.get_tasks_by_date(due_date_string)
+            context = f"due_date: {due_date_string}"
+            snapshot_list.extend(self.count_total_tasks(context, task_list))
+        return snapshot_list
+
+    def save_snapshots(self, snapshot_list: list):
+        for snapshot in snapshot_list:
             snapshot.index = 0
             self.__snapshots.add(snapshot)
 
@@ -235,14 +246,14 @@ class Client:
 
         start_datetime = datetime.now()
         self.logger.info(f"Starting import")
-        import_task_list = google_tasks_importer.convert_to_task_list(project)
+        import_task_list = google_tasks_importer.convert_local_tasks(project)
         self.logger.info(f"Retrieved {len(import_task_list)} tasks from service")
         sync_results = google_tasks_importer.import_tasks(import_task_list)
         self.logger.info(f"Import summary: {sync_results.get_summary()}")
 
         self.logger.info(f"Import complete: Duration: {self.get_duration(start_datetime)}")
 
-    def export_tasks(self, google_tasks_exporter, project: str):
+    def export_tasks(self, google_tasks_exporter, project_name: str):
         """
         Exports tasks to the Google Tasks service
         :param google_tasks_exporter: GoogleTasksExporter class
@@ -250,15 +261,15 @@ class Client:
         :return: None
         """
         assert isinstance(google_tasks_exporter, GoogleTasksExporter)
-        assert type(project) is str
+        assert type(project_name) is str
 
         start_datetime = datetime.now()
 
         self.logger.info(f"Starting export")
         self.logger.info(f"Preparing tasks for export")
-        gtasks_list = google_tasks_exporter.convert_to_gtasklist(project)
+        local_project_list = google_tasks_exporter.convert_local_tasks(project_name)
         self.logger.info(f"Exporting tasks to service")
-        sync_results = google_tasks_exporter.export_tasks(gtasks_list)
+        sync_results = google_tasks_exporter.export_tasks(local_project_list)
         self.logger.info(f"Export summary: {sync_results.get_summary()}")
 
         self.logger.info(f"Export complete: Duration: {self.get_duration(start_datetime)}")

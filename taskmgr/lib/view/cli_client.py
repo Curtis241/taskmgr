@@ -1,4 +1,8 @@
+from typing import List
+
 from taskmgr.lib.logger import AppLogger
+from taskmgr.lib.model.calendar import Today
+from taskmgr.lib.model.snapshot import Snapshot
 from taskmgr.lib.view.client import Client
 from taskmgr.lib.view.snapshot_console_table import SnapshotConsoleTable
 from taskmgr.lib.view.task_console_table import TaskConsoleTable
@@ -73,8 +77,24 @@ class CliClient(Client):
             for task in self.get_tasks_by_label(label):
                 task_list.append(task)
 
+        task_list = self.__print_tasks_table(task_list)
         self.__export_tasks(task_list, **kwargs)
-        return self.__print_tasks_table(task_list)
+        return task_list
+
+    def group_by_due_date(self, **kwargs):
+        """
+        Displays all tasks and sorts by due date string
+        :param kwargs:
+        :return: task_list
+        """
+        task_list = list()
+        for due_date_string in self.get_unique_due_date_list():
+            for task in self.get_tasks_by_date(due_date_string):
+                task_list.append(task)
+
+        task_list = self.__print_tasks_table(task_list)
+        self.__export_tasks(task_list, **kwargs)
+        return task_list
 
     def group_by_project(self, **kwargs):
         """
@@ -86,8 +106,9 @@ class CliClient(Client):
             for task in self.get_tasks_by_project(project):
                 task_list.append(task)
 
+        task_list = self.__print_tasks_table(task_list)
         self.__export_tasks(task_list, **kwargs)
-        return self.__print_tasks_table(task_list)
+        return task_list
 
     def display_all_tasks(self, **kwargs):
         """
@@ -95,8 +116,9 @@ class CliClient(Client):
         :return: task_list
         """
         task_list = self.get_task_list()
+        task_list = self.__print_tasks_table(task_list, kwargs.get("all"))
         self.__export_tasks(task_list, **kwargs)
-        return self.__print_tasks_table(task_list, kwargs.get("all"))
+        return task_list
 
     def filter_by_today(self, **kwargs):
         """
@@ -104,9 +126,11 @@ class CliClient(Client):
         :param kwargs: kwargs[tasks] contains tasks_list
         :return: task_list
         """
-        task_list = self.get_tasks_for_today()
+        date_string = Today().to_date_string()
+        task_list = self.get_tasks_by_date(date_string)
+        task_list = self.__print_tasks_table(task_list)
         self.__export_tasks(task_list, **kwargs)
-        return self.__print_tasks_table(task_list)
+        return task_list
 
     def filter_by_due_date(self, **kwargs):
         """
@@ -118,8 +142,9 @@ class CliClient(Client):
 
         date_string = kwargs.get("date")
         task_list = self.get_tasks_by_date(date_string)
+        task_list = self.__print_tasks_table(task_list)
         self.__export_tasks(task_list, **kwargs)
-        return self.__print_tasks_table(task_list)
+        return task_list
 
     def filter_by_due_date_range(self, **kwargs):
         """
@@ -134,8 +159,9 @@ class CliClient(Client):
         max_date_string = kwargs.get("max_date")
 
         task_list = self.get_tasks_within_date_range(min_date_string, max_date_string)
+        task_list = self.__print_tasks_table(task_list)
         self.__export_tasks(task_list, **kwargs)
-        return self.__print_tasks_table(task_list)
+        return task_list
 
     def filter_by_status(self, **kwargs):
         """
@@ -151,8 +177,9 @@ class CliClient(Client):
         else:
             task_list = self.get_tasks_by_status(is_completed=True)
 
+        task_list = self.__print_tasks_table(task_list)
         self.__export_tasks(task_list, **kwargs)
-        return self.__print_tasks_table(task_list)
+        return task_list
 
     def filter_by_project(self, **kwargs):
         """
@@ -164,8 +191,9 @@ class CliClient(Client):
 
         project = kwargs.get("project")
         task_list = self.get_tasks_by_project(project)
+        task_list = self.__print_tasks_table(task_list)
         self.__export_tasks(task_list, **kwargs)
-        return self.__print_tasks_table(task_list)
+        return task_list
 
     def filter_by_label(self, **kwargs):
         """
@@ -177,8 +205,9 @@ class CliClient(Client):
 
         label = kwargs.get("label")
         task_list = self.get_tasks_by_label(label)
+        task_list = self.__print_tasks_table(task_list)
         self.__export_tasks(task_list, **kwargs)
-        return self.__print_tasks_table(task_list)
+        return task_list
 
     def filter_by_text(self, **kwargs):
         """
@@ -190,22 +219,27 @@ class CliClient(Client):
 
         text = str(kwargs.get("text"))
         task_list = self.get_tasks_by_text(text)
+        task_list = self.__print_tasks_table(task_list)
         self.__export_tasks(task_list, **kwargs)
-        return self.__print_tasks_table(task_list)
+        return task_list
 
-    def count_all_tasks(self, **kwargs):
+    def count_all_tasks(self, **kwargs) -> List[Snapshot]:
 
-        tasks_list = self.get_task_list()
-        snapshot_list = self.count_tasks(tasks_list)
-        self.save_snapshots(snapshot_list)
+        if kwargs.get("due_date"):
+            task_list = self.get_task_list()
+            snapshot_list = self.count_tasks_by_date(task_list)
+            self.save_snapshots(snapshot_list)
+        else:
+            task_list = self.get_task_list()
+            snapshot_list = self.count_total_tasks("all tasks", task_list)
+            self.save_snapshots(snapshot_list)
 
         if kwargs.get("export") is not None:
-            self.__file_exporter.save_snapshots(self.get_snapshot_list())
+            self.__file_exporter.save_snapshots(snapshot_list)
 
-        if kwargs.get("silent") is False:
-            tasks_list = self.__print_snapshots_table(snapshot_list)
+        self.__print_snapshots_table(snapshot_list)
 
-        return tasks_list
+        return snapshot_list
 
     def count_by_due_date_range(self, **kwargs):
         assert "min_date" in kwargs
@@ -215,7 +249,9 @@ class CliClient(Client):
         max_date_string = kwargs.get("max_date")
 
         task_list = self.get_tasks_within_date_range(min_date_string, max_date_string)
-        snapshot_list = self.count_tasks(task_list)
+        context = f"min_due_date: {min_date_string} to max_due_date: {max_date_string}"
+        snapshot_list = self.count_total_tasks(context, task_list)
+        self.save_snapshots(snapshot_list)
 
         return self.__print_snapshots_table(snapshot_list)
 
@@ -224,13 +260,18 @@ class CliClient(Client):
 
         date_string = kwargs.get("date")
         task_list = self.get_tasks_by_date(date_string)
-        snapshot_list = self.count_tasks(task_list)
+        context = f"due_date: {date_string}"
+        snapshot_list = self.count_total_tasks(context, task_list)
+        self.save_snapshots(snapshot_list)
 
         return self.__print_snapshots_table(snapshot_list)
 
     def count_by_today(self):
-        task_list = self.get_tasks_for_today()
-        snapshot_list = self.count_tasks(task_list)
+        date_string = Today().to_date_string()
+        task_list = self.get_tasks_by_date(date_string)
+        context = f"due_date: {date_string}"
+        snapshot_list = self.count_total_tasks(context, task_list)
+        self.save_snapshots(snapshot_list)
 
         return self.__print_snapshots_table(snapshot_list)
 
@@ -239,7 +280,9 @@ class CliClient(Client):
 
         project = kwargs.get("project")
         task_list = self.get_tasks_by_project(project)
-        snapshot_list = self.count_tasks(task_list)
+        context = f"project: {project}"
+        snapshot_list = self.count_total_tasks(context, task_list)
+        self.save_snapshots(snapshot_list)
 
         return self.__print_snapshots_table(snapshot_list)
 
@@ -252,7 +295,10 @@ class CliClient(Client):
         else:
             task_list = self.get_tasks_by_status(is_completed=False)
 
-        snapshot_list = self.count_tasks(task_list)
+        context = f"status: {status_type}"
+        snapshot_list = self.count_total_tasks(context, task_list)
+        self.save_snapshots(snapshot_list)
+
         return self.__print_snapshots_table(snapshot_list)
 
     def count_by_label(self, **kwargs):
@@ -260,9 +306,8 @@ class CliClient(Client):
 
         label = kwargs.get("label")
         task_list = self.get_tasks_by_label(label)
-        snapshot_list = self.count_tasks(task_list)
+        context = f"label: {label}"
+        snapshot_list = self.count_total_tasks(context, task_list)
+        self.save_snapshots(snapshot_list)
+
         return self.__print_snapshots_table(snapshot_list)
-
-
-
-

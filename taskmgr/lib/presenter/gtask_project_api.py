@@ -1,9 +1,9 @@
 from taskmgr.lib.logger import AppLogger
-from taskmgr.lib.model.gtask_list import GTaskList
+from taskmgr.lib.model.gtask_project import GTaskProject
 
 
-class GTasksListAPI:
-    logger = AppLogger("tasks_list_api").get_logger()
+class GTasksProjectAPI:
+    logger = AppLogger("gtasks_project_api").get_logger()
 
     def __init__(self, tasks_service):
         self.service = tasks_service
@@ -11,7 +11,7 @@ class GTasksListAPI:
     @staticmethod
     def to_object(tasklist_dict):
         if type(tasklist_dict) is dict:
-            obj = GTaskList()
+            obj = GTaskProject()
             for key, value in tasklist_dict.items():
                 setattr(obj, key, value)
             return obj
@@ -21,7 +21,7 @@ class GTasksListAPI:
     @staticmethod
     def to_object_list(tasklist_list):
         assert type(tasklist_list) is list
-        return [GTasksListAPI.to_object(tasklist_dict) for tasklist_dict in tasklist_list]
+        return [GTasksProjectAPI.to_object(tasklist_dict) for tasklist_dict in tasklist_list]
 
     def list(self) -> list:
         results = self.service.list_tasklist()

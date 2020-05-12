@@ -1,6 +1,6 @@
 import unittest
 
-from taskmgr.lib.presenter.gtask_list_api import GTasksListAPI
+from taskmgr.lib.presenter.gtask_project_api import GTasksListAPI
 from taskmgr.lib.presenter.gtasks_api import GTask, GTasksAPI
 from tests.mock_tasks_service import MockTasksService
 

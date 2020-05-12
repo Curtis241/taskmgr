@@ -13,8 +13,8 @@ class Snapshot(DatabaseObject):
         self.__completed = 0
         self.__incomplete = 0
         self.__deleted = 0
-        self.__project = "local"
-        self.__location = str()
+        self.__project = str()
+        self.__context = str()
         self.__timestamp = str()
 
     def get_redis_db_id(self):
@@ -29,12 +29,12 @@ class Snapshot(DatabaseObject):
         self.__project = project
 
     @property
-    def location(self):
-        return self.__location
+    def context(self):
+        return self.__context
 
-    @location.setter
-    def location(self, location):
-        self.__location = location
+    @context.setter
+    def context(self, context):
+        self.__context = context
 
     @property
     def count(self):
@@ -93,6 +93,6 @@ class Snapshot(DatabaseObject):
         yield 'incomplete', self.__incomplete
         yield 'deleted', self.__deleted
         yield 'project', self.__project
-        yield 'location', self.__location
+        yield 'context', self.__context
         yield 'last_updated', self.last_updated
         yield 'timestamp', self.__timestamp

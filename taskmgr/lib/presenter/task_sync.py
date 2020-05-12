@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
 
-from taskmgr.lib.model.gtask_list import GTaskList
+from taskmgr.lib.model.gtask_project import GTaskProject
 from taskmgr.lib.presenter.date_generator import Day, DueDate
-from taskmgr.lib.presenter.gtask_list_api import GTasksListAPI
+from taskmgr.lib.presenter.gtask_project_api import GTasksProjectAPI
 from taskmgr.lib.presenter.gtasks_api import GTask, GTasksAPI
 from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.model.task import Task
@@ -163,6 +163,30 @@ class SyncAction(ABC):
         else:
             return Rule("has_changed", False)
 
+    def ids_match(self) -> Rule:
+        if self.local_task is not None and self.remote_task is not None:
+            return Rule("external_ids_match", self.local_task.id == self.remote_task.id)
+        else:
+            return Rule("external_ids_match", False)
+
+    def titles_match(self) -> Rule:
+        if self.local_task is not None and self.remote_task is not None:
+            return Rule("titles_match", self.local_task.title == self.remote_task.title)
+        else:
+            return Rule("titles_match", False)
+
+    def external_ids_match(self) -> Rule:
+        if self.local_task is not None and self.remote_task is not None:
+            return Rule("external_ids_match", self.local_task.external_id == self.remote_task.external_id)
+        else:
+            return Rule("external_ids_match", False)
+
+    def names_match(self) -> Rule:
+        if self.local_task is not None and self.remote_task is not None:
+            return Rule("names_match", self.local_task.text == self.remote_task.text)
+        else:
+            return Rule("names_match", False)
+
     @abstractmethod
     def can_delete(self):
         pass
@@ -200,18 +224,6 @@ class ExportAction(SyncAction):
 
     def get_name(self):
         return self.__class__.__name__
-
-    def ids_match(self) -> Rule:
-        if self.local_task is not None and self.remote_task is not None:
-            return Rule("external_ids_match", self.local_task.id == self.remote_task.id)
-        else:
-            return Rule("external_ids_match", False)
-
-    def titles_match(self) -> Rule:
-        if self.local_task is not None and self.remote_task is not None:
-            return Rule("titles_match", self.local_task.title == self.remote_task.title)
-        else:
-            return Rule("titles_match", False)
 
     def can_delete(self):
         """
@@ -259,7 +271,7 @@ class ExportAction(SyncAction):
         rules.add(self.remote_task_exists())
         rules.add(self.local_task_is_not_deleted())
         rules.add(self.has_changed())
-        rules.add(self.titles_match())
+        rules.add(self.ids_match())
         rule_result = rules.get_result()
         rules.print_summary(self.local_task, self.remote_task, rule_result)
         return rule_result
@@ -287,18 +299,6 @@ class ImportAction(SyncAction):
     def get_name(self):
         return self.__class__.__name__
 
-    def external_ids_match(self) -> Rule:
-        if self.local_task is not None and self.remote_task is not None:
-            return Rule("external_ids_match", self.local_task.external_id == self.remote_task.external_id)
-        else:
-            return Rule("external_ids_match", False)
-
-    def names_match(self) -> Rule:
-        if self.local_task is not None and self.remote_task is not None:
-            return Rule("names_match", self.local_task.text == self.remote_task.text)
-        else:
-            return Rule("names_match", False)
-
     def can_delete(self):
         """
         Remote task must be deleted
@@ -311,7 +311,7 @@ class ImportAction(SyncAction):
         rules.add(self.remote_task_is_deleted())
         rules.add(self.local_task_exists())
         rules.add(self.local_task_is_not_deleted())
-        rules.add(self.names_match())
+        rules.add(self.external_ids_match())
         rule_result = rules.get_result()
         rules.print_summary(self.local_task, self.remote_task, rule_result)
         return rule_result
@@ -327,7 +327,7 @@ class ImportAction(SyncAction):
         rules = Rules(self.get_name(), "update")
         rules.add(self.local_task_exists())
         rules.add(self.remote_task_exists())
-        rules.add(self.names_match())
+        rules.add(self.external_ids_match())
         rules.add(self.remote_task_is_not_deleted())
         rule_result = rules.get_result()
         rules.print_summary(self.local_task, self.remote_task, rule_result)
@@ -349,56 +349,101 @@ class ImportAction(SyncAction):
         return rule_result
 
 
+class Converter:
+    logger = AppLogger("converter").get_logger()
+
+    @staticmethod
+    def rfc3339_to_date_string(rfc3339_string) -> str:
+        dt = datetime.strptime(rfc3339_string, CommonVariables().rfc3339_date_time_format)
+        return Day(dt).to_date_string()
+
+    @staticmethod
+    def date_string_to_rfc3339(date_string) -> str:
+        variables = CommonVariables()
+        if len(date_string) > 0:
+            dt = datetime.strptime(date_string, variables.date_format)
+            return dt.strftime(variables.rfc3339_date_time_format)
+        return date_string
+
+    @staticmethod
+    def to_gtask_project(tasks_list: list, project_name: str) -> GTaskProject:
+        assert type(tasks_list) is list
+        assert type(project_name) is str
+
+        gtask_project = GTaskProject()
+        gtask_project.title = project_name
+        Converter.logger.info(f"Working on tasks in {project_name}")
+
+        for task in tasks_list:
+            if task.project == gtask_project.title:
+                gtask = GTask()
+                gtask.title = task.text
+                gtask.notes = task.label
+                gtask.deleted = task.deleted
+                gtask.id = task.external_id
+                gtask.due = Converter.date_string_to_rfc3339(task.due_date.date_string)
+                gtask.is_completed(task.is_completed())
+                gtask.source_task = task
+                gtask_project.append(gtask)
+
+        return gtask_project
+
+    @staticmethod
+    def to_task(gtask: GTask, project_name: str) -> Task:
+        assert isinstance(gtask, GTask)
+        assert type(project_name) is str
+
+        Converter.logger.debug(f"{gtask.title}")
+
+        task = Task(gtask.title)
+        task.external_id = gtask.id
+        task.deleted = gtask.deleted
+        task.label = gtask.notes
+        task.project = project_name
+
+        due_date = DueDate()
+        if len(gtask.due) != 0:
+            due_date.completed = bool(gtask.is_completed)
+            due_date.date_string = Converter.rfc3339_to_date_string(gtask.due)
+
+        elif len(gtask.completed) != 0:
+            due_date.completed = bool(gtask.is_completed)
+            due_date.date_string = Converter.rfc3339_to_date_string(gtask.completed)
+
+        else:
+            due_date.completed = False
+            due_date.date_string = str()
+        task.due_date = due_date
+
+        return task
+
+
 class GoogleTasksImporter:
     logger = AppLogger("google_tasks_importer").get_logger()
 
     def __init__(self, google_tasks_service, tasks):
         self.__tasks = tasks
         self.__google_tasks_service = google_tasks_service
-        self.__tasks_list_api = GTasksListAPI(self.__google_tasks_service)
-
-    @staticmethod
-    def convert_rfc3339_to_date_string(rfc3339_string) -> str:
-        dt = datetime.strptime(rfc3339_string, CommonVariables().rfc3339_date_time_format)
-        return Day(dt).to_date_string()
+        self.__gtasks_project_api = GTasksProjectAPI(self.__google_tasks_service)
+        self.__converter = Converter
 
     def get_projects(self):
-        return self.__tasks_list_api.list()
+        return self.__gtasks_project_api.list()
 
-    def convert_to_task_list(self, project) -> list:
+    def convert_local_tasks(self, project_name) -> list:
         """
         Converts local tasks to Google Tasks List
-        :param project:
+        :param project_name:
         :return:
         """
-        assert type(project) is str
+        assert type(project_name) is str
 
         task_list = list()
-        google_taskslist = self.__tasks_list_api.get(project)
-        self.logger.info(f"Working on tasks in {google_taskslist.title}")
-        for gtask in GTasksAPI(google_taskslist.id, self.__google_tasks_service).list():
+        project = self.__gtasks_project_api.get(project_name)
+        self.logger.info(f"Working on tasks in {project.title}")
+        for gtask in GTasksAPI(project.id, self.__google_tasks_service).list():
             if len(gtask.title) != 0:
-                self.logger.debug(f"{gtask.title}")
-                t = Task(gtask.title)
-                t.external_id = gtask.id
-                t.deleted = gtask.deleted
-                t.label = gtask.notes
-                t.project = google_taskslist.title
-
-                due_date = DueDate()
-                if len(gtask.due) != 0:
-                    due_date.completed = bool(gtask.is_completed)
-                    due_date.date_string = self.convert_rfc3339_to_date_string(gtask.due)
-
-                elif len(gtask.completed) != 0:
-                    due_date.completed = bool(gtask.is_completed)
-                    due_date.date_string = self.convert_rfc3339_to_date_string(gtask.completed)
-
-                else:
-                    due_date.completed = False
-                    due_date.date_string = str()
-                t.due_date = due_date
-                task_list.append(t)
+                task_list.append(self.__converter.to_task(gtask, project.title))
 
         return task_list
 
@@ -413,7 +458,7 @@ class GoogleTasksImporter:
         for remote_task in remote_task_list:
             assert type(remote_task) is Task
 
-            local_task = self.__tasks.get_task_by_name(remote_task.text)
+            local_task = self.__tasks.get_task_by_external_id(remote_task.external_id)
             action = ImportAction(local_task, remote_task)
 
             if action.can_delete():
@@ -440,77 +485,70 @@ class GoogleTasksExporter:
 
     def __init__(self, google_tasks_service, tasks):
         self.__google_tasks_service = google_tasks_service
-        self.__tasks_list_api = GTasksListAPI(google_tasks_service)
+        self.__gtasks_project_api = GTasksProjectAPI(google_tasks_service)
         self.__tasks = tasks
-        self.vars = CommonVariables()
-
-    def convert_date_string_to_rfc3339(self, date_string) -> str:
-        if len(date_string) > 0:
-            dt = datetime.strptime(date_string, self.vars.date_format)
-            return dt.strftime(self.vars.rfc3339_date_time_format)
-        return date_string
+        self.__converter = Converter
 
     def get_projects(self):
         return set([t.project for t in self.__tasks.get_object_list()])
 
-    def convert_to_gtasklist(self, project) -> list:
+    def convert_local_tasks(self, project_name) -> list:
         """
         Prepares local Task objects for export
+        :type project_name: string
         :return:
         """
-        assert type(project) is str
+        assert type(project_name) is str
 
-        gtasks_list = list()
+        project_list = list()
         tasks_list = self.__tasks.get_object_list()
         if len(tasks_list) > 0:
-            gtasks = GTaskList()
-            gtasks.title = project
-            self.logger.info(f"Working on tasks in {project}")
+            project_list.append(self.__converter.to_gtask_project(tasks_list, project_name))
 
-            for task in tasks_list:
-                if task.project == project:
-                    gtask = GTask()
-                    gtask.title = task.text
-                    gtask.notes = task.label
-                    gtask.deleted = task.deleted
-                    gtask.id = task.external_id
+        return project_list
 
-                    if len(task.due_dates) >= 1:
-                        gtask.due = self.convert_date_string_to_rfc3339(task.due_dates[0].date_string)
-
-                    gtask.is_completed(task.is_completed())
-                    gtasks.append(gtask)
-            gtasks_list.append(gtasks)
-        return gtasks_list
-
-    def export_tasks(self, task_list) -> SyncResultsList:
+    def export_tasks(self, local_project_list) -> SyncResultsList:
         """
         Manages task export to the Google Tasks Service
-        :param task_list:
-        :return:
+        :param local_project_list: list of GTaskProject objects
+        :return: SyncResultsList object
         """
         self.logger.debug("Starting task export")
         sync_results = SyncResultsList()
-        for gtask_list in task_list:
-            existing_gtask_list = self.__tasks_list_api.get(gtask_list.title)
-            if existing_gtask_list is None:
-                existing_gtask_list = self.__tasks_list_api.insert(gtask_list.title)
+        for local_project in local_project_list:
+            remote_project = self.__gtasks_project_api.get(local_project.title)
+            if remote_project is None:
+                # If the project does not exist then create one.
+                remote_project = self.__gtasks_project_api.insert(local_project.title)
 
-            tasks_api = GTasksAPI(existing_gtask_list.id, self.__google_tasks_service)
-            for local_gtask in gtask_list.tasks:
-                remote_gtask = tasks_api.get(local_gtask.title)
+            api = GTasksAPI(remote_project.id, self.__google_tasks_service)
+            for local_gtask in local_project.tasks:
+
+                if len(local_gtask.id) > 0:
+                    # If the task has been imported previously it will have an gtask.id, but
+                    # if it has been created locally then it will not.
+                    remote_gtask = api.get_by_id(local_gtask.id)
+                else:
+                    # Select using the title if the id does not exist.
+                    remote_gtask = api.get_by_title(local_gtask.title)
 
                 action = ExportAction(local_gtask, remote_gtask)
                 if action.can_insert():
-                    tasks_api.insert(local_gtask)
+                    remote_gtask = api.insert(local_gtask)
                     sync_results.append(SyncAction.ADDED)
 
+                    remote_task = Converter.to_task(remote_gtask, local_project.title)
+                    local_task = local_gtask.source_task
+                    # After it is inserted then the local object needs to be updated to
+                    # preserve the gtask.id so it can be updated in the google tasks service.
+                    self.__tasks.replace(local_task, remote_task)
+
                 elif action.can_update():
-                    tasks_api.update(local_gtask)
+                    api.update(local_gtask)
                     sync_results.append(SyncAction.UPDATED)
 
                 elif action.can_delete():
-                    tasks_api.delete(local_gtask.title)
+                    api.delete(local_gtask.title)
                     sync_results.append(SyncAction.DELETED)
 
                 else:

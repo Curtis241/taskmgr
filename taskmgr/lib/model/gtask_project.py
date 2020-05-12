@@ -4,7 +4,7 @@ from taskmgr.lib.model.gtask import GTask
 from taskmgr.lib.variables import CommonVariables
 
 
-class GTaskList:
+class GTaskProject:
     """
     Models the structure of Google Tasks service tasklist object. Detailed description found here:
     https://developers.google.com/tasks/v1/reference/tasks

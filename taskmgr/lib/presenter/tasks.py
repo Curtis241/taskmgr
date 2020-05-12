@@ -195,11 +195,13 @@ class Tasks(Model):
         assert isinstance(remote_task, Task)
         assert isinstance(local_task, Task)
 
-        if local_task is not None:
-            remote_task.index = local_task.index
-            self.replace_object(local_task.index, remote_task)
-            self.logger.debug(f"Replaced local_task: {dict(local_task)} with remote_task: {dict(remote_task)}")
-            return remote_task
+        remote_task.index = local_task.index
+        remote_task.unique_id = local_task.unique_id
+        remote_task.due_date = local_task.due_date
+
+        self.replace_object(local_task.index, remote_task)
+        self.logger.debug(f"Replaced local_task: {dict(local_task)} with remote_task: {dict(remote_task)}")
+        return remote_task
 
     def edit(self, task_id: str, text: str, label: str, project: str, date_expression: str) -> Task:
         assert type(task_id) and type(text) and type(label) and type(project) is str
@@ -259,11 +261,14 @@ class Tasks(Model):
     def get_project_set(self) -> Set[Task]:
         return self.unique("project", self.get_object_list())
 
+    def get_due_date_set(self) -> Set[Task]:
+        return set([task.due_date.date_string for task in self.get_object_list()])
+
     @staticmethod
     def unique(parameter_name: str, task_list: list) -> Set[Task]:
         assert type(parameter_name) is str
         assert type(task_list) is list
-        return set([getattr(t, parameter_name) for t in task_list])
+        return set([getattr(task, parameter_name) for task in task_list])
 
     def clear(self):
         self.clear_objects()
