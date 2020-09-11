@@ -101,7 +101,6 @@ class TestYamlDatabase(unittest.TestCase):
         index = self.yaml_db.get_list_index(self.task4, task_list)
         self.assertIsNone(index)
 
-
     def test_object_must_be_subclass_of_DatabaseObject(self):
         with self.assertRaises(ValueError):
             self.yaml_db.set([MissingSubclass])

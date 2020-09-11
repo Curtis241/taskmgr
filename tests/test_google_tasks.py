@@ -1,6 +1,6 @@
 import unittest
 
-from taskmgr.lib.presenter.gtask_project_api import GTasksListAPI
+from taskmgr.lib.presenter.gtask_project_api import GTasksProjectAPI
 from taskmgr.lib.presenter.gtasks_api import GTask, GTasksAPI
 from tests.mock_tasks_service import MockTasksService
 
@@ -9,7 +9,7 @@ class TestGoogleTasks(unittest.TestCase):
 
     def setUp(self):
         self.service = MockTasksService()
-        self.tasks_list_api = GTasksListAPI(self.service)
+        self.tasks_list_api = GTasksProjectAPI(self.service)
         tasklist_obj = self.tasks_list_api.get("My Tasks")
         self.tasks_api = GTasksAPI(tasklist_obj.id, self.service)
 
@@ -41,7 +41,7 @@ class TestGoogleTasks(unittest.TestCase):
         self.assertIsInstance(task_obj_list[0], GTask)
 
     def test_get_task(self):
-        task_obj = self.tasks_api.get("Task1")
+        task_obj = self.tasks_api.get_by_title("Task1")
         self.assertIsNotNone(task_obj)
         self.assertTrue(task_obj.title == "Task1")
 
@@ -56,5 +56,6 @@ class TestGoogleTasks(unittest.TestCase):
     def test_update_task(self):
         task = GTask()
         task.title = "Task1"
+        task.id = "id1"
         result = self.tasks_api.update(task)
         self.assertTrue(result.title == "Task1")

@@ -15,7 +15,7 @@ class TaskConsoleTable(ConsoleTable):
     def add_row(self, obj):
         assert isinstance(obj, Task)
         row = self.format_row(obj)
-        self.get_table().append_row(row)
+        self.get_table().rows.append(row)
         self.__task_list.append(obj)
 
     def print(self):
@@ -23,7 +23,7 @@ class TaskConsoleTable(ConsoleTable):
         Controls the final display to the console.
         :return: task_list
         """
-        if len(self.get_table()) > 0:
+        if len(self.get_table().rows) > 0:
             print(self.get_table())
             return self.__task_list
         else:

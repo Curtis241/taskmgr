@@ -11,7 +11,7 @@ class SnapshotConsoleTable(ConsoleTable):
     def add_row(self, obj):
         assert type(obj) is Snapshot
         row = self.format_row(obj)
-        self.get_table().append_row(row)
+        self.get_table().rows.append(row)
         self.__snapshot_list.append(obj)
 
     def clear(self):
@@ -19,7 +19,7 @@ class SnapshotConsoleTable(ConsoleTable):
         self.__snapshot_list = list()
 
     def print(self):
-        if len(self.get_table()) > 0:
+        if len(self.get_table().rows) > 0:
             print(self.get_table())
             return self.__snapshot_list
         else:

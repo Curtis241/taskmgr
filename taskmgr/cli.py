@@ -251,11 +251,11 @@ def export_tasks(**kwargs):
     cli_client.export_tasks(GoogleTasksExporter(GoogleTasksService(), mgr.get_tasks_model()), kwargs.get("project"))
 
 
-@cli.command("repair", help="Checks redis db for issues")
-@click.option('--ok', is_flag=True)
-def repair_db(**kwargs):
-    from taskmgr.scripts.repair_db import RepairDb
-    RepairDb().fix(kwargs.get("ok"))
+# @cli.command("repair", help="Checks redis db for issues")
+# @click.option('--ok', is_flag=True)
+# def repair_db(**kwargs):
+#     from taskmgr.scripts.repair_db import RepairDb
+#     RepairDb().fix(kwargs.get("ok"))
 
 
 @cli.command("defaults", help="Sets the default variables")

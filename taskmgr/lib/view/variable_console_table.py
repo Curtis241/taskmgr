@@ -9,7 +9,7 @@ class VariableConsoleTable(ConsoleTable):
 
     def add_row(self, obj):
         assert type(obj) is list
-        self.get_table().append_row(obj)
+        self.get_table().rows.append(obj)
         self.__variables_list.append(obj)
 
     def clear(self):
@@ -17,7 +17,7 @@ class VariableConsoleTable(ConsoleTable):
         self.__variables_list = list()
 
     def print(self):
-        if len(self.get_table()) > 0:
+        if len(self.get_table().rows) > 0:
             print(self.get_table())
             return self.__variables_list
 

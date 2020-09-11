@@ -33,7 +33,7 @@ class TestCliClient(unittest.TestCase):
     def test_add_task(self):
         self.client.add_task("Clean garage", "", "home", "empty")
         self.client.display_all_tasks()
-        row_count = len(self.client.task_table.get_table())
+        row_count = len(self.client.task_table.get_table().rows)
         self.assertTrue(row_count == 1)
 
     def test_list_all_tasks(self):
@@ -129,7 +129,7 @@ class TestCliClient(unittest.TestCase):
     def test_delete(self):
         self.client.add_task("Clean car", "@waiting_on", "home", "today")
         self.client.add_task("Clean bathroom", "", "home", "tomorrow")
-        task_list = self.client.delete_tasks_by_index((1, 2,))
+        task_list = self.client.delete_tasks((1, 2,))
         self.assertTrue(len(task_list) == 2)
         self.assertTrue(task_list[0].deleted)
         self.assertTrue(task_list[1].deleted)

@@ -61,7 +61,7 @@ class TestSnapshots(unittest.TestCase):
         tasks.append(task2)
         tasks.append(task3)
 
-        snapshot = self.snapshots.count_tasks("work", tasks.get_object_list())
+        snapshot = self.snapshots.total_count("all", "work", tasks.get_object_list())
         self.assertIsNotNone(snapshot)
         self.assertTrue(snapshot.count == 3)
         self.assertTrue(snapshot.deleted == 1)
