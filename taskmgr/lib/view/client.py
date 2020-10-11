@@ -7,7 +7,8 @@ from taskmgr.lib.model.snapshot import Snapshot
 from taskmgr.lib.model.task import Task
 from taskmgr.lib.presenter.date_generator import DateGenerator
 from taskmgr.lib.model.calendar import Today
-from taskmgr.lib.presenter.task_sync import GoogleTasksImporter, GoogleTasksExporter
+from taskmgr.lib.presenter.task_sync import GoogleTasksImporter, GoogleTasksExporter, CsvFileImporter
+from taskmgr.lib.presenter.file_manager import FileManager
 from taskmgr.lib.variables import CommonVariables
 
 
@@ -19,8 +20,11 @@ class Client:
     """
     logger = AppLogger("client").get_logger()
 
-    def __init__(self, db_manager):
+    def __init__(self, db_manager, file_manager):
         assert isinstance(db_manager, DatabaseManager)
+        assert isinstance(file_manager, FileManager)
+
+        self.__file_manager = file_manager
         self.__tasks = db_manager.get_tasks_model()
         self.__snapshots = db_manager.get_snapshots_model()
         self.__date_generator = DateGenerator()
@@ -234,7 +238,33 @@ class Client:
             snapshot.index = 0
             self.__snapshots.add(snapshot)
 
-    def import_tasks(self, google_tasks_importer, project: str):
+    def save_tasks_to_file(self, task_list: list):
+        self.__file_manager.save_tasks(task_list)
+
+    def save_snapshots_to_file(self, snapshot_list: list):
+        self.__file_manager.save_snapshots(snapshot_list)
+
+    def import_tasks(self, csv_file_importer: CsvFileImporter, path: str):
+        """
+        Imports tasks from the Csv file.
+        :param csv_file_importer: CsvFileImporter class
+        :param path: path to csv file
+        :return: None
+        """
+        assert isinstance(csv_file_importer, CsvFileImporter)
+        assert type(path) is str
+
+        start_datetime = datetime.now()
+        self.logger.info(f"Starting import")
+        obj_list = self.__file_manager.open_tasks(path)
+        self.logger.info(f"Retrieved {len(obj_list)} tasks from file")
+        task_list = csv_file_importer.convert(obj_list)
+        sync_results = csv_file_importer.import_tasks(task_list)
+        self.logger.info(f"Import summary: {sync_results.get_summary()}")
+
+        self.logger.info(f"Import complete: Duration: {self.get_duration(start_datetime)}")
+
+    def download_tasks(self, google_tasks_importer: GoogleTasksImporter, project: str):
         """
         Imports tasks from the Google Tasks service
         :param google_tasks_importer: GoogleTasksImporter class
@@ -246,18 +276,18 @@ class Client:
 
         start_datetime = datetime.now()
         self.logger.info(f"Starting import")
-        import_task_list = google_tasks_importer.convert_local_tasks(project)
+        import_task_list = google_tasks_importer.convert(project)
         self.logger.info(f"Retrieved {len(import_task_list)} tasks from service")
         sync_results = google_tasks_importer.import_tasks(import_task_list)
         self.logger.info(f"Import summary: {sync_results.get_summary()}")
 
         self.logger.info(f"Import complete: Duration: {self.get_duration(start_datetime)}")
 
-    def export_tasks(self, google_tasks_exporter, project_name: str):
+    def upload_tasks(self, google_tasks_exporter: GoogleTasksExporter, project_name: str):
         """
         Exports tasks to the Google Tasks service
         :param google_tasks_exporter: GoogleTasksExporter class
-        :param project: Local task project
+        :param project_name: Local task project
         :return: None
         """
         assert isinstance(google_tasks_exporter, GoogleTasksExporter)
@@ -267,7 +297,7 @@ class Client:
 
         self.logger.info(f"Starting export")
         self.logger.info(f"Preparing tasks for export")
-        local_project_list = google_tasks_exporter.convert_local_tasks(project_name)
+        local_project_list = google_tasks_exporter.convert(project_name)
         self.logger.info(f"Exporting tasks to service")
         sync_results = google_tasks_exporter.export_tasks(local_project_list)
         self.logger.info(f"Export summary: {sync_results.get_summary()}")

@@ -1,19 +1,25 @@
 import unittest
 from datetime import datetime, timedelta
 
-from taskmgr.lib.model.database_manager import DatabaseManager
 from taskmgr.lib.model.calendar import Today
+from taskmgr.lib.model.database_manager import DatabaseManager
 from taskmgr.lib.model.day import Day
 from taskmgr.lib.presenter.date_generator import DateGenerator
-
-from taskmgr.lib.presenter.file_exporter import FileExporter
-from taskmgr.lib.view.cli_client import CliClient
+from taskmgr.lib.presenter.file_manager import FileManager
 from taskmgr.lib.variables import CommonVariables
+from taskmgr.lib.view.cli_client import CliClient
 
 
-class MockFileExporter(FileExporter):
+class MockFileManager(FileManager):
 
-    def save(self, table_row_list, output_dir) -> str: pass
+    @staticmethod
+    def save_tasks(task_list): pass
+
+    @staticmethod
+    def open_tasks(path) -> list: pass
+
+    @staticmethod
+    def save_snapshots(snapshot_list): pass
 
 
 class TestCliClient(unittest.TestCase):
@@ -23,7 +29,7 @@ class TestCliClient(unittest.TestCase):
         mgr = DatabaseManager(variables)
 
         self.tasks = mgr.get_tasks_model()
-        self.client = CliClient(mgr, MockFileExporter())
+        self.client = CliClient(mgr, MockFileManager())
         self.client.remove_all_tasks()
         self.date_generator = DateGenerator()
 
@@ -150,5 +156,3 @@ class TestCliClient(unittest.TestCase):
     def test_count(self):
         summary_list = self.client.count_all_tasks()
         self.assertIsNotNone(summary_list)
-
-

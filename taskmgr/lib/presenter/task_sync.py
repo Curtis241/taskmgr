@@ -1,5 +1,7 @@
+import ast
 from abc import ABC, abstractmethod
 from datetime import datetime
+from typing import List
 
 from taskmgr.lib.model.gtask_project import GTaskProject
 from taskmgr.lib.presenter.date_generator import Day, DueDate
@@ -288,12 +290,10 @@ class ImportAction(SyncAction):
         if local_task is not None:
             assert type(local_task) is Task
             assert hasattr(local_task, "deleted") is True
-            assert hasattr(local_task, "external_id") is True
             assert hasattr(local_task, "text") is True
 
         assert type(remote_task) is Task
         assert hasattr(remote_task, "deleted") is True
-        assert hasattr(remote_task, "external_id") is True
         assert hasattr(remote_task, "text") is True
 
     def get_name(self):
@@ -311,7 +311,6 @@ class ImportAction(SyncAction):
         rules.add(self.remote_task_is_deleted())
         rules.add(self.local_task_exists())
         rules.add(self.local_task_is_not_deleted())
-        rules.add(self.external_ids_match())
         rule_result = rules.get_result()
         rules.print_summary(self.local_task, self.remote_task, rule_result)
         return rule_result
@@ -327,7 +326,6 @@ class ImportAction(SyncAction):
         rules = Rules(self.get_name(), "update")
         rules.add(self.local_task_exists())
         rules.add(self.remote_task_exists())
-        rules.add(self.external_ids_match())
         rules.add(self.remote_task_is_not_deleted())
         rule_result = rules.get_result()
         rules.print_summary(self.local_task, self.remote_task, rule_result)
@@ -418,34 +416,15 @@ class Converter:
         return task
 
 
-class GoogleTasksImporter:
-    logger = AppLogger("google_tasks_importer").get_logger()
+class Importer:
+    logger = AppLogger("importer").get_logger()
 
-    def __init__(self, google_tasks_service, tasks):
+    def __init__(self, tasks):
         self.__tasks = tasks
-        self.__google_tasks_service = google_tasks_service
-        self.__gtasks_project_api = GTasksProjectAPI(self.__google_tasks_service)
-        self.__converter = Converter
 
-    def get_projects(self):
-        return self.__gtasks_project_api.list()
-
-    def convert_local_tasks(self, project_name) -> list:
-        """
-        Converts local tasks to Google Tasks List
-        :param project_name:
-        :return:
-        """
-        assert type(project_name) is str
-
-        task_list = list()
-        project = self.__gtasks_project_api.get(project_name)
-        self.logger.info(f"Working on tasks in {project.title}")
-        for gtask in GTasksAPI(project.id, self.__google_tasks_service).list():
-            if len(gtask.title) != 0:
-                task_list.append(self.__converter.to_task(gtask, project.title))
-
-        return task_list
+    @abstractmethod
+    def get_tasks_by_id(self, remote_task):
+        pass
 
     def import_tasks(self, remote_task_list) -> SyncResultsList:
         """
@@ -458,7 +437,7 @@ class GoogleTasksImporter:
         for remote_task in remote_task_list:
             assert type(remote_task) is Task
 
-            local_task = self.__tasks.get_task_by_external_id(remote_task.external_id)
+            local_task = self.get_tasks_by_id(remote_task)
             action = ImportAction(local_task, remote_task)
 
             if action.can_delete():
@@ -480,6 +459,70 @@ class GoogleTasksImporter:
         return sync_results
 
 
+class CsvFileImporter(Importer):
+    logger = AppLogger("csv_file_importer").get_logger()
+
+    def __init__(self, tasks):
+        super().__init__(tasks)
+        self.__tasks = tasks
+
+    def get_tasks_by_id(self, remote_task):
+        return self.__tasks.get_task_by_id(remote_task.unique_id)
+
+    @staticmethod
+    def convert(obj_list: list) -> List[Task]:
+        task_list = list()
+        for obj_dict in obj_list:
+            task = Task(obj_dict["text"])
+            for key, value in obj_dict.items():
+                if key == "deleted":
+                    value = ast.literal_eval(value)
+                    task.deleted = value
+                elif key == "due_date":
+                    task.due_date.date_string = value
+                elif key == "done":
+                    value = ast.literal_eval(value)
+                    task.due_date.completed = value
+                else:
+                    setattr(task, key, value)
+            task_list.append(task)
+        return task_list
+
+
+class GoogleTasksImporter(Importer):
+    logger = AppLogger("google_tasks_importer").get_logger()
+
+    def __init__(self, google_tasks_service, tasks):
+        super().__init__(tasks)
+        self.__tasks = tasks
+        self.__google_tasks_service = google_tasks_service
+        self.__gtasks_project_api = GTasksProjectAPI(self.__google_tasks_service)
+        self.__converter = Converter
+
+    def get_projects(self):
+        return self.__gtasks_project_api.list()
+
+    def convert(self, project_name) -> List[Task]:
+        """
+        Converts local tasks to Google Tasks List
+        :param project_name:
+        :return:
+        """
+        assert type(project_name) is str
+
+        task_list = list()
+        project = self.__gtasks_project_api.get(project_name)
+        self.logger.info(f"Working on tasks in {project.title}")
+        for gtask in GTasksAPI(project.id, self.__google_tasks_service).list():
+            if len(gtask.title) != 0:
+                task_list.append(self.__converter.to_task(gtask, project.title))
+
+        return task_list
+
+    def get_tasks_by_id(self, remote_task):
+        return self.__tasks.get_task_by_external_id(remote_task.external_id)
+
+
 class GoogleTasksExporter:
     logger = AppLogger("google_tasks_exporter").get_logger()
 
@@ -492,7 +535,7 @@ class GoogleTasksExporter:
     def get_projects(self):
         return set([t.project for t in self.__tasks.get_object_list()])
 
-    def convert_local_tasks(self, project_name) -> list:
+    def convert(self, project_name) -> List[GTaskProject]:
         """
         Prepares local Task objects for export
         :type project_name: string

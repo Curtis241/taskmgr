@@ -7,7 +7,7 @@ from taskmgr.lib.presenter.tasks import Tasks
 from tests.mock_tasks_service import MockTasksService
 
 
-class TestSyncImporter(unittest.TestCase):
+class TestGoogleTasksImporter(unittest.TestCase):
 
     def setUp(self):
         self.service = MockTasksService()
@@ -25,21 +25,21 @@ class TestSyncImporter(unittest.TestCase):
 
     def test_pull_tasks_from_service_when_empty(self):
         self.service.return_empty_tasks = True
-        task_list = self.importer.convert_local_tasks("My Tasks")
+        task_list = self.importer.convert("My Tasks")
         self.assertListEqual(task_list, [])
 
     def test_pull_tasks_from_service_when_null(self):
         self.service.tasks = {'kind': 'tasks#tasks', 'etag': '', 'items': [
             {'kind': 'tasks#task', 'id': '', 'title': '', 'updated': '',
              'position': '', 'status': '', 'due': ''}]}
-        task_list = self.importer.convert_local_tasks("My Tasks")
+        task_list = self.importer.convert("My Tasks")
         self.assertListEqual(task_list, [])
 
     def test_title_to_text(self):
         self.service.tasks = {'kind': 'tasks#tasks', 'etag': '', 'items': [
             {'kind': 'tasks#task', 'id': '', 'title': 'Title1', 'updated': '',
              'position': '', 'status': '', 'due': ''}]}
-        task_list = self.importer.convert_local_tasks("My Tasks")
+        task_list = self.importer.convert("My Tasks")
         self.assertTrue(len(task_list) == 1)
         task1 = task_list[0]
         self.assertTrue(task1.text == "Title1")
@@ -48,7 +48,7 @@ class TestSyncImporter(unittest.TestCase):
         self.service.tasks = {'kind': 'tasks#tasks', 'etag': '', 'items': [
             {'kind': 'tasks#task', 'id': '', 'title': 'Title1', 'updated': '',
              'position': '', 'status': '', 'due': '', 'deleted': True}]}
-        task_list = self.importer.convert_local_tasks("My Tasks")
+        task_list = self.importer.convert("My Tasks")
         self.assertTrue(len(task_list) == 1)
         task1 = task_list[0]
         self.assertTrue(task1.deleted)
@@ -60,7 +60,7 @@ class TestSyncImporter(unittest.TestCase):
              'updated': '2019-05-17T03:48:30.000Z',
              'position': '00000000000000000001', 'notes': 'Notes1',
              'status': 'needsAction'}]}
-        task_list = self.importer.convert_local_tasks("My Tasks")
+        task_list = self.importer.convert("My Tasks")
         self.assertTrue(len(task_list) == 1)
         task1 = task_list[0]
         self.assertTrue(task1.label == "Notes1")
@@ -74,7 +74,7 @@ class TestSyncImporter(unittest.TestCase):
              'status': 'completed',
              'completed': '2019-08-11T01:56:14.000Z',
              'deleted': False, 'hidden': True}]}
-        task_list = self.importer.convert_local_tasks("My Tasks")
+        task_list = self.importer.convert("My Tasks")
         self.assertTrue(len(task_list) == 1)
         task1 = task_list[0]
         self.assertIsNotNone(task1.due_date)
@@ -99,7 +99,6 @@ class TestSyncImporter(unittest.TestCase):
         sync_results_list = sync_results.get_list()
         self.assertTrue(len(sync_results_list) == 3)
 
-        print(sync_results_list)
         self.assertTrue(sync_results_list[0] == SyncAction.ADDED)
         self.assertTrue(sync_results_list[1] == SyncAction.UPDATED)
         self.assertTrue(sync_results_list[2] == SyncAction.DELETED)

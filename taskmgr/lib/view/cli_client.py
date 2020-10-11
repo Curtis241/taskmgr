@@ -15,10 +15,9 @@ class CliClient(Client):
     """
     logger = AppLogger("cli_client").get_logger()
 
-    def __init__(self, db_manager, file_exporter):
-        super().__init__(db_manager)
+    def __init__(self, db_manager, file_manager):
+        super().__init__(db_manager, file_manager)
 
-        self.__file_exporter = file_exporter
         self.task_table = TaskConsoleTable()
         self.snapshots_table = SnapshotConsoleTable()
         self.variables_table = VariableConsoleTable()
@@ -63,9 +62,8 @@ class CliClient(Client):
         return self.snapshots_table.print()
 
     def __export_tasks(self, task_list, **kwargs):
-        if "export" in kwargs:
-            file_type = kwargs.get("export")
-            self.__file_exporter.save_tasks(task_list, file_type)
+        if "export" in kwargs and kwargs.get("export") is True:
+            self.save_tasks_to_file(task_list)
 
     def group_by_label(self, **kwargs):
         """
@@ -235,7 +233,7 @@ class CliClient(Client):
             self.save_snapshots(snapshot_list)
 
         if kwargs.get("export") is not None:
-            self.__file_exporter.save_snapshots(snapshot_list)
+            self.save_snapshots_to_file(snapshot_list)
 
         self.__print_snapshots_table(snapshot_list)
 
@@ -311,3 +309,6 @@ class CliClient(Client):
         self.save_snapshots(snapshot_list)
 
         return self.__print_snapshots_table(snapshot_list)
+
+
+
