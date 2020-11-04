@@ -89,9 +89,11 @@ class TestDateGenerator(unittest.TestCase):
         self.assertTrue(len(due_date_list) == 60)
 
     def test_get_date_count_when_every_weekday(self):
+        self.vars.recurring_month_limit = 2
         self.assertTrue(self.get_date_count('2019-03-01', 'every weekday') == 42)
 
     def test_get_date_when_every_weekday(self):
+        self.vars.recurring_month_limit = 2
         self.date_generator.current_day = Day(self.march1)
         due_date_list = self.date_generator.get_due_dates("every weekday")
         self.assertTrue(len(due_date_list) == 42)
@@ -102,24 +104,31 @@ class TestDateGenerator(unittest.TestCase):
         self.assertTrue(due_date_list[4].date_string == "2019-03-08")
 
     def test_get_date_when_every_sunday(self):
+        self.vars.recurring_month_limit = 2
         self.assertTrue(self.get_date_count('2019-03-01', 'every su') == 9)
 
     def test_get_date_when_every_monday(self):
+        self.vars.recurring_month_limit = 2
         self.assertTrue(self.get_date_count('2019-03-01', 'every m') == 9)
 
     def test_get_date_when_every_tuesday(self):
+        self.vars.recurring_month_limit = 2
         self.assertTrue(self.get_date_count('2019-03-01', 'every tu') == 9)
 
     def test_get_date_when_every_wednesday(self):
+        self.vars.recurring_month_limit = 2
         self.assertTrue(self.get_date_count('2019-03-01', 'every w') == 8)
 
     def test_get_date_when_every_thursday(self):
+        self.vars.recurring_month_limit = 2
         self.assertTrue(self.get_date_count('2019-03-01', 'every th') == 8)
 
     def test_get_date_when_every_friday(self):
+        self.vars.recurring_month_limit = 2
         self.assertTrue(self.get_date_count('2019-03-01', 'every f') == 8)
 
     def test_get_date_when_every_saturday(self):
+        self.vars.recurring_month_limit = 2
         self.assertTrue(self.get_date_count('2019-03-01', 'every sa') == 9)
 
     def test_get_week_count(self):

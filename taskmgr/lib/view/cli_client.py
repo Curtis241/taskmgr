@@ -1,8 +1,4 @@
-from typing import List
-
 from taskmgr.lib.logger import AppLogger
-from taskmgr.lib.model.calendar import Today
-from taskmgr.lib.model.snapshot import Snapshot
 from taskmgr.lib.view.client import Client
 from taskmgr.lib.view.snapshot_console_table import SnapshotConsoleTable
 from taskmgr.lib.view.task_console_table import TaskConsoleTable
@@ -22,6 +18,19 @@ class CliClient(Client):
         self.snapshots_table = SnapshotConsoleTable()
         self.variables_table = VariableConsoleTable()
 
+    def display_tasks(self, task_list, kwargs):
+        task_list = self.__print_tasks_table(task_list)
+        self.__export_tasks(task_list, **kwargs)
+        return task_list
+
+    def display_snapshots(self, snapshot_list, kwargs):
+        self.save_snapshots(snapshot_list)
+        if kwargs.get("export") is not None:
+            self.save_snapshots_to_file(snapshot_list)
+
+        self.__print_snapshots_table(snapshot_list)
+        return snapshot_list
+
     def list_labels(self):
         """
         Lists all labels contained in the tasks
@@ -35,9 +44,6 @@ class CliClient(Client):
         :return:
         """
         print("Projects: {}".format(self.get_unique_project_list()))
-
-    def set_default_variables(self, **kwargs):
-        self.set_defaults(kwargs)
 
     def list_default_variables(self):
         for key, value in self.get_variables_list():
@@ -64,251 +70,3 @@ class CliClient(Client):
     def __export_tasks(self, task_list, **kwargs):
         if "export" in kwargs and kwargs.get("export") is True:
             self.save_tasks_to_file(task_list)
-
-    def group_by_label(self, **kwargs):
-        """
-        Displays all tasks and sorts by label
-        :return: task_list
-        """
-        task_list = list()
-        for label in self.get_unique_label_list():
-            for task in self.get_tasks_by_label(label):
-                task_list.append(task)
-
-        task_list = self.__print_tasks_table(task_list)
-        self.__export_tasks(task_list, **kwargs)
-        return task_list
-
-    def group_by_due_date(self, **kwargs):
-        """
-        Displays all tasks and sorts by due date string
-        :param kwargs:
-        :return: task_list
-        """
-        task_list = list()
-        for due_date_string in self.get_unique_due_date_list():
-            for task in self.get_tasks_by_date(due_date_string):
-                task_list.append(task)
-
-        task_list = self.__print_tasks_table(task_list)
-        self.__export_tasks(task_list, **kwargs)
-        return task_list
-
-    def group_by_project(self, **kwargs):
-        """
-        Displays all tasks and sorts by project
-        :return: task_list
-        """
-        task_list = list()
-        for project in self.get_unique_project_list():
-            for task in self.get_tasks_by_project(project):
-                task_list.append(task)
-
-        task_list = self.__print_tasks_table(task_list)
-        self.__export_tasks(task_list, **kwargs)
-        return task_list
-
-    def display_all_tasks(self, **kwargs):
-        """
-        Simple list of all tasks without any sorting applied.
-        :return: task_list
-        """
-        task_list = self.get_task_list()
-        task_list = self.__print_tasks_table(task_list, kwargs.get("all"))
-        self.__export_tasks(task_list, **kwargs)
-        return task_list
-
-    def filter_by_today(self, **kwargs):
-        """
-        Filters the tasks that contain today's date.
-        :param kwargs: kwargs[tasks] contains tasks_list
-        :return: task_list
-        """
-        date_string = Today().to_date_string()
-        task_list = self.get_tasks_by_date(date_string)
-        task_list = self.__print_tasks_table(task_list)
-        self.__export_tasks(task_list, **kwargs)
-        return task_list
-
-    def filter_by_due_date(self, **kwargs):
-        """
-        Filters the tasks that contain today's date.
-        :param kwargs: kwargs[tasks] contains tasks_list
-        :return: task_list
-        """
-        assert "date" in kwargs
-
-        date_string = kwargs.get("date")
-        task_list = self.get_tasks_by_date(date_string)
-        task_list = self.__print_tasks_table(task_list)
-        self.__export_tasks(task_list, **kwargs)
-        return task_list
-
-    def filter_by_due_date_range(self, **kwargs):
-        """
-        Filters the tasks that are between the min date and the max date
-        :param kwargs: kwargs[tasks] contains tasks_list
-        :return: task_list
-        """
-        assert "min_date" in kwargs
-        assert "max_date" in kwargs
-
-        min_date_string = kwargs.get("min_date")
-        max_date_string = kwargs.get("max_date")
-
-        task_list = self.get_tasks_within_date_range(min_date_string, max_date_string)
-        task_list = self.__print_tasks_table(task_list)
-        self.__export_tasks(task_list, **kwargs)
-        return task_list
-
-    def filter_by_status(self, **kwargs):
-        """
-        Filters tasks by the status either complete or incomplete
-        :param kwargs: kwargs[tasks] contains tasks_list
-        :return: task_list
-        """
-        assert "status" in kwargs
-
-        status_type = kwargs.get("status")
-        if status_type == "incomplete":
-            task_list = self.get_tasks_by_status(is_completed=False)
-        else:
-            task_list = self.get_tasks_by_status(is_completed=True)
-
-        task_list = self.__print_tasks_table(task_list)
-        self.__export_tasks(task_list, **kwargs)
-        return task_list
-
-    def filter_by_project(self, **kwargs):
-        """
-        Filters tasks by project
-        :param kwargs: kwargs[value] contains a project_name
-        :return: task_list
-        """
-        assert "project" in kwargs
-
-        project = kwargs.get("project")
-        task_list = self.get_tasks_by_project(project)
-        task_list = self.__print_tasks_table(task_list)
-        self.__export_tasks(task_list, **kwargs)
-        return task_list
-
-    def filter_by_label(self, **kwargs):
-        """
-        Filters tasks by label
-        :param kwargs: kwargs[value] contains a label
-        :return: task_list
-        """
-        assert "label" in kwargs
-
-        label = kwargs.get("label")
-        task_list = self.get_tasks_by_label(label)
-        task_list = self.__print_tasks_table(task_list)
-        self.__export_tasks(task_list, **kwargs)
-        return task_list
-
-    def filter_by_text(self, **kwargs):
-        """
-        Filters tasks by text. Similar to a text search
-        :param kwargs: kwargs[value] contains the title of a task and depends on kwargs[tasks]
-        :return: task_list
-        """
-        assert "text" in kwargs
-
-        text = str(kwargs.get("text"))
-        task_list = self.get_tasks_by_text(text)
-        task_list = self.__print_tasks_table(task_list)
-        self.__export_tasks(task_list, **kwargs)
-        return task_list
-
-    def count_all_tasks(self, **kwargs) -> List[Snapshot]:
-
-        if kwargs.get("due_date"):
-            task_list = self.get_task_list()
-            snapshot_list = self.count_tasks_by_date(task_list)
-            self.save_snapshots(snapshot_list)
-        else:
-            task_list = self.get_task_list()
-            snapshot_list = self.count_total_tasks("all tasks", task_list)
-            self.save_snapshots(snapshot_list)
-
-        if kwargs.get("export") is not None:
-            self.save_snapshots_to_file(snapshot_list)
-
-        self.__print_snapshots_table(snapshot_list)
-
-        return snapshot_list
-
-    def count_by_due_date_range(self, **kwargs):
-        assert "min_date" in kwargs
-        assert "max_date" in kwargs
-
-        min_date_string = kwargs.get("min_date")
-        max_date_string = kwargs.get("max_date")
-
-        task_list = self.get_tasks_within_date_range(min_date_string, max_date_string)
-        context = f"min_due_date: {min_date_string} to max_due_date: {max_date_string}"
-        snapshot_list = self.count_total_tasks(context, task_list)
-        self.save_snapshots(snapshot_list)
-
-        return self.__print_snapshots_table(snapshot_list)
-
-    def count_by_due_date(self, **kwargs):
-        assert "date" in kwargs
-
-        date_string = kwargs.get("date")
-        task_list = self.get_tasks_by_date(date_string)
-        context = f"due_date: {date_string}"
-        snapshot_list = self.count_total_tasks(context, task_list)
-        self.save_snapshots(snapshot_list)
-
-        return self.__print_snapshots_table(snapshot_list)
-
-    def count_by_today(self):
-        date_string = Today().to_date_string()
-        task_list = self.get_tasks_by_date(date_string)
-        context = f"due_date: {date_string}"
-        snapshot_list = self.count_total_tasks(context, task_list)
-        self.save_snapshots(snapshot_list)
-
-        return self.__print_snapshots_table(snapshot_list)
-
-    def count_by_project(self, **kwargs):
-        assert "project" in kwargs
-
-        project = kwargs.get("project")
-        task_list = self.get_tasks_by_project(project)
-        context = f"project: {project}"
-        snapshot_list = self.count_total_tasks(context, task_list)
-        self.save_snapshots(snapshot_list)
-
-        return self.__print_snapshots_table(snapshot_list)
-
-    def count_by_status(self, **kwargs):
-        assert "status" in kwargs
-
-        status_type = kwargs.get("status")
-        if status_type == "complete":
-            task_list = self.get_tasks_by_status(is_completed=True)
-        else:
-            task_list = self.get_tasks_by_status(is_completed=False)
-
-        context = f"status: {status_type}"
-        snapshot_list = self.count_total_tasks(context, task_list)
-        self.save_snapshots(snapshot_list)
-
-        return self.__print_snapshots_table(snapshot_list)
-
-    def count_by_label(self, **kwargs):
-        assert "label" in kwargs
-
-        label = kwargs.get("label")
-        task_list = self.get_tasks_by_label(label)
-        context = f"label: {label}"
-        snapshot_list = self.count_total_tasks(context, task_list)
-        self.save_snapshots(snapshot_list)
-
-        return self.__print_snapshots_table(snapshot_list)
-
-
-

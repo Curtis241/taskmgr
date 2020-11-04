@@ -4,7 +4,7 @@ from taskmgr.lib.model.database import JsonFileDatabase
 from taskmgr.lib.model.task import Task
 from taskmgr.lib.presenter.task_sync import GoogleTasksImporter, SyncAction, Converter
 from taskmgr.lib.presenter.tasks import Tasks
-from tests.mock_tasks_service import MockTasksService
+from tests.unit_tests.mock_tasks_service import MockTasksService
 
 
 class TestGoogleTasksImporter(unittest.TestCase):

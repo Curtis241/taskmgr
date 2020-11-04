@@ -1,14 +1,15 @@
+from abc import abstractmethod
 from datetime import datetime
 from typing import List
 
 from taskmgr.lib.logger import AppLogger
+from taskmgr.lib.model.calendar import Today
 from taskmgr.lib.model.database_manager import DatabaseManager
 from taskmgr.lib.model.snapshot import Snapshot
 from taskmgr.lib.model.task import Task
 from taskmgr.lib.presenter.date_generator import DateGenerator
-from taskmgr.lib.model.calendar import Today
-from taskmgr.lib.presenter.task_sync import GoogleTasksImporter, GoogleTasksExporter, CsvFileImporter
 from taskmgr.lib.presenter.file_manager import FileManager
+from taskmgr.lib.presenter.task_sync import GoogleTasksImporter, GoogleTasksExporter, CsvFileImporter
 from taskmgr.lib.variables import CommonVariables
 
 
@@ -30,6 +31,79 @@ class Client:
         self.__date_generator = DateGenerator()
         self.__variables = CommonVariables()
 
+    @abstractmethod
+    def display_tasks(self, task_list: list, kwargs): pass
+
+    @abstractmethod
+    def display_snapshots(self, snapshot_list: list, kwargs): pass
+
+    def list_all_tasks(self, **kwargs) -> List[Task]:
+        task_list = self.__tasks.get_object_list()
+        return self.display_tasks(task_list, kwargs)
+
+    def filter_tasks_by_today(self, **kwargs) -> List[Task]:
+        date_string = Today().to_date_string()
+        task_list = self.__tasks.get_tasks_by_date(date_string)
+        return self.display_tasks(task_list, kwargs)
+
+    def filter_tasks_by_due_date(self, **kwargs) -> List[Task]:
+        date_string = kwargs.get("date")
+        task_list = self.__tasks.get_tasks_by_date(date_string)
+        return self.display_tasks(task_list, kwargs)
+
+    def filter_tasks_by_due_date_range(self, **kwargs) -> List[Task]:
+        min_date_string = kwargs.get("min_date")
+        max_date_string = kwargs.get("max_date")
+        task_list = self.__tasks.get_tasks_within_date_range(min_date_string, max_date_string)
+        return self.display_tasks(task_list, kwargs)
+
+    def filter_tasks_by_status(self, **kwargs) -> List[Task]:
+        status_type = kwargs.get("status")
+        if status_type == "incomplete":
+            task_list = self.__tasks.get_tasks_by_status(is_completed=False)
+        else:
+            task_list = self.__tasks.get_tasks_by_status(is_completed=True)
+        return self.display_tasks(task_list, kwargs)
+
+    def filter_tasks_by_project(self, **kwargs) -> List[Task]:
+        project = kwargs.get("project")
+        task_list = self.__tasks.get_tasks_by_project(project)
+        return self.display_tasks(task_list, kwargs)
+
+    def filter_tasks_by_label(self, **kwargs) -> List[Task]:
+        label = kwargs.get("label")
+        task_list = self.__tasks.get_tasks_by_label(label)
+        return self.display_tasks(task_list, kwargs)
+
+    def filter_tasks_by_text(self, **kwargs) -> List[Task]:
+        text = str(kwargs.get("text"))
+        task_list = self.__tasks.get_tasks_containing_text(text)
+        return self.display_tasks(task_list, kwargs)
+
+    def group_tasks_by_project(self, **kwargs) -> List[Task]:
+        task_list = list()
+        for project in self.get_unique_project_list():
+            for task in self.__tasks.get_tasks_by_project(project):
+                task_list.append(task)
+        return self.display_tasks(task_list, kwargs)
+
+    def group_tasks_by_due_date(self, **kwargs) -> List[Task]:
+        task_list = list()
+        for due_date_string in self.get_unique_due_date_list():
+            for task in self.__tasks.get_tasks_by_date(due_date_string):
+                task_list.append(task)
+        return self.display_tasks(task_list, kwargs)
+
+    def group_tasks_by_label(self, **kwargs) -> List[Task]:
+        task_list = list()
+        for label in self.get_unique_label_list():
+            for task in self.__tasks.get_tasks_by_label(label):
+                task_list.append(task)
+        return self.display_tasks(task_list, kwargs)
+
+    def set_default_variables(self, **kwargs):
+        self.set_defaults(kwargs)
+
     def get_unique_label_list(self) -> List[str]:
         """Returns a list of labels from the tasks."""
         return list(self.__tasks.get_label_set())
@@ -42,41 +116,65 @@ class Client:
         """Returns list of due_date strings from the tasks."""
         return list(sorted(self.__tasks.get_due_date_set()))
 
-    def get_tasks_by_project(self, project: str) -> List[Task]:
-        """Returns list of tasks that match the provided project name. """
-        assert type(project) is str
-        return self.__tasks.get_tasks_by_project(project)
-
-    def get_tasks_by_label(self, label: str) -> List[Task]:
-        """Returns list of tasks that match the provided label. """
-        assert type(label) is str
-        return self.__tasks.get_tasks_by_label(label)
-
-    def get_tasks_by_text(self, text: str) -> List[Task]:
-        """Returns list of tasks that contain the provided text string. """
-        assert type(text) is str
-        return self.__tasks.get_tasks_containing_text(text)
-
-    def get_tasks_by_status(self, is_completed: bool) -> List[Task]:
-        """Returns list of tasks that are either completed/incomplete"""
-        assert type(is_completed) is bool
-        return self.__tasks.get_tasks_by_status(is_completed)
-
-    def get_task_list(self) -> List[Task]:
-        """Returns all tasks"""
-        return self.__tasks.get_object_list()
-
     def get_snapshot_list(self) -> List[Snapshot]:
         return self.__snapshots.get_snapshot_list()
 
-    def get_tasks_by_date(self, date_string: str):
-        assert type(date_string) is str
-        return self.__tasks.get_tasks_by_date(date_string)
+    def count_all_tasks(self, **kwargs) -> List[Snapshot]:
+        if kwargs.get("due_date"):
+            task_list = self.__tasks.get_object_list()
+            snapshot_list = self.count_tasks_by_date(task_list)
+        else:
+            task_list = self.__tasks.get_object_list()
+            snapshot_list = self.count_total_tasks("all tasks", task_list)
+        return self.display_snapshots(snapshot_list, kwargs)
 
-    def get_tasks_within_date_range(self, min_date_string: str, max_date_string: str) -> List[Task]:
-        assert type(min_date_string) is str
-        assert type(max_date_string) is str
-        return self.__tasks.get_tasks_within_date_range(min_date_string, max_date_string)
+    def count_tasks_by_due_date_range(self, **kwargs) -> List[Snapshot]:
+        min_date_string = kwargs.get("min_date")
+        max_date_string = kwargs.get("max_date")
+
+        task_list = self.__tasks.get_tasks_within_date_range(min_date_string, max_date_string)
+        context = f"min_due_date: {min_date_string} to max_due_date: {max_date_string}"
+        snapshot_list = self.count_total_tasks(context, task_list)
+        return self.display_snapshots(snapshot_list, kwargs)
+
+    def count_tasks_by_label(self, **kwargs) -> List[Snapshot]:
+        label = kwargs.get("label")
+        task_list = self.__tasks.get_tasks_by_label(label)
+        context = f"label: {label}"
+        snapshot_list = self.count_total_tasks(context, task_list)
+        return self.display_snapshots(snapshot_list, kwargs)
+
+    def count_tasks_by_due_date(self, **kwargs) -> List[Snapshot]:
+        date_string = kwargs.get("date")
+        task_list = self.__tasks.get_tasks_by_date(date_string)
+        context = f"due_date: {date_string}"
+        snapshot_list = self.count_total_tasks(context, task_list)
+        return self.display_snapshots(snapshot_list, kwargs)
+
+    def count_tasks_by_today(self) -> List[Snapshot]:
+        date_string = Today().to_date_string()
+        task_list = self.__tasks.get_tasks_by_date(date_string)
+        context = f"due_date: {date_string}"
+        snapshot_list = self.count_total_tasks(context, task_list)
+        return self.display_snapshots(snapshot_list, {})
+
+    def count_tasks_by_project(self, **kwargs) -> List[Snapshot]:
+        project = kwargs.get("project")
+        task_list = self.__tasks.get_tasks_by_project(project)
+        context = f"project: {project}"
+        snapshot_list = self.count_total_tasks(context, task_list)
+        return self.display_snapshots(snapshot_list, kwargs)
+
+    def count_tasks_by_status(self, **kwargs):
+        status_type = kwargs.get("status")
+        if status_type == "complete":
+            task_list = self.__tasks.get_tasks_by_status(is_completed=True)
+        else:
+            task_list = self.__tasks.get_tasks_by_status(is_completed=False)
+
+        context = f"status: {status_type}"
+        snapshot_list = self.count_total_tasks(context, task_list)
+        return self.display_snapshots(snapshot_list, kwargs)
 
     def add_task(self, text: str, label: str, project: str, date_expression: str) -> List[Task]:
         """
@@ -220,7 +318,6 @@ class Client:
             snapshot = self.__snapshots.total_count(context, project, task_list)
             snapshot.index = index
             snapshot_list.append(snapshot)
-
         return snapshot_list
 
     def count_tasks_by_date(self, task_list) -> List[Snapshot]:

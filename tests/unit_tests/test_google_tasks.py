@@ -2,7 +2,7 @@ import unittest
 
 from taskmgr.lib.presenter.gtask_project_api import GTasksProjectAPI
 from taskmgr.lib.presenter.gtasks_api import GTask, GTasksAPI
-from tests.mock_tasks_service import MockTasksService
+from tests.unit_tests.mock_tasks_service import MockTasksService
 
 
 class TestGoogleTasks(unittest.TestCase):

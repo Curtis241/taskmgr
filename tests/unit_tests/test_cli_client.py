@@ -38,7 +38,7 @@ class TestCliClient(unittest.TestCase):
 
     def test_add_task(self):
         self.client.add_task("Clean garage", "", "home", "empty")
-        self.client.display_all_tasks()
+        self.client.list_all_tasks()
         row_count = len(self.client.task_table.get_table().rows)
         self.assertTrue(row_count == 1)
 
@@ -52,7 +52,7 @@ class TestCliClient(unittest.TestCase):
         self.client.add_task("Build puzzle with family", "@idea", "home", "su")
         self.client.add_task("Schedule meeting with SW team", "@meeting", "work", "m")
         self.client.add_task("Create facebook 2.0 app", "@idea", "", "empty")
-        rows = self.client.display_all_tasks()
+        rows = self.client.list_all_tasks()
         self.assertTrue(len(rows) == 9)
 
     def test_list_tasks_by_label(self):
@@ -65,7 +65,7 @@ class TestCliClient(unittest.TestCase):
         self.client.add_task("Build puzzle with family", "@idea", "home", "su")
         self.client.add_task("Schedule meeting with SW team", "@meeting", "work", "m")
         self.client.add_task("Create facebook 2.0 app", "@idea", "", "empty")
-        rows = self.client.group_by_label()
+        rows = self.client.group_tasks_by_label()
         self.assertTrue(len(rows) == 9)
 
     def test_list_tasks_by_project(self):
@@ -78,7 +78,7 @@ class TestCliClient(unittest.TestCase):
         self.client.add_task("Build puzzle with family", "@idea", "home", "su")
         self.client.add_task("Schedule meeting with SW team", "@meeting", "work", "m")
         self.client.add_task("Create facebook 2.0 app", "@idea", "", "empty")
-        rows = self.client.group_by_project()
+        rows = self.client.group_tasks_by_project()
         self.assertTrue(len(rows) == 9)
 
     def test_encoding_decoding_date_string(self):
@@ -110,7 +110,7 @@ class TestCliClient(unittest.TestCase):
         self.client.add_task("Build puzzle with family", "@idea", "home", "su")
         self.client.add_task("Schedule meeting with SW team", "@meeting", "work", "m")
         self.client.add_task("Create facebook 2.0 app", "@idea", "", "empty")
-        task_list = self.client.display_all_tasks()
+        task_list = self.client.list_all_tasks()
         self.assertTrue(len(task_list) > 0)
         task1 = task_list[0]
         self.assertIsNotNone(task1)
@@ -120,7 +120,7 @@ class TestCliClient(unittest.TestCase):
         future_day = Day(future_day)
         self.client.reschedule_tasks(future_day)
 
-        task_list = self.client.display_all_tasks()
+        task_list = self.client.list_all_tasks()
         self.assertTrue(len(task_list) > 0)
         task1 = task_list[0]
         self.assertIsNotNone(task1)
@@ -129,7 +129,7 @@ class TestCliClient(unittest.TestCase):
     def test_today(self):
         self.client.add_task("task1", "home", "home", "empty")
         self.client.add_task("task2", "home", "home", "today")
-        rows = self.client.filter_by_today()
+        rows = self.client.filter_tasks_by_today()
         self.assertTrue(len(list(rows)) == 1)
 
     def test_delete(self):
@@ -146,7 +146,7 @@ class TestCliClient(unittest.TestCase):
         for task in task_list:
             self.client.complete_tasks((task.index,))
 
-        rows = self.client.display_all_tasks()
+        rows = self.client.list_all_tasks()
         self.assertTrue(len(due_dates) == len(rows))
 
         done_list = [row.due_date.completed for row in rows]
