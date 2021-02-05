@@ -1,6 +1,7 @@
 import os
 
 from flask import Flask, jsonify, request, make_response, Response
+from werkzeug.exceptions import abort
 
 from taskmgr.lib.model.database_manager import DatabaseManager
 from taskmgr.lib.presenter.file_manager import FileManager
@@ -17,14 +18,12 @@ def get_tasks_list():
 
 @app.route("/task/add", methods=["POST"])
 def add_task():
-    content = request.json
-    print(content)
-    return Response()
-    # if "text" in content:
-    #     return jsonify(api_client.add_task(content.text, content.label,
-    #                                        content.project, content.due_date))
-    # else:
-    #     return 404
+    app.logger.debug("Request Headers %s", request.headers)
+    app.logger.debug("Request Body %s", request.json)
+    if not request.json or 'text' not in request.json:
+        abort(400)
+    return jsonify(api_client.add_task(request["text"], request["label"],
+                                       request["project"], request["due_date"]))
 
 
 if __name__ == "__main__":

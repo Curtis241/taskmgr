@@ -5,11 +5,12 @@ import json
 
 class RestApi:
 
-    def __init__(self): pass
+    def __init__(self):
+        self.ip_address = '127.0.0.1'
+        self.port = 5000
 
-    @staticmethod
-    def build_url(relative_api):
-        return f"http://localhost:5000/{relative_api}"
+    def build_url(self, relative_api):
+        return f"http://{self.ip_address}:{self.port}/{relative_api}"
 
     def get(self, relative_api):
         print(self.build_url(relative_api))
@@ -20,7 +21,8 @@ class RestApi:
 
     def post(self, relative_api, data=None):
         if data is not None:
-            return requests.post(self.build_url(relative_api), data)
+            return requests.post(self.build_url(relative_api), data, headers={"Content-Type": "application/json",
+                                                                              "Accept": "application/json"})
         else:
             return requests.post(self.build_url(relative_api))
 

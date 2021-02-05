@@ -20,7 +20,8 @@ requests==2.22.0
 dpath==1.4.2
 redis==3.3.11
 flask==1.1.2
-getgauge==0.3.12
+
+getgauge==0.3.10
 
 google-auth>=1.21.1
 google-api-python-client==1.7.8

@@ -60,7 +60,7 @@ test-all: ## run tests on every Python version with tox
 	tox
 
 run-ac-tests:
-	. venv3/bin/activate; export PYTHONPATH=`pwd`; gauge run tests/acceptance_tests/specs/; deactivate
+	. venv3/bin/activate; export PYTHONPATH=`pwd`; gauge run -s tests/acceptance_tests/specs/; deactivate
 
 coverage: ## check code coverage quickly with the default Python
 	coverage run --source taskmgr -m pytest
