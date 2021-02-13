@@ -1,4 +1,5 @@
 import ast
+import os
 import re
 from configparser import RawConfigParser, NoSectionError
 from pathlib import Path
@@ -35,6 +36,7 @@ class CommonVariables:
                                    'enable_redis': False,
                                    'redis_host': 'localhost',
                                    'redis_port': 6379}
+            os.makedirs(self.resources_dir)
             self.__save()
 
     def __get_file_path(self):

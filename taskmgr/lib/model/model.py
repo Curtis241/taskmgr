@@ -30,7 +30,8 @@ class Model:
         if self.__db is not None:
             dict_list = self.__db.get()
             if dict_list is not None and len(dict_list) > 0:
-                return self.__db.to_object_list(dict_list, self.__db_object)
+                return sorted(self.__db.to_object_list(dict_list, self.__db_object),
+                              key=lambda task:task.due_date.date_string)
         return []
 
     def clear_objects(self):
