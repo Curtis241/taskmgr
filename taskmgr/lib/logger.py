@@ -32,7 +32,8 @@ class AppLogger:
         console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setLevel(logging.INFO)
         console_handler.addFilter(MyFilter(logging.INFO))
-        console_formatter = logging.Formatter('%(levelname)s : %(name)s : %(message)s')
+        #console_formatter = logging.Formatter('%(levelname)s : %(name)s : %(message)s')
+        console_formatter = logging.Formatter('%(message)s')
         console_handler.setFormatter(console_formatter)
 
         self.logger.addHandler(file_handler)

@@ -36,7 +36,7 @@ class CommonVariables:
                                    'enable_redis': False,
                                    'redis_host': 'localhost',
                                    'redis_port': 6379}
-            os.makedirs(self.resources_dir)
+            os.makedirs(self.resources_dir, exist_ok=True)
             self.__save()
 
     def __get_file_path(self):

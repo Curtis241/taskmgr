@@ -145,7 +145,6 @@ class TestTasks(unittest.TestCase):
         self.assertEqual(initial_task.due_date.date_string, "2020-05-11")
 
         modified_task = tasks.get_task_by_name("InitialTask")
-        self.assertTrue(len(modified_task.due_dates) == 1)
         current_date_string = Today().to_date_string()
         self.assertTrue(modified_task.due_date.date_string == current_date_string)
 

@@ -1,4 +1,5 @@
 import calendar
+from typing import Callable, List
 from datetime import datetime, timedelta
 from taskmgr.lib.model.day import Day
 from taskmgr.lib.model.due_date import DueDate
@@ -22,9 +23,9 @@ class Calendar:
         self.vars = CommonVariables()
 
     @staticmethod
-    def __exists(day_tuple, date_list):
-        for date in date_list:
-            if date[0] == day_tuple[0]:
+    def __exists(day: tuple, dates: list):
+        for date in dates:
+            if date[0] == day[0]:
                 return True
         return False
 
@@ -34,33 +35,29 @@ class Calendar:
             date_list.append(day_tuple)
         return date_list
 
-    def is_past(self, due_date, current_day=Today()):
-        if type(due_date) is DueDate and len(due_date.date_string) > 0:
-            day = Day(datetime.strptime(due_date.date_string, self.vars.date_format))
-            timedelta1 = day.to_date_time() - current_day.to_date_time()
-            if timedelta1.days < 0:
-                return True
-
+    @staticmethod
+    def is_past(due_date: DueDate, current_day=Today()) -> bool:
+        timedelta1 = due_date.to_date_time() - current_day.to_date_time()
+        if timedelta1.days < 0:
+            return True
         return False
 
-    def contains_month(self, due_date_list, selected_day=Today()):
-        for due_date in due_date_list:
-            day = Day(datetime.strptime(due_date.date_string, self.vars.date_format))
-            if day.month == selected_day.month:
-                return True
-        return False
+    @staticmethod
+    def contains(due_dates: List[DueDate], is_matched: Callable) -> bool:
+        return len([due_date for due_date in due_dates if is_matched(due_date)]) >= 1
 
-    def contains_week(self, due_date_list, selected_day=Today()):
-        for due_date in due_date_list:
-            day = Day(datetime.strptime(due_date.date_string, self.vars.date_format))
-            if day.week == selected_day.week:
-                return True
-        return False
+    @staticmethod
+    def contains_month(due_dates: List[DueDate], selected_day=Today()) -> bool:
+        return Calendar.contains(due_dates, lambda due_date: Day(due_date.to_date_time()).month == selected_day.month)
 
-    def get_closest_due_date(self, due_date_list, current_day=None):
+    @staticmethod
+    def contains_week(due_dates: List[DueDate], selected_day=Today()) -> bool:
+        return Calendar.contains(due_dates, lambda due_date: Day(due_date.to_date_time()).week == selected_day.week)
+
+    def get_closest_due_date(self, due_dates: List[DueDate], current_day=None):
         """
         Returns a future date string that is the closest to the current day
-        :param due_date_list: list of due_date objects with the format yyyy-mm-dd
+        :param due_dates: list of due_date objects with the format yyyy-mm-dd
         :param current_day: Day object
         :return:
         Date string
@@ -68,21 +65,19 @@ class Calendar:
         if current_day is None:
             current_day = Today()
 
-        if type(due_date_list) is list and len(due_date_list) > 0:
-            diff_list = []
+        diff_list = []
+        # calculate the difference between current day and date string
+        for due_date in due_dates:
+            if len(due_date.date_string) > 0:
+                day = Day(datetime.strptime(due_date.date_string, self.vars.date_format))
+                timedelta1 = day.to_date_time() - current_day.to_date_time()
+                diff_list.append(timedelta1.days)
 
-            if type(due_date_list[0]) is DueDate:
-                # calculate the difference between current day and date string
-                for due_date in due_date_list:
-                    if len(due_date.date_string) > 0:
-                        day = Day(datetime.strptime(due_date.date_string, self.vars.date_format))
-                        timedelta1 = day.to_date_time() - current_day.to_date_time()
-                        diff_list.append(timedelta1.days)
+        # return the date string using the smallest difference
+        for index, diff_num in enumerate(diff_list):
+            if diff_num >= 0:
+                return due_dates[index]
 
-                # return the date string using the smallest difference
-                for index, diff_num in enumerate(diff_list):
-                    if diff_num >= 0:
-                        return due_date_list[index]
         return None
 
     def get_weekday_number(self, day_abbrev):

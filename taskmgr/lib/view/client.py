@@ -190,7 +190,10 @@ class Client:
         assert type(label) is str
         assert type(project) is str
         assert type(date_expression) is str
-        return self.__tasks.add(text, label, project, date_expression)
+        task_list = self.__tasks.add(text, label, project, date_expression)
+        if len(task_list) > 0:
+            self.logger.info(f"Added task {task_list[0].index}")
+        return task_list
 
     def edit_task(self, index: int, text: str, project: str, label: str, date_expression: str) -> Task:
         """

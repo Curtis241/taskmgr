@@ -31,10 +31,12 @@ class Snapshots(Model):
         for task in task_list:
             if task.deleted:
                 snapshot.deleted += 1
-            elif task.is_completed():
+
+            if task.is_completed():
                 snapshot.completed += 1
             else:
                 snapshot.incomplete += 1
+
         snapshot.count = len(task_list)
         return snapshot
 

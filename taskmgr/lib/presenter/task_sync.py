@@ -512,10 +512,11 @@ class GoogleTasksImporter(Importer):
 
         task_list = list()
         project = self.__gtasks_project_api.get(project_name)
-        self.logger.info(f"Working on tasks in {project.title}")
-        for gtask in GTasksAPI(project.id, self.__google_tasks_service).list():
-            if len(gtask.title) != 0:
-                task_list.append(self.__converter.to_task(gtask, project.title))
+        if project is not None:
+            self.logger.info(f"Working on tasks in {project.title}")
+            for gtask in GTasksAPI(project.id, self.__google_tasks_service).list():
+                if len(gtask.title) != 0:
+                    task_list.append(self.__converter.to_task(gtask, project.title))
 
         return task_list
 

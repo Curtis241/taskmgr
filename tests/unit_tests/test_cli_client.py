@@ -96,22 +96,13 @@ class TestCliClient(unittest.TestCase):
         self.assertEqual(task.priority, 1)
         self.assertEqual(task.project, 'home')
         self.assertEqual(task.date_expression, 'apr 14')
-        self.assertEqual(task.due_date.date_string, '2020-04-14')
+        self.assertEqual(task.due_date.date_string, '2021-04-14')
         self.assertEqual(task.due_date.completed, False)
 
     def test_reschedule_tasks(self):
         today = Today()
-        self.client.add_task("Clean car", "@waiting_on", "home", "today")
-        self.client.add_task("Clean bathroom", "", "home", "tomorrow")
-        self.client.add_task("Book flight to New York", "@at_computer", "work", "m")
-        self.client.add_task("Repair deck", "@waiting_on", "home", "sa")
-        self.client.add_task("Call friend for birthday", "@call", "home", "m")
-        self.client.add_task("Paint picture", "@idea", "home", "sa")
-        self.client.add_task("Build puzzle with family", "@idea", "home", "su")
-        self.client.add_task("Schedule meeting with SW team", "@meeting", "work", "m")
-        self.client.add_task("Create facebook 2.0 app", "@idea", "", "empty")
-        task_list = self.client.list_all_tasks()
-        self.assertTrue(len(task_list) > 0)
+        task_list = self.client.add_task("Clean car", "@waiting_on", "home", "today")
+        self.assertTrue(len(task_list) == 1)
         task1 = task_list[0]
         self.assertIsNotNone(task1)
         self.assertTrue(task1.due_date.date_string == today.to_date_string())
@@ -120,8 +111,9 @@ class TestCliClient(unittest.TestCase):
         future_day = Day(future_day)
         self.client.reschedule_tasks(future_day)
 
-        task_list = self.client.list_all_tasks()
-        self.assertTrue(len(task_list) > 0)
+        kwargs = {"text": task1.text}
+        task_list = self.client.filter_tasks_by_text(**kwargs)
+        self.assertTrue(len(task_list) == 1)
         task1 = task_list[0]
         self.assertIsNotNone(task1)
         self.assertTrue(task1.due_date.date_string == future_day.to_date_string())

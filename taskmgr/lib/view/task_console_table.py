@@ -42,7 +42,9 @@ class TaskConsoleTable(ConsoleTable):
         :return: list
         """
         assert type(task) is Task
-        text = textwrap.shorten(task.text, CommonVariables().default_text_field_length, placeholder="...")
+        text = textwrap.shorten(task.text,
+                                CommonVariables().default_text_field_length,
+                                placeholder="...")
 
         if task.is_completed():
             completed_text = fg('green') + str(task.due_date.completed)
@@ -52,4 +54,5 @@ class TaskConsoleTable(ConsoleTable):
         if task.deleted:
             text = fg('red') + str(text)
 
-        return [task.index, completed_text, text, task.project, task.label, task.due_date.date_string]
+        return [task.index, completed_text, text, task.project,
+                task.label, task.due_date.date_string]

@@ -65,7 +65,7 @@ class TestSnapshots(unittest.TestCase):
         self.assertIsNotNone(snapshot)
         self.assertTrue(snapshot.count == 3)
         self.assertTrue(snapshot.deleted == 1)
-        self.assertTrue(snapshot.incomplete == 1)
+        self.assertTrue(snapshot.incomplete == 2)
         self.assertTrue(snapshot.completed == 1)
 
 

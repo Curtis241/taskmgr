@@ -1,8 +1,5 @@
-from datetime import datetime
-
 from taskmgr.lib.model.database import DatabaseObject
 from taskmgr.lib.model.due_date import DueDate
-from taskmgr.lib.model.day import Day
 from taskmgr.lib.variables import CommonVariables
 
 
@@ -22,7 +19,6 @@ class Task(DatabaseObject):
         self.__priority = 1
         self.__project = self.vars.default_project_name
         self.__date_expression = self.vars.default_date_expression
-        self.__due_dates = [DueDate()]
         self.__due_date = DueDate()
 
     def get_redis_db_id(self):
@@ -38,15 +34,6 @@ class Task(DatabaseObject):
         self.__date_expression = expression
 
     @property
-    def due_dates(self):
-        return self.__due_dates
-
-    @due_dates.setter
-    def due_dates(self, due_dates):
-        assert type(due_dates) is list
-        self.__due_dates = due_dates
-
-    @property
     def due_date(self):
         return self.__due_date
 
@@ -56,7 +43,7 @@ class Task(DatabaseObject):
 
     def complete(self) -> list:
         self.due_date.completed = True
-        return self.__due_dates
+        return [self.__due_date]
 
     @property
     def external_id(self):
@@ -117,8 +104,6 @@ class Task(DatabaseObject):
     def deserialize(self, obj_dict):
         for key, value in obj_dict.items():
             if type(value) is list:
-                if key == "due_dates":
-                    self.due_dates = [DueDate().from_dict(due_date_dict) for due_date_dict in value]
                 if key == "due_date" and len(value) == 1:
                     self.due_date = DueDate().from_dict(value[0])
             else:
@@ -135,7 +120,6 @@ class Task(DatabaseObject):
         yield 'project', self.__project
         yield 'date_expression', self.__date_expression
         yield 'due_date', [self.__due_date.to_dict()]
-        yield 'due_dates', [due_date.to_dict() for due_date in self.due_dates]
         yield 'unique_id', self.unique_id
         yield 'last_updated', self.last_updated
 

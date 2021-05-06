@@ -74,6 +74,9 @@ class Tasks(Model):
                 self.logger.debug(f"Retrieved task by index: {task.index}, text: {task.text}")
                 return task
 
+    def get_task_list(self):
+        return sorted(self.get_object_list(), key=lambda task: task.due_date.date_string)
+
     def get_tasks_containing_text(self, value) -> List[Task]:
         """
         Selects all tasks that with a text value that contain the provided value
@@ -81,7 +84,7 @@ class Tasks(Model):
         :return: list of Task
         """
         assert type(value) is str
-        return [task for task in self.get_object_list()
+        return [task for task in self.get_task_list()
                 if str(value).lower() in str(task.text).lower()]
 
     def get_tasks_matching_text(self, value) -> List[Task]:
@@ -91,7 +94,7 @@ class Tasks(Model):
         :return:
         """
         assert type(value) is str
-        return [task for task in self.get_object_list()
+        return [task for task in self.get_task_list()
                 if str(value.lower() == str(task.text).lower())]
 
     def get_task_by_index(self, index) -> Task:
@@ -112,21 +115,21 @@ class Tasks(Model):
 
     def get_tasks_by_date(self, date_string) -> List[Task]:
         assert type(date_string) is str
-        return [task for task in self.get_object_list() if task.due_date.date_string == date_string]
+        return [task for task in self.get_task_list() if task.due_date.date_string == date_string]
 
     def get_tasks_within_date_range(self, min_date_string, max_date_string) -> List[Task]:
         assert type(min_date_string) is str
         assert type(max_date_string) is str
-        return [task for task in self.get_object_list()
+        return [task for task in self.get_task_list()
                 if self.contains_due_date_range(task, min_date_string, max_date_string)]
 
     def get_tasks_by_status(self, is_completed) -> List[Task]:
         assert type(is_completed) is bool
 
         if is_completed:
-            return [task for task in self.get_object_list() if task.is_completed()]
+            return [task for task in self.get_task_list() if task.is_completed()]
         else:
-            return [task for task in self.get_object_list() if not task.is_completed()]
+            return [task for task in self.get_task_list() if not task.is_completed()]
 
     def get_tasks_by_project(self, project) -> List[Task]:
         assert type(project) is str
@@ -137,7 +140,7 @@ class Tasks(Model):
         return self.get_list_by_type("label", label)
 
     def get_filtered_list(self) -> List[Task]:
-        return [task for task in self.get_object_list() if not task.deleted]
+        return [task for task in self.get_task_list() if not task.deleted]
 
     def delete(self, task_id) -> Task:
         assert type(task_id) is str
@@ -226,7 +229,7 @@ class Tasks(Model):
 
     def reschedule(self, today) -> None:
         assert type(today) is Today or Day
-        task_list = self.get_object_list()
+        task_list = self.get_task_list()
         for task in task_list:
             if self.__calendar.is_past(task.due_date, today) and task.due_date.completed is False:
                 task.due_date.date_string = today.to_date_string()
@@ -245,7 +248,7 @@ class Tasks(Model):
         assert type(value) is str
 
         if task_list is None:
-            task_list = self.get_object_list()
+            task_list = self.get_task_list()
         else:
             assert type(task_list) is list
 
@@ -253,16 +256,16 @@ class Tasks(Model):
 
     def __sort(self, parameter_name: str) -> list:
         assert type(parameter_name) is str
-        return [t for t in sorted(self.get_object_list(), key=lambda t: getattr(t, parameter_name))]
+        return [t for t in sorted(self.get_task_list(), key=lambda t: getattr(t, parameter_name))]
 
     def get_label_set(self) -> Set[Task]:
-        return self.unique("label", self.get_object_list())
+        return self.unique("label", self.get_task_list())
 
     def get_project_set(self) -> Set[Task]:
-        return self.unique("project", self.get_object_list())
+        return self.unique("project", self.get_task_list())
 
     def get_due_date_set(self) -> Set[Task]:
-        return set([task.due_date.date_string for task in self.get_object_list()])
+        return set([task.due_date.date_string for task in self.get_task_list()])
 
     @staticmethod
     def unique(parameter_name: str, task_list: list) -> Set[Task]:
