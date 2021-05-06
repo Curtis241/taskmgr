@@ -32,21 +32,24 @@ backend storage for the Android Google Tasks app.
 
 * Contains basic functions add, edit, delete, complete tasks
 * The add and edit functions support normal language date expressions like:
-    * Day of week (ie. su, m, tu, w, th, f, sa)
-    * Relative terms (ie. today, tomorrow, next week, next month)
-    * Recurring terms (ie. every day, every weekday, every su, every m, every tu, every w, every th, every f, every sa)
+    * Day of week
+        su, m, tu, w, th, f, sa
+    * Relative terms
+        today, tomorrow, next week, next month
+    * Recurring terms
+        every day, every weekday, every su, every m, every tu, every w, every th, every f, every sa
     * Short date - jan-dec 1-31
 * Attractive table structure provided by the BeautifulTable library https://pypi.org/project/beautifultable/
-* Import / Export of tasks to Google Tasks service
-* The list task feature displays all tasks that have not been deleted.
+* Download / Upload commands work with the Google Tasks service, but require setting up credentials
+* The list task feature displays all tasks that have not been deleted and exports to csv file.
 * The group command orders tasks by project and label. The results can be exported to a csv file.
 * The filter command selects tasks by the status, project, complete/incomplete status, and label.
 * The count command summarizes and displays the number of tasks in each project by date, date_range, label, project, and status. When the all command is used both the deleted and un-deleted tasks are included. The data is persisted to the selected database.
-* Added export of tasks to a csv file on results that are filtered. In addition to the csv file, the today command can also export to a markdown file.
+* The import command will now load tasks from a csv file
 * Added support for a json or redis database. The database type can be configured using the default command.
 
 
-**The commands available in version 0.1.7.**
+**The commands available in version 0.2.0.**
 
 
 ::
@@ -57,22 +60,24 @@ backend storage for the Android Google Tasks app.
         --help  Show this message and exit.
 
         Commands:
+          add         Appends a task using the provided or default parameters
+          complete    Marks the task as done
+          count       Displays task count
+          defaults    Sets the default variables
+          delete      Soft delete
+          download    Imports tasks from the Google Tasks service
+          edit        Replaces the task parameters with the provided parameters
+          filter      Filters tasks
+          group       Groups tasks
+          import      Imports tasks from csv file
+          incomplete  Marks the task as not done
+          list        Lists all tasks
+          reschedule  Moves all tasks from the past to today
+          today       Lists only the tasks that have today's date
+          undelete    Reverts deleted tasks
+          unique      Displays unique tasks
+          upload      Exports tasks to the Google Tasks service
 
-        add             Appends a task using the provided or default parameters
-        complete        Marks the task as done
-        count           Displays task count
-        defaults        Sets the default variables
-        delete          Soft delete
-        edit            Replaces the task parameters with the provided parameters
-        export          Exports the tasks to the Google Tasks service
-        filter          Filters tasks
-        group           Groups tasks
-        import          Imports the tasks from the Google Tasks service
-        list            Lists all un-deleted tasks
-        repair          Checks redis db for issues
-        reschedule      Moves all tasks from the past to today
-        reset           Resets the done status
-        today           Lists only the tasks that have today's date
 
 
 
