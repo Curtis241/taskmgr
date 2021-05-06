@@ -12,7 +12,7 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 requirements = ['pip==19.3.1', 'bumpversion>=0.5.3','wheel==0.32.1','watchdog==0.9.0',
-                'click==7.0', 'colored==1.4.2', 'pyyaml==3.12', 'ujson==1.35',  'beautifultable==1.0.0',
+                'click==7.0', 'colored==1.4.2', 'pyyaml==5.4', 'ujson==1.35',  'beautifultable==1.0.0',
                 'requests==2.22.0','dpath==1.4.2','redis==3.3.11', 'google-auth>=1.21.1', 'google-api-python-client>=1.7.8',
                 'google-auth-httplib2>=0.0.3', 'google-auth-oauthlib>=0.3.0', 'google-cloud-datastore>=1.9.0']
 setup_requirements = ['pytest-runner', ]
