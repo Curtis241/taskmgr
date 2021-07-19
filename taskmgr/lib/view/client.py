@@ -396,13 +396,16 @@ class Client:
         start_datetime = datetime.now()
 
         self.logger.info(f"Starting export")
-        self.logger.info(f"Preparing tasks for export")
-        local_project_list = google_tasks_exporter.convert(project_name)
-        self.logger.info(f"Exporting tasks to service")
-        sync_results = google_tasks_exporter.export_tasks(local_project_list)
-        self.logger.info(f"Export summary: {sync_results.get_summary()}")
+        if not google_tasks_exporter.project_exist(project_name):
+            self.logger.info(f"Preparing tasks for export")
+            local_project_list = google_tasks_exporter.convert(project_name)
+            self.logger.info(f"Exporting tasks to service")
+            sync_results = google_tasks_exporter.export_tasks(local_project_list)
+            self.logger.info(f"Export summary: {sync_results.get_summary()}")
 
-        self.logger.info(f"Export complete: Duration: {self.get_duration(start_datetime)}")
+            self.logger.info(f"Export complete: Duration: {self.get_duration(start_datetime)}")
+        else:
+            self.logger.info("ERROR: Cannot overwrite tasks in project")
 
     def display_invalid_index_error(self, index: int):
         assert type(index) is int

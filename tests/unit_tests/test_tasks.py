@@ -1,18 +1,19 @@
 import unittest
-from datetime import datetime
+from datetime import datetime, timedelta
 
-from taskmgr.lib.model.database import JsonFileDatabase
-from taskmgr.lib.model.day import Day
 from taskmgr.lib.model.calendar import Today
-from taskmgr.lib.presenter.date_generator import DateGenerator
+from taskmgr.lib.model.database import JsonFileDatabase
 from taskmgr.lib.model.task import Task
+from taskmgr.lib.presenter.date_generator import DateGenerator
 from taskmgr.lib.presenter.tasks import Tasks
+from taskmgr.lib.model.due_date import DueDate
 from taskmgr.lib.variables import CommonVariables
 
 
 class TestTasks(unittest.TestCase):
 
     def setUp(self):
+        self.vars = CommonVariables()
         self.db = JsonFileDatabase()
         self.db.initialize(Task())
         self.tasks = Tasks(self.db)
@@ -67,6 +68,12 @@ class TestTasks(unittest.TestCase):
         self.task10.date_expression = "may 11"
         self.tasks.append(self.task10)
 
+        self.future_task = Task("Future Task")
+        future_datetime = datetime.now() + timedelta(days=1)
+        date_string = future_datetime.strftime(self.vars.date_format)
+        self.future_task.due_date = DueDate(date_string)
+        self.tasks.append(self.future_task)
+
     def tearDown(self):
         self.db.clear()
 
@@ -74,12 +81,12 @@ class TestTasks(unittest.TestCase):
         task = Task("Task11")
         self.tasks.append(task)
         task_list = self.tasks.get_object_list()
-        self.assertTrue(len(task_list) == 11)
+        self.assertTrue(len(task_list) == 12)
 
     def test_deleted_task(self):
         self.tasks.delete(self.task1.unique_id)
         task_list = self.tasks.get_object_list()
-        self.assertTrue(len(task_list) == 10)
+        self.assertTrue(len(task_list) == 11)
         task = task_list[0]
         self.assertEqual(task.unique_id, self.task1.unique_id)
         self.assertTrue(task.deleted)
@@ -126,6 +133,12 @@ class TestTasks(unittest.TestCase):
     def test_get_list_by_type(self):
         returned_result = self.tasks.get_list_by_type("label", "call", self.tasks.get_object_list())
         self.assertTrue(len(returned_result) == 2)
+
+    def test_get_list_by_date_expression(self):
+        task_list = self.tasks.get_tasks_by_date("tomorrow")
+        self.assertTrue(len(task_list) == 1)
+        task = task_list[0]
+        self.assertTrue(task.text == "Future Task")
 
     def test_replace(self):
         task = self.tasks.get_task_by_name("Task1")

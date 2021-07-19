@@ -155,7 +155,8 @@ def filter_tasks_by_date_range(**kwargs):
 
 
 @task_filter.command("date")
-@click.argument('date', type=DateFormatString(), required=True, metavar="<date>")
+#@click.argument('date', type=DateFormatString(), required=True, metavar="<date>")
+@click.argument('date', type=str, required=True, metavar="<date>")
 @click.option('--export', is_flag=True, help="Outputs to csv file")
 def filter_tasks_by_date(**kwargs):
     cli_client.filter_tasks_by_due_date(**kwargs)

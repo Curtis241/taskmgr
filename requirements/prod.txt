@@ -2,15 +2,16 @@ pip==19.3.1
 bumpversion==0.5.3
 wheel==0.32.1
 watchdog==0.9.0
-click==7.0
+click==8.0.1
 colored==1.4.2
-pyyaml==3.12
-ujson==1.35
-beautifultable==1.0.0
-requests==2.22.0
-dpath==1.4.2
-redis==3.3.11
-flask==1.1.2
+pyyaml==5.4.1
+ujson==4.0.2
+beautifultable==1.0.1
+requests==2.25.1
+dpath==2.0.1
+redis==3.5.3
+flask==2.0.1
+python-dateutil==2.8.1
 
 google-auth>=1.21.1
 google-api-python-client>=1.7.8

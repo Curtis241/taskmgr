@@ -1,11 +1,9 @@
-import calendar
 from abc import ABC, abstractmethod
-from datetime import datetime, timedelta
+from datetime import datetime
 
-from taskmgr.lib.model.due_date import DueDate
-from taskmgr.lib.model.day import Day
 from taskmgr.lib.model.calendar import Calendar
-
+from taskmgr.lib.model.day import Day
+from taskmgr.lib.model.due_date import DueDate
 from taskmgr.lib.variables import CommonVariables
 
 
@@ -15,14 +13,15 @@ class DateParser:
         assert type(expression) is str
         self.expression = str(expression).lower()
         self.today = day
-        self.date_list = []
+        self.day_list = []
         self.handler_name = str()
-        self.calendar = Calendar()
 
 
 class Handler(ABC):
     def __init__(self):
         self.next_handler = None
+        self.calendar = Calendar()
+        self.vars = CommonVariables()
 
     def handle(self, request):
         self.next_handler.handle(request)
@@ -48,9 +47,7 @@ class DayOfWeekHandler(Handler):
 
     def parse_expression(self, parser):
         parser.handler_name = DayOfWeekHandler.__name__
-        weekday_number = parser.calendar.get_weekday_number(parser.expression)
-        calendar_day = parser.calendar.get_next_day(parser.today, weekday_number)
-        parser.date_list = calendar_day.to_date_list()
+        parser.day_list = [self.calendar.get_day_using_abbrev(parser.today, parser.expression)]
 
     def validate(self, expression):
         return expression in self.expression_list
@@ -60,7 +57,9 @@ class NormalLanguageDateHandler(Handler):
 
     def __init__(self):
         super().__init__()
-        self.expression_list = ["today", "tomorrow", "next week", "next month"]
+        self.expression_list = ["today", "tomorrow", "yesterday",
+                                "this week", "next week", "last week",
+                                "this month", "next month", "last month"]
 
     def handle(self, parser):
         if self.validate(parser.expression):
@@ -72,22 +71,31 @@ class NormalLanguageDateHandler(Handler):
         parser.handler_name = NormalLanguageDateHandler.__name__
 
         if parser.expression == "today":
-            date_list = parser.today.to_date_list()
-            parser.date_list = date_list
+            parser.day_list = [parser.today]
 
         if parser.expression == "tomorrow":
-            today = parser.today
-            tomorrow = today.to_date_time() + timedelta(days=1)
-            parser.date_list = Day(tomorrow).to_date_list()
+            parser.day_list = [self.calendar.get_tomorrow(parser.today)]
+
+        if parser.expression == "yesterday":
+            parser.day_list = [self.calendar.get_yesterday(parser.today)]
+
+        if parser.expression == "this week":
+            parser.day_list = self.calendar.get_this_week(parser.today)
 
         if parser.expression == "next week":
-            calendar_day = parser.calendar.get_next_day(parser.today, 0)
-            parser.date_list = calendar_day.to_date_list()
+            parser.day_list = self.calendar.get_next_week(parser.today)
+
+        if parser.expression == "last week":
+            parser.day_list = self.calendar.get_last_week(parser.today)
+
+        if parser.expression == "this month":
+            parser.day_list = self.calendar.get_this_month(parser.today)
 
         if parser.expression == "next month":
-            today = parser.today
-            today.month = today.month + 1
-            parser.date_list = parser.calendar.get_first_day_of_month(today, 1)
+            parser.day_list = self.calendar.get_next_month(parser.today)
+
+        if parser.expression == "last month":
+            parser.day_list = self.calendar.get_last_month(parser.today)
 
     def validate(self, expression):
         return expression in self.expression_list
@@ -100,7 +108,6 @@ class RecurringDateHandler(Handler):
         self.expression_list = ["every day", "every weekday", "every su", "every m", "every tu", "every w", "every th",
                                 "every f", "every sa"]
         self.week_abbrev_list = ['su', 'm', 'tu', 'w', 'th', 'f', 'sa']
-        self.vars = CommonVariables()
 
     def handle(self, parser):
         if self.validate(parser.expression):
@@ -111,18 +118,14 @@ class RecurringDateHandler(Handler):
     def parse_expression(self, parser):
         parser.handler_name = RecurringDateHandler.__name__
         if parser.expression == "every day":
-            date_list = parser.calendar.get_week_days(parser.today, self.vars.recurring_month_limit)
-            parser.date_list = date_list
-
+            parser.day_list = self.calendar.get_days(parser.today,
+                                                     self.vars.recurring_month_limit)
         elif parser.expression == "every weekday":
-            parser.date_list = parser.calendar.get_work_week_dates(parser.today,
-                                                                   self.vars.recurring_month_limit)
+            parser.day_list = self.calendar.get_work_week_days(parser.today,
+                                                               self.vars.recurring_month_limit)
         elif str(parser.expression).startswith("every"):
-            expression = str(parser.expression).split(" ")
-            if expression[1] in self.week_abbrev_list:
-                weekday_number = parser.calendar.get_weekday_number(expression[1])
-                parser.date_list = parser.calendar.get_week_day_list(parser.today, weekday_number,
-                                                                     self.vars.recurring_month_limit)
+            parser.day_list = self.calendar.parse_recurring_abbrev(parser.today, parser.expression,
+                                                                   self.vars.recurring_month_limit)
 
     def validate(self, expression):
         return expression in self.expression_list
@@ -141,23 +144,10 @@ class ShortDateHandler(Handler):
             super(ShortDateHandler, self).handle(parser)
 
     def parse_expression(self, parser):
-        expression = str(parser.expression).lower().split(" ")
-        for month_number, month in enumerate(self.expression_list, start=1):
-            if expression[0] == month and int(expression[1]) in range(1, calendar.mdays[month_number]):
-                now = datetime.now()
-                day = Day(now)
-                day.month = month_number
-                day.day = int(expression[1])
-                parser.date_list = day.to_date_list()
+        parser.day_list = [self.calendar.parse_date(parser.expression)]
 
     def validate(self, expression):
-        fragments = str(expression).lower().split(" ")
-        if len(fragments) == 2:
-            month_exists = fragments[0] in self.expression_list
-            day_number_exists = str(fragments[1]).isdigit()
-            return month_exists is True and day_number_exists is True
-        else:
-            return False
+        return self.calendar.is_short_date(expression)
 
 
 class YearMonthDateHandler(Handler):
@@ -171,7 +161,7 @@ class YearMonthDateHandler(Handler):
 
     def parse_expression(self, parser):
         parser.handler_name = YearMonthDateHandler.__name__
-        parser.date_list = [parser.expression]
+        parser.day_list = [self.calendar.parse_date(parser.expression)]
 
     def handle(self, parser):
         if self.validate(parser.expression):
@@ -193,7 +183,7 @@ class EmptyDateHandler(Handler):
             super(EmptyDateHandler, self).handle(parser)
 
     def parse_expression(self, parser):
-        parser.date_list = []
+        parser.day_list = []
 
     def validate(self, expression):
         return expression in self.expression_list
@@ -247,20 +237,20 @@ class DateGenerator(object):
         self.handler_6.next_handler = ErrorHandler()
         self.handler_1.handle(parser)
 
-        due_date_list = list()
-        if len(parser.date_list) == 0:
+        due_day_list = list()
+        if len(parser.day_list) == 0:
             due_date = DueDate()
             due_date.date_string = ""
             due_date.completed = False
-            due_date_list.append(due_date)
+            due_day_list.append(due_date)
         else:
-            for date_string in parser.date_list:
+            for day in parser.day_list:
                 due_date = DueDate()
-                due_date.date_string = date_string
+                due_date.date_string = day.to_date_string()
                 due_date.completed = False
-                due_date_list.append(due_date)
+                due_day_list.append(due_date)
 
-        return due_date_list
+        return due_day_list
 
     def validate_input(self, date_expression: str) -> bool:
         assert type(date_expression) is str

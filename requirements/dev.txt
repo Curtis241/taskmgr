@@ -8,4 +8,3 @@ twine==1.12.1
 pytest==3.8.2
 pluggy==0.7.1
 pytest-runner==4.2
-getgauge>=0.3.10

@@ -8,23 +8,23 @@ class Day:
     def __init__(self, dt):
         assert type(dt) is datetime
         self.dt = dt
-        self.day = dt.day
+        self.day_number = dt.day
         self.month = dt.month
         self.year = dt.year
         self.timestamp = dt.timestamp()
         self.weekday_number = dt.weekday()
-        self.week = self.get_week(self.day, self.weekday_number, self.month, self.year)
+        self.week = self.get_week(self.day_number, self.weekday_number, self.month, self.year)
         self.vars = CommonVariables()
 
     def to_date_list(self):
         return [self.to_date_string()]
 
     def to_date_expression(self):
-        return f"{self.month} {self.day}"
+        return f"{self.month} {self.day_number}"
 
     def to_date_string(self):
         month = Day.pad(self.month)
-        day = Day.pad(self.day)
+        day = Day.pad(self.day_number)
         return f"{self.year}-{month}-{day}"
 
     def to_date_time_string(self):
@@ -32,7 +32,7 @@ class Day:
 
     def to_date_time(self):
         month = self.pad(self.month)
-        day = self.pad(self.day)
+        day = self.pad(self.day_number)
         return datetime.strptime(f"{self.year}-{month}-{day}", self.vars.date_format)
 
     @staticmethod

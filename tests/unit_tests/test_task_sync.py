@@ -101,3 +101,4 @@ class TestTaskSync(unittest.TestCase):
         self.assertTrue(action.can_delete())
         self.assertFalse(action.can_update())
         self.assertFalse(action.can_insert())
+

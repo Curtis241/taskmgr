@@ -113,9 +113,14 @@ class Tasks(Model):
         assert type(task_name) is str
         return self.get_task(lambda task: task if task.text == task_name else None)
 
-    def get_tasks_by_date(self, date_string) -> List[Task]:
-        assert type(date_string) is str
-        return [task for task in self.get_task_list() if task.due_date.date_string == date_string]
+    def get_tasks_by_date(self, date_expression) -> List[Task]:
+        assert type(date_expression) is str
+        task_list = list()
+        for due_date in self.__date_generator.get_due_dates(date_expression):
+            for task in self.get_task_list():
+                if task.due_date.date_string == due_date.date_string:
+                    task_list.append(task)
+        return task_list
 
     def get_tasks_within_date_range(self, min_date_string, max_date_string) -> List[Task]:
         assert type(min_date_string) is str

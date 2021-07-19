@@ -551,6 +551,11 @@ class GoogleTasksExporter:
 
         return project_list
 
+    def project_exist(self, project_name: str) -> bool:
+        if self.__gtasks_project_api.get(project_name) is None:
+            return False
+        return True
+
     def export_tasks(self, local_project_list) -> SyncResultsList:
         """
         Manages task export to the Google Tasks Service
