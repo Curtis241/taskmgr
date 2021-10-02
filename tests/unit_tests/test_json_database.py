@@ -1,6 +1,6 @@
 import unittest
 
-from taskmgr.lib.model.database import JsonFileDatabase, YamlFileDatabase, RedisDatabase, DatabaseObject
+from taskmgr.lib.model.database import JsonFileDatabase, DatabaseObject
 from taskmgr.lib.model.task import Task
 
 

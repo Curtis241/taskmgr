@@ -60,6 +60,8 @@ class DueDate(object):
 
         if "completed" in due_date:
             self.__completed = due_date["completed"]
-
         return self
+
+    def __eq__(self, other):
+        return (self.__date_string, self.__completed) == (other.date_string, other.completed)
 

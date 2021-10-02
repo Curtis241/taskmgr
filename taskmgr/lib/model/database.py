@@ -8,7 +8,6 @@ from typing import List
 
 import redis
 import ujson
-import yaml
 
 from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.variables import CommonVariables
@@ -297,85 +296,6 @@ class JsonFileDatabase(GenericDatabase):
             self.logger.debug("Retrieved json database")
             with open(self.path, 'r') as infile:
                 return ujson.load(infile)
-        return []
-
-    def exists(self) -> bool:
-        return self.file_exists(self.path)
-
-    def clear(self):
-        if self.exists():
-            self.remove_file(self.path)
-
-
-class YamlFileDatabase(GenericDatabase):
-    """
-    Manages saving and retrieving tasks as dict object to a yaml file
-    located in the resource directory. Retrieve method should be called
-    before save to maintain a consistent state.
-    """
-
-    logger = AppLogger("yaml_file_database").get_logger()
-
-    def __init__(self):
-        super().__init__()
-        self.path = None
-
-    def initialize(self, obj):
-        """
-        Constructs the db file path
-        :param obj: Class object that implements DatabaseObject
-        :param test_mode: Causes a file to be created with unique_id
-        :return: None
-        """
-        self.path = self.get_file_path(obj, "yaml")
-
-    def replace(self, obj):
-        assert isinstance(obj, DatabaseObject)
-        assert obj.index > 0
-
-        dict_list = self.get()
-        if dict_list is not None:
-            index = self.get_list_index(obj, dict_list)
-            if index is not None:
-                obj = self.set_unique_id(obj)
-                obj.last_updated = self.get_last_updated()
-                dict_list[index] = dict(obj)
-                self.save(dict_list)
-
-    def append(self, obj):
-        assert isinstance(obj, DatabaseObject)
-
-        dict_list = self.get()
-        if dict_list is not None:
-            obj.index = self.get_last_index(dict_list)
-            obj = self.set_unique_id(obj)
-            obj.last_updated = self.get_last_updated()
-            dict_list.append(dict(obj))
-            self.save(dict_list)
-        else:
-            obj.index = 1
-            obj = self.set_unique_id(obj)
-            obj.last_updated = self.get_last_updated()
-            self.save([dict(obj)])
-
-    def save(self, dict_list):
-        with open(self.path, 'w') as outfile:
-            self.logger.debug("Saved yaml database")
-            yaml.dump(dict_list, outfile, default_flow_style=False)
-
-    def set(self, obj_list):
-        """
-        Overwrites the contents of the yaml file using the obj_list.
-        :param obj_list: List of class objects
-        :return:
-        """
-        self.save(self.to_dict_list(obj_list))
-
-    def get(self) -> List[dict]:
-        if self.exists():
-            self.logger.debug("Retrieved yaml database")
-            with open(self.path, 'r') as infile:
-                return yaml.load(infile)
         return []
 
     def exists(self) -> bool:

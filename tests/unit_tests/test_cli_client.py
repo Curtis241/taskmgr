@@ -87,9 +87,9 @@ class TestCliClient(unittest.TestCase):
         date_object = datetime.strptime(date_string, "%m-%d-%Y")
         self.assertIsInstance(date_object, datetime)
 
-    def test_edit_task(self):
+    def test_edit_task_using_all_fields(self):
         self.client.add_task("Clean car", "@waiting_on", "home", "today")
-        task = self.client.edit_task(1, "text_value", "", "all", "apr 14")
+        task = self.client.edit_task(1, "text_value", "all", "", "apr 14")
         self.assertEqual(task.text, 'text_value')
         self.assertEqual(task.label, "all")
         self.assertEqual(task.deleted, False)

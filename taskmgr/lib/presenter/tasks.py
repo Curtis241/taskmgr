@@ -211,23 +211,20 @@ class Tasks(Model):
         self.logger.debug(f"Replaced local_task: {dict(local_task)} with remote_task: {dict(remote_task)}")
         return remote_task
 
-    def edit(self, task_id: str, text: str, label: str, project: str, date_expression: str) -> Task:
-        assert type(task_id) and type(text) and type(label) and type(project) is str
-        assert type(date_expression) is str
+    def edit(self, index: int, text: str, project: str, label: str, date_expression: str) -> Task:
 
-        task = self.get_task_by_id(task_id)
+        task = self.get_task_by_index(index)
         if task is not None:
-            due_dates = self.__date_generator.get_due_dates(date_expression)
-            if len(due_dates) == 1:
-                task.text = text
-                task.label = label
-                task.project = project
+            task.text = text
+            task.project = project
+            task.label = label
+
+            due_date = self.__date_generator.get_due_date(date_expression)
+            if due_date is not None:
                 task.date_expression = date_expression
-                task.due_date = due_dates[0]
-                self.replace_object(task.index, task)
-            else:
-                self.logger.info(f"Provided date expression {date_expression} is invalid when editing task, "
-                                 f"but is supported by the add task command")
+                task.due_date.date_string = due_date.date_string
+
+            self.replace_object(task.index, task)
             return task
         else:
             raise TaskKeyError()

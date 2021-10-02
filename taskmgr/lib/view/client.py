@@ -9,7 +9,8 @@ from taskmgr.lib.model.snapshot import Snapshot
 from taskmgr.lib.model.task import Task
 from taskmgr.lib.presenter.date_generator import DateGenerator
 from taskmgr.lib.presenter.file_manager import FileManager
-from taskmgr.lib.presenter.task_sync import GoogleTasksImporter, GoogleTasksExporter, CsvFileImporter
+from taskmgr.lib.presenter.task_sync import CsvFileImporter
+from taskmgr.lib.presenter.tasks import TaskKeyError
 from taskmgr.lib.variables import CommonVariables
 
 
@@ -203,8 +204,7 @@ class Client:
         :param text: text string describing the task
         :param project: project name of the task
         :param label: label name of the task
-        :param date_expression: Must be one of [today, tomorrow, m-s, every *, month / day, etc]. For complete
-        list see the expression_lists in handler objects in date_generator.py
+        :param date_expression: Must be one of [today, tomorrow, m-s, every *, month / day, etc].
         :return: Task
         """
         assert type(index) is int
@@ -213,14 +213,13 @@ class Client:
         assert type(label) is str
         assert type(date_expression) is str
 
-        task = self.__tasks.get_task_by_index(index)
-        if task is None:
+        try:
+            if self.__date_generator.validate_input(date_expression) is False:
+                self.logger.info(f"Provided due date {date_expression} is invalid")
+            else:
+                return self.__tasks.edit(index, text, label, project, date_expression)
+        except TaskKeyError:
             self.display_invalid_index_error(index)
-
-        if self.__date_generator.validate_input(date_expression) is False:
-            self.logger.info(f"Provided due date {date_expression} is invalid")
-
-        return self.__tasks.edit(task.unique_id, text, label, project, date_expression)
 
     def complete_tasks(self, index_tuple: tuple) -> list:
         """
@@ -363,49 +362,6 @@ class Client:
         self.logger.info(f"Import summary: {sync_results.get_summary()}")
 
         self.logger.info(f"Import complete: Duration: {self.get_duration(start_datetime)}")
-
-    def download_tasks(self, google_tasks_importer: GoogleTasksImporter, project: str):
-        """
-        Imports tasks from the Google Tasks service
-        :param google_tasks_importer: GoogleTasksImporter class
-        :param project: Local task project
-        :return: None
-        """
-        assert isinstance(google_tasks_importer, GoogleTasksImporter)
-        assert type(project) is str
-
-        start_datetime = datetime.now()
-        self.logger.info(f"Starting import")
-        import_task_list = google_tasks_importer.convert(project)
-        self.logger.info(f"Retrieved {len(import_task_list)} tasks from service")
-        sync_results = google_tasks_importer.import_tasks(import_task_list)
-        self.logger.info(f"Import summary: {sync_results.get_summary()}")
-
-        self.logger.info(f"Import complete: Duration: {self.get_duration(start_datetime)}")
-
-    def upload_tasks(self, google_tasks_exporter: GoogleTasksExporter, project_name: str):
-        """
-        Exports tasks to the Google Tasks service
-        :param google_tasks_exporter: GoogleTasksExporter class
-        :param project_name: Local task project
-        :return: None
-        """
-        assert isinstance(google_tasks_exporter, GoogleTasksExporter)
-        assert type(project_name) is str
-
-        start_datetime = datetime.now()
-
-        self.logger.info(f"Starting export")
-        if not google_tasks_exporter.project_exist(project_name):
-            self.logger.info(f"Preparing tasks for export")
-            local_project_list = google_tasks_exporter.convert(project_name)
-            self.logger.info(f"Exporting tasks to service")
-            sync_results = google_tasks_exporter.export_tasks(local_project_list)
-            self.logger.info(f"Export summary: {sync_results.get_summary()}")
-
-            self.logger.info(f"Export complete: Duration: {self.get_duration(start_datetime)}")
-        else:
-            self.logger.info("ERROR: Cannot overwrite tasks in project")
 
     def display_invalid_index_error(self, index: int):
         assert type(index) is int

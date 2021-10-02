@@ -4,9 +4,8 @@ import click
 
 from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.model.database_manager import DatabaseManager
-from taskmgr.lib.model.google_tasks_service import GoogleTasksService
 from taskmgr.lib.presenter.file_manager import FileManager
-from taskmgr.lib.presenter.task_sync import GoogleTasksImporter, GoogleTasksExporter, CsvFileImporter
+from taskmgr.lib.presenter.task_sync import CsvFileImporter
 from taskmgr.lib.variables import CommonVariables
 from taskmgr.lib.view.cli_client import CliClient
 
@@ -155,7 +154,6 @@ def filter_tasks_by_date_range(**kwargs):
 
 
 @task_filter.command("date")
-#@click.argument('date', type=DateFormatString(), required=True, metavar="<date>")
 @click.argument('date', type=str, required=True, metavar="<date>")
 @click.option('--export', is_flag=True, help="Outputs to csv file")
 def filter_tasks_by_date(**kwargs):
@@ -237,20 +235,6 @@ def reset_task(**kwargs):
 def import_tasks(**kwargs):
     mgr = DatabaseManager()
     cli_client.import_tasks(CsvFileImporter(mgr.get_tasks_model()), kwargs.get("path"))
-
-
-@cli.command("download", help="Imports tasks from the Google Tasks service")
-@click.option('--project', type=str, required=True, metavar="<project>")
-def download_tasks(**kwargs):
-    mgr = DatabaseManager()
-    cli_client.download_tasks(GoogleTasksImporter(GoogleTasksService(), mgr.get_tasks_model()), kwargs.get("project"))
-
-
-@cli.command("upload", help="Upload tasks to the Google Tasks service")
-@click.option('--project', type=str, required=True, metavar="<project>")
-def upload_tasks(**kwargs):
-    mgr = DatabaseManager()
-    cli_client.upload_tasks(GoogleTasksExporter(GoogleTasksService(), mgr.get_tasks_model()), kwargs.get("project"))
 
 
 @cli.command("defaults", help="Sets the default variables")

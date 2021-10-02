@@ -110,6 +110,11 @@ class Task(DatabaseObject):
                 setattr(self, key, value)
         return self
 
+    def __eq__(self, other):
+        existing = (self.unique_id, self.__text, self.__label, self.__project)
+        new = (other.unqiue_id, other.text, self.label, self.project)
+        return existing == new
+
     def __iter__(self):
         yield 'index', self.index
         yield 'external_id', self.external_id

@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import List
 
 from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.model.model import Model

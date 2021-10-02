@@ -3,10 +3,10 @@ from datetime import datetime, timedelta
 
 from taskmgr.lib.model.calendar import Today
 from taskmgr.lib.model.database import JsonFileDatabase
+from taskmgr.lib.model.due_date import DueDate
 from taskmgr.lib.model.task import Task
 from taskmgr.lib.presenter.date_generator import DateGenerator
 from taskmgr.lib.presenter.tasks import Tasks
-from taskmgr.lib.model.due_date import DueDate
 from taskmgr.lib.variables import CommonVariables
 
 
@@ -128,7 +128,7 @@ class TestTasks(unittest.TestCase):
 
     def test_get_unique_labels(self):
         unique_label_set = self.tasks.get_label_set()
-        self.assertSetEqual(unique_label_set, {'office', 'waiting', 'call', 'computer'})
+        self.assertSetEqual(unique_label_set, {'office', 'waiting', 'call', 'computer', 'current'})
 
     def test_get_list_by_type(self):
         returned_result = self.tasks.get_list_by_type("label", "call", self.tasks.get_object_list())

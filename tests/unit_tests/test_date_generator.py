@@ -9,11 +9,6 @@ from taskmgr.lib.variables import CommonVariables
 
 class TestDateGenerator(unittest.TestCase):
 
-    # def get_first_date_string(self, due_date_list):
-    #     self.assertTrue(len(due_date_list) == 1)
-    #     due_date = due_date_list[0]
-    #     return due_date.date_string
-
     def match_date(self, current_date_string, date_expression, expected_date_string):
         current_date_time = datetime.strptime(current_date_string, CommonVariables().date_format)
         self.date_generator.current_day = Day(current_date_time)
@@ -147,6 +142,13 @@ class TestDateGenerator(unittest.TestCase):
         self.assertTrue(len(due_date_list) == 1)
         self.assertFalse(due_date_list[0].completed)
         self.assertTrue(due_date_list[0].date_string == "2019-03-01")
+
+    def test_get_due_date(self):
+        due_date = self.date_generator.get_due_date("this week")
+        self.assertIsNone(due_date)
+        due_date = self.date_generator.get_due_date("sep 24")
+        self.assertIn("09-24", due_date.date_string)
+
 
 if __name__ == "__main__":
     unittest.main()

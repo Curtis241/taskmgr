@@ -19,7 +19,7 @@ class CliClient(Client):
         self.variables_table = VariableConsoleTable()
 
     def display_tasks(self, task_list, kwargs):
-        task_list = self.__print_tasks_table(task_list)
+        task_list = self.__print_tasks_table(task_list, kwargs.get("all"))
         self.__export_tasks(task_list, **kwargs)
         return task_list
 
