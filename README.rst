@@ -35,12 +35,12 @@ backend storage for the Android Google Tasks app.
     * Day of week
         su, m, tu, w, th, f, sa
     * Relative terms
-        today, tomorrow, next week, next month
+        today, tomorrow, yesterday, last [week, month], this [week, month], next [week, month]
     * Recurring terms
-        every day, every weekday, every su, every m, every tu, every w, every th, every f, every sa
-    * Short date - jan-dec 1-31
+        every day, every weekday, every [su,m,tu,w,th,f,sa]
+    * Short date 
+        jan-dec 1-31 (ie. jan 21)
 * Attractive table structure provided by the BeautifulTable library https://pypi.org/project/beautifultable/
-* Download / Upload commands work with the Google Tasks service, but require setting up credentials
 * The list task feature displays all tasks that have not been deleted and exports to csv file.
 * The group command orders tasks by project and label. The results can be exported to a csv file.
 * The filter command selects tasks by the status, project, complete/incomplete status, and label.
@@ -49,7 +49,7 @@ backend storage for the Android Google Tasks app.
 * Added support for a json or redis database. The database type can be configured using the default command.
 
 
-**The commands available in version 0.2.0.**
+**The commands available in version 0.2.2.**
 
 
 ::
@@ -65,7 +65,6 @@ backend storage for the Android Google Tasks app.
           count       Displays task count
           defaults    Sets the default variables
           delete      Soft delete
-          download    Imports tasks from the Google Tasks service
           edit        Replaces the task parameters with the provided parameters
           filter      Filters tasks
           group       Groups tasks
@@ -76,7 +75,6 @@ backend storage for the Android Google Tasks app.
           today       Lists only the tasks that have today's date
           undelete    Reverts deleted tasks
           unique      Displays unique tasks
-          upload      Exports tasks to the Google Tasks service
 
 
 
