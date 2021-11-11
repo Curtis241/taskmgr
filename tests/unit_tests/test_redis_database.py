@@ -90,14 +90,13 @@ class TestRedisDatabase(unittest.TestCase):
         self.assertIsNotNone(self.redis_db.db)
 
         snapshot = Snapshot()
-        snapshot.project = "work"
         snapshot.count = 22
         self.redis_db.set([snapshot])
 
         snapshot_list = self.redis_db.get()
         self.assertTrue(len(snapshot_list) == 1)
         snapshot_dict = snapshot_list[0]
-        self.assertTrue(snapshot_dict["project"] == "work")
+        self.assertTrue(snapshot_dict["count"] == 22)
 
         self.redis_db.initialize(Task())
         self.assertIsNotNone(self.redis_db.db)

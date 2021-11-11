@@ -1,30 +1,174 @@
-import os
 
-from flask import Flask, jsonify, request, make_response, Response
-from werkzeug.exceptions import abort
+from typing import Optional
+
+import uvicorn
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 
 from taskmgr.lib.model.database_manager import DatabaseManager
-from taskmgr.lib.presenter.file_manager import FileManager
 from taskmgr.lib.view.api_client import ApiClient
 
-app = Flask(__name__)
-api_client = ApiClient(DatabaseManager(), FileManager())
+api_client = ApiClient(DatabaseManager())
+app = FastAPI()
 
 
-@app.route("/tasks/list", methods=["GET"])
-def get_tasks_list():
-    return jsonify(api_client.list_all_tasks(**{}))
+def contains_spaces(text_string: str) -> bool: pass
 
 
-@app.route("/task/add", methods=["POST"])
-def add_task():
-    app.logger.debug("Request Headers %s", request.headers)
-    app.logger.debug("Request Body %s", request.json)
-    if not request.json or 'text' not in request.json:
-        abort(400)
-    return jsonify(api_client.add_task(request["text"], request["label"],
-                                       request["project"], request["due_date"]))
+class TaskModel(BaseModel):
+    index: Optional[int] = 0
+    text: str
+    label: str
+    project: str
+    date_expression: str
+
+
+class RequestBody(BaseModel):
+    name: str
+    value1: Optional[str] = str()
+    value2: Optional[str] = str()
+
+
+@app.get("/tasks")
+async def get_all_tasks():
+    return api_client.list_all_tasks()
+
+
+@app.post("/tasks")
+async def add_task(task: TaskModel):
+    return api_client.add_task(task.text, task.label, task.project, task.date_expression)
+
+
+@app.delete("/tasks")
+async def delete_tasks():
+    api_client.remove_all_tasks()
+    return api_client.count_all_tasks()
+
+
+@app.put("/tasks/")
+async def edit_task(task: TaskModel):
+    return api_client.edit_task(task.index, task.text,
+                                task.label, task.project, task.date_expression)
+
+
+@app.get("/tasks/task/{task_index}")
+async def get_task(task_index: int):
+    return api_client.get_task(task_index)
+
+
+@app.delete("/tasks/task/{action}/{uuid}")
+async def delete_task(action: str, uuid: str):
+
+    if action == "undelete":
+        return api_client.undelete_task(uuid)
+    elif action == "delete":
+        return api_client.delete_task(uuid)
+    else:
+        raise HTTPException(status_code=418, detail="action: [undelete, delete]")
+
+
+@app.put("/tasks/task/{action}/{uuid}")
+async def update_task_status(action: str, uuid: str):
+
+    if action == "complete":
+        return api_client.complete_task(uuid)
+    elif action == "incomplete":
+        return api_client.reset_task(uuid)
+    else:
+        raise HTTPException(status_code=418, detail="action: [complete, incomplete]")
+
+
+@app.put("/unique/")
+async def get_unique_object(body: RequestBody):
+
+    if body.name == "label":
+        return api_client.get_unique_label_list()
+    elif body.name == "project":
+        return api_client.get_unique_project_list()
+    else:
+        raise HTTPException(status_code=418, detail="name: [label, project]")
+
+
+@app.put("/group/")
+async def group_by_object(body: RequestBody):
+
+    if body.name == "label":
+        return api_client.group_tasks_by_label()
+    elif body.name == "project":
+        return api_client.group_tasks_by_project()
+    elif body.name == "due_date":
+        return api_client.group_tasks_by_due_date()
+    else:
+        raise HTTPException(status_code=418, detail="name: [label, project, due_date]")
+
+
+@app.put("/filter/")
+async def filter_tasks(body: RequestBody):
+
+    if not body.value1:
+        raise HTTPException(status_code=418, detail=f"value1 {body.value1} is invalid")
+
+    if body.name == "project":
+        return api_client.filter_tasks_by_project(body.value1)
+    elif body.name == "label":
+        return api_client.filter_tasks_by_label(body.value1)
+    elif body.name == "text":
+        return api_client.filter_tasks_by_text(body.value1)
+    elif body.name == "due_date":
+        return api_client.filter_tasks_by_due_date(body.value1)
+    elif body.name == "status":
+        return api_client.filter_tasks_by_status(body.value1)
+    elif body.name == "due_date_range":
+
+        if not body.value2:
+            raise HTTPException(status_code=418, detail=f"value2 {body.value2} is invalid")
+
+        return api_client.filter_tasks_by_due_date_range(body.value1, body.value2)
+    else:
+        raise HTTPException(status_code=418, detail="name: [project, label, text, due_date, status, due_date_range]")
+
+
+@app.put("/count/")
+async def count_tasks(body: RequestBody):
+
+    if not body.value1:
+        raise HTTPException(status_code=418, detail=f"value1 {body.value1} is invalid")
+
+    if body.name == "all":
+        return api_client.count_all_tasks()
+    elif body.name == "due_date":
+        return api_client.count_tasks_by_due_date(body.value1)
+    elif body.name == "project":
+        return api_client.count_tasks_by_project(body.value1)
+    elif body.name == "due_date_range":
+
+        if not body.value2:
+            raise HTTPException(status_code=418, detail=f"value2 {body.value2} is invalid")
+
+        return api_client.count_tasks_by_due_date_range(body.value1, body.value2)
+    else:
+        raise HTTPException(status_code=418, detail="name: [all, due_date, project, due_date_range")
+
+
+@app.put("/reschedule/")
+async def reschedule():
+    api_client.reschedule_tasks()
+
+
+@app.put("/default/")
+async def set_default(body: RequestBody):
+
+    if not body.value1:
+        raise HTTPException(status_code=418, detail=f"value1 {body.value1} is invalid")
+
+    if body.name:
+        api_client.set_default_variables(**{body.name: body.value1})
+    else:
+        detail = "name: [default_date_expression, default_project_name, default_label, default_month_limit]"
+        raise HTTPException(status_code=418, detail=detail)
 
 
 if __name__ == "__main__":
-    app.run(host="localhost", port=5000, debug=True)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+
+

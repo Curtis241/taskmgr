@@ -19,6 +19,10 @@ class DateParser:
 
 
 class Handler(ABC):
+
+    SINGLE = "single"
+    MULTIPLE = "multiple"
+
     def __init__(self):
         self.next_handler = None
         self.calendar = Calendar()
@@ -259,6 +263,8 @@ class DateGenerator(object):
         if len(parser.day_list) == 1:
             day = deque(parser.day_list).popleft()
             return DueDate(day.to_date_string())
+        else:
+            return DueDate()
 
     def get_due_dates(self, expression: str) -> list:
         assert type(expression) is str

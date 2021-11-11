@@ -60,9 +60,10 @@ def edit_task(**kwargs):
 
 @cli.command("list", help="Lists all tasks")
 @click.option('--export', is_flag=True, help="Outputs to csv file")
-@click.option('--all', is_flag=True, help="Includes deleted tasks")
 def list_tasks(**kwargs):
-    cli_client.list_all_tasks(**kwargs)
+    task_list = cli_client.list_all_tasks()
+    if kwargs.get("export"):
+        cli_client.export_tasks(task_list)
 
 
 @cli.command("delete", help="Soft delete")
@@ -98,19 +99,25 @@ def task_group(): pass
 @task_group.command("label")
 @click.option('--export', is_flag=True, help="Outputs to csv file")
 def task_group_by_label(**kwargs):
-    cli_client.group_tasks_by_label(**kwargs)
+    task_list = cli_client.group_tasks_by_label()
+    if kwargs.get("export"):
+        cli_client.export_tasks(task_list)
 
 
 @task_group.command("project")
 @click.option('--export', is_flag=True, help="Outputs to csv file")
 def task_group_by_project(**kwargs):
-    cli_client.group_tasks_by_project(**kwargs)
+    task_list = cli_client.group_tasks_by_project()
+    if kwargs.get("export"):
+        cli_client.export_tasks(task_list)
 
 
 @task_group.command("due_date")
 @click.option('--export', is_flag=True, help="Outputs to csv file")
 def task_group_by_project(**kwargs):
-    cli_client.group_tasks_by_due_date(**kwargs)
+    task_list = cli_client.group_tasks_by_due_date()
+    if kwargs.get("export"):
+        cli_client.export_tasks(task_list)
 
 
 @cli.group("filter", help="Filters tasks")
@@ -121,28 +128,36 @@ def task_filter(): pass
 @click.argument('project', type=str, required=True, metavar="<project>")
 @click.option('--export', is_flag=True, help="Outputs to csv file")
 def filter_tasks_by_project(**kwargs):
-    cli_client.filter_tasks_by_project(**kwargs)
+    task_list = cli_client.filter_tasks_by_project(kwargs.get("project"))
+    if kwargs.get("export"):
+        cli_client.export_tasks(task_list)
 
 
 @task_filter.command("status")
 @click.argument('status', type=click.Choice(['incomplete', 'complete']), required=True, metavar="<status>")
 @click.option('--export', is_flag=True, help="Outputs to csv file")
 def filter_tasks_by_status(**kwargs):
-    cli_client.filter_tasks_by_status(**kwargs)
+    task_list = cli_client.filter_tasks_by_status(kwargs.get("status"))
+    if kwargs.get("export"):
+        cli_client.export_tasks(task_list)
 
 
 @task_filter.command("text")
 @click.argument('text', type=str, required=True, metavar="<text>")
 @click.option('--export', is_flag=True, help="Outputs to csv file")
 def filter_tasks_by_text(**kwargs):
-    cli_client.filter_tasks_by_text(**kwargs)
+    task_list = cli_client.filter_tasks_by_text(kwargs.get("text"))
+    if kwargs.get("export"):
+        cli_client.export_tasks(task_list)
 
 
 @task_filter.command("label")
 @click.argument('label', type=str, required=True, metavar="<label>")
 @click.option('--export', is_flag=True, help="Outputs to csv file")
 def filter_tasks_by_label(**kwargs):
-    cli_client.filter_tasks_by_label(**kwargs)
+    task_list = cli_client.filter_tasks_by_label(kwargs.get("label"))
+    if kwargs.get("export"):
+        cli_client.export_tasks(task_list)
 
 
 @task_filter.command("date_range")
@@ -150,20 +165,26 @@ def filter_tasks_by_label(**kwargs):
 @click.option('--max_date', required=True, help='Maximum date', type=DateFormatString())
 @click.option('--export', is_flag=True, help="Outputs to csv file")
 def filter_tasks_by_date_range(**kwargs):
-    cli_client.filter_tasks_by_due_date_range(**kwargs)
+    task_list = cli_client.filter_tasks_by_due_date_range(kwargs.get("min_date"), kwargs.get("max_date"))
+    if kwargs.get("export"):
+        cli_client.export_tasks(task_list)
 
 
 @task_filter.command("date")
 @click.argument('date', type=str, required=True, metavar="<date>")
 @click.option('--export', is_flag=True, help="Outputs to csv file")
 def filter_tasks_by_date(**kwargs):
-    cli_client.filter_tasks_by_due_date(**kwargs)
+    task_list = cli_client.filter_tasks_by_due_date(kwargs.get("date"))
+    if kwargs.get("export"):
+        cli_client.export_tasks(task_list)
 
 
 @cli.command("today", help="Lists only the tasks that have today's date")
 @click.option('--export', is_flag=True, help="Outputs to csv file")
 def today(**kwargs):
-    cli_client.filter_tasks_by_today(**kwargs)
+    task_list = cli_client.filter_tasks_by_today()
+    if kwargs.get("export"):
+        cli_client.export_tasks(task_list)
 
 
 @cli.group("count", help="Displays task count")
@@ -172,16 +193,19 @@ def task_count(): pass
 
 @task_count.command("all")
 @click.option('--export', is_flag=True, help="Outputs to csv file")
-@click.option('--due_date', is_flag=True, help="Displays task count by due date")
 def count_all_tasks(**kwargs):
-    cli_client.count_all_tasks(**kwargs)
+    task_list = cli_client.count_all_tasks()
+    if kwargs.get("export"):
+        cli_client.export_snapshots(task_list)
 
 
 @task_count.command("date")
 @click.option('--export', is_flag=True, help="Outputs to csv file")
 @click.argument('date', type=DateFormatString(), required=True, metavar="<date>")
 def count_tasks_by_date(**kwargs):
-    cli_client.count_tasks_by_due_date(**kwargs)
+    task_list = cli_client.count_tasks_by_due_date(kwargs.get("date"))
+    if kwargs.get("export"):
+        cli_client.export_snapshots(task_list)
 
 
 @task_count.command("date_range")
@@ -189,28 +213,18 @@ def count_tasks_by_date(**kwargs):
 @click.option('--min_date', required=True, type=DateFormatString())
 @click.option('--max_date', required=True, type=DateFormatString())
 def count_tasks_by_date_range(**kwargs):
-    cli_client.count_tasks_by_due_date_range(**kwargs)
+    task_list = cli_client.count_tasks_by_due_date_range(kwargs.get("min_date"), kwargs.get("max_date"))
+    if kwargs.get("export"):
+        cli_client.export_snapshots(task_list)
 
 
 @task_count.command("project")
 @click.option('--export', is_flag=True, help="Outputs to csv file")
 @click.argument('project', type=str, required=True, metavar="<project>")
 def count_tasks_by_project(**kwargs):
-    cli_client.count_tasks_by_project(**kwargs)
-
-
-@task_count.command("status")
-@click.option('--export', is_flag=True, help="Outputs to csv file")
-@click.argument('status', type=click.Choice(['incomplete', 'complete']), required=True, metavar="<status>")
-def count_tasks_by_status(**kwargs):
-    cli_client.count_tasks_by_status(**kwargs)
-
-
-@task_count.command("label")
-@click.option('--export', is_flag=True, help="Outputs to csv file")
-@click.argument('label', type=str, required=True, metavar="<label>")
-def count_tasks_by_label(**kwargs):
-    cli_client.count_tasks_by_label(**kwargs)
+    task_list = cli_client.count_tasks_by_project(kwargs.get("project"))
+    if kwargs.get("export"):
+        cli_client.export_snapshots(task_list)
 
 
 @cli.command("reschedule", help="Moves all tasks from the past to today")

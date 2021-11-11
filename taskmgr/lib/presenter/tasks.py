@@ -37,9 +37,8 @@ class Tasks(Model):
     def add(self, text, label, project, date_expression) -> List[Task]:
         assert type(text) and type(label) and type(project)\
                and type(date_expression) is str
+        task_list = list()
         if self.__date_generator.validate_input(date_expression):
-            task_list = list()
-
             for due_date in self.__date_generator.get_due_dates(date_expression):
                 task = Task(text)
                 task.label = label
@@ -48,9 +47,9 @@ class Tasks(Model):
                 task.due_date = due_date
                 self.append(task)
                 task_list.append(task)
-            return task_list
         else:
             self.logger.info(f"Provided due date {date_expression} is invalid")
+        return task_list
 
     def append(self, obj: Task):
         assert isinstance(obj, Task)
@@ -97,23 +96,23 @@ class Tasks(Model):
         return [task for task in self.get_task_list()
                 if str(value.lower() == str(task.text).lower())]
 
-    def get_task_by_index(self, index) -> Task:
+    def get_task_by_index(self, index: int) -> Task:
         assert type(index) is int
         return self.get_task(lambda task: task if task.index == index else None)
 
-    def get_task_by_external_id(self, external_id) -> Task:
+    def get_task_by_external_id(self, external_id: int) -> Task:
         assert type(external_id) is str
         return self.get_task(lambda task: task if task.external_id == external_id else None)
 
-    def get_task_by_id(self, task_id) -> Task:
+    def get_task_by_id(self, task_id: str) -> Task:
         assert type(task_id) is str
         return self.get_task(lambda task: task if task.unique_id == task_id else None)
 
-    def get_task_by_name(self, task_name) -> Task:
+    def get_task_by_name(self, task_name: str) -> Task:
         assert type(task_name) is str
         return self.get_task(lambda task: task if task.text == task_name else None)
 
-    def get_tasks_by_date(self, date_expression) -> List[Task]:
+    def get_tasks_by_date(self, date_expression: str) -> List[Task]:
         assert type(date_expression) is str
         task_list = list()
         for due_date in self.__date_generator.get_due_dates(date_expression):
@@ -122,13 +121,13 @@ class Tasks(Model):
                     task_list.append(task)
         return task_list
 
-    def get_tasks_within_date_range(self, min_date_string, max_date_string) -> List[Task]:
+    def get_tasks_within_date_range(self, min_date_string: str, max_date_string: str) -> List[Task]:
         assert type(min_date_string) is str
         assert type(max_date_string) is str
         return [task for task in self.get_task_list()
                 if self.contains_due_date_range(task, min_date_string, max_date_string)]
 
-    def get_tasks_by_status(self, is_completed) -> List[Task]:
+    def get_tasks_by_status(self, is_completed: bool) -> List[Task]:
         assert type(is_completed) is bool
 
         if is_completed:
@@ -136,18 +135,18 @@ class Tasks(Model):
         else:
             return [task for task in self.get_task_list() if not task.is_completed()]
 
-    def get_tasks_by_project(self, project) -> List[Task]:
+    def get_tasks_by_project(self, project: str) -> List[Task]:
         assert type(project) is str
         return self.get_list_by_type("project", project)
 
-    def get_tasks_by_label(self, label) -> List[Task]:
+    def get_tasks_by_label(self, label: str) -> List[Task]:
         assert type(label) is str
         return self.get_list_by_type("label", label)
 
     def get_filtered_list(self) -> List[Task]:
         return [task for task in self.get_task_list() if not task.deleted]
 
-    def delete(self, task_id) -> Task:
+    def delete(self, task_id: str) -> Task:
         assert type(task_id) is str
 
         task = self.get_task_by_id(task_id)
@@ -211,7 +210,7 @@ class Tasks(Model):
         self.logger.debug(f"Replaced local_task: {dict(local_task)} with remote_task: {dict(remote_task)}")
         return remote_task
 
-    def edit(self, index: int, text: str, project: str, label: str, date_expression: str) -> Task:
+    def edit(self, index: int, text: str, label: str, project: str, date_expression: str) -> Task:
 
         task = self.get_task_by_index(index)
         if task is not None:

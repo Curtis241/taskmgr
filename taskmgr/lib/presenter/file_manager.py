@@ -133,15 +133,15 @@ class CsvSnapshotsFile(File):
     @staticmethod
     def __get_field_names():
         return ["index", "count", "completed", "incomplete",
-                "deleted", "project", "timestamp"]
+                "deleted", "due_date"]
 
     @staticmethod
     def __write_row(snapshot):
-        return {"index": snapshot.index, "count": snapshot.count, "completed": snapshot.completed,
+        return {"due_date": snapshot.due_date, "index": snapshot.index,
+                "count": snapshot.count, "completed": snapshot.completed,
                 "incomplete": snapshot.incomplete,
-                "deleted": snapshot.deleted,
-                "project": snapshot.project,
-                "timestamp": snapshot.timestamp}
+                "deleted": snapshot.deleted
+                }
 
 
 class FileManager:

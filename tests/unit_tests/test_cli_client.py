@@ -25,13 +25,17 @@ class MockFileManager(FileManager):
 class TestCliClient(unittest.TestCase):
 
     def setUp(self):
-        variables = CommonVariables('test_variables.ini')
-        mgr = DatabaseManager(variables)
+        self.vars = CommonVariables('test_variables.ini')
+        mgr = DatabaseManager(self.vars)
 
         self.tasks = mgr.get_tasks_model()
         self.client = CliClient(mgr, MockFileManager())
         self.client.remove_all_tasks()
         self.date_generator = DateGenerator()
+
+        self.june4 = Day(datetime.strptime("2021-06-04", self.vars.date_format))
+        self.june7 = Day(datetime.strptime("2021-06-07", self.vars.date_format))
+        self.june9 = Day(datetime.strptime("2021-06-09", self.vars.date_format))
 
     def tearDown(self):
         self.client.remove_all_tasks()
@@ -88,13 +92,13 @@ class TestCliClient(unittest.TestCase):
         self.assertIsInstance(date_object, datetime)
 
     def test_edit_task_using_all_fields(self):
-        self.client.add_task("Clean car", "@waiting_on", "home", "today")
-        task = self.client.edit_task(1, "text_value", "all", "", "apr 14")
+        self.client.add_task("Clean car", "deprecated", "home", "today")
+        task = self.client.edit_task(1, "text_value", "current", "work", "apr 14")
         self.assertEqual(task.text, 'text_value')
-        self.assertEqual(task.label, "all")
+        self.assertEqual(task.label, "current")
         self.assertEqual(task.deleted, False)
         self.assertEqual(task.priority, 1)
-        self.assertEqual(task.project, 'home')
+        self.assertEqual(task.project, 'work')
         self.assertEqual(task.date_expression, 'apr 14')
         self.assertEqual(task.due_date.date_string, '2021-04-14')
         self.assertEqual(task.due_date.completed, False)
@@ -145,6 +149,38 @@ class TestCliClient(unittest.TestCase):
         self.assertIsNotNone(done_list)
         self.assertTrue("False" not in done_list)
 
-    def test_count(self):
-        summary_list = self.client.count_all_tasks()
-        self.assertIsNotNone(summary_list)
+    def test_count_all_tasks(self):
+        self.tasks.add("task1", "label1", "project1", "today")
+        snapshot_list = self.client.count_all_tasks()
+        self.assertIsNotNone(snapshot_list)
+        self.assertTrue(len(snapshot_list) == 1)
+
+    def test_count_by_date(self):
+        self.tasks.add("task1", "label1", "project1", "today")
+        date_string = Today().to_date_string()
+        snapshot_list = self.client.count_tasks_by_due_date(date_string)
+        self.assertTrue(len(snapshot_list) == 1)
+        snapshot = snapshot_list[0]
+        self.assertTrue(snapshot.count == 1)
+
+    def test_count_by_due_date_range(self):
+        june4_date_string = self.june4.to_date_string()
+        june9_date_string = self.june9.to_date_string()
+        self.tasks.add("task1", "current", "work", june4_date_string)
+        self.tasks.add("task2", "current", "work", self.june7.to_date_string())
+        self.tasks.add("task3", "current", "work", june9_date_string)
+        snapshot_list = self.client.count_tasks_by_due_date_range(june4_date_string, june9_date_string)
+        self.assertTrue(len(snapshot_list) == 3)
+
+    def test_count_by_project(self):
+        date_string = Today().to_date_string()
+        self.tasks.add("task1", "current", "work", date_string)
+        self.tasks.add("task2", "current", "work", date_string)
+        self.tasks.add("task3", "current", "work", date_string)
+        snapshot_list = self.client.count_tasks_by_project("work")
+        self.assertTrue(len(snapshot_list) == 1)
+        snapshot = snapshot_list[0]
+        self.assertTrue(snapshot.count == 3)
+
+
+

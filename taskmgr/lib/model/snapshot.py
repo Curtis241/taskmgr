@@ -13,28 +13,10 @@ class Snapshot(DatabaseObject):
         self.__completed = 0
         self.__incomplete = 0
         self.__deleted = 0
-        self.__project = str()
-        self.__context = str()
-        self.__timestamp = str()
+        self.__due_date = str()
 
     def get_redis_db_id(self):
         return 1
-
-    @property
-    def project(self):
-        return self.__project
-
-    @project.setter
-    def project(self, project):
-        self.__project = project
-
-    @property
-    def context(self):
-        return self.__context
-
-    @context.setter
-    def context(self, context):
-        self.__context = context
 
     @property
     def count(self):
@@ -65,12 +47,12 @@ class Snapshot(DatabaseObject):
         return self.__deleted
 
     @property
-    def timestamp(self):
-        return self.__timestamp
+    def due_date(self):
+        return self.__due_date
 
-    @timestamp.setter
-    def timestamp(self, value):
-        self.__timestamp = value
+    @due_date.setter
+    def due_date(self, value):
+        self.__due_date = value
 
     @deleted.setter
     def deleted(self, deleted):
@@ -92,7 +74,5 @@ class Snapshot(DatabaseObject):
         yield 'completed', self.__completed
         yield 'incomplete', self.__incomplete
         yield 'deleted', self.__deleted
-        yield 'project', self.__project
-        yield 'context', self.__context
         yield 'last_updated', self.last_updated
-        yield 'timestamp', self.__timestamp
+        yield 'due_date', self.__due_date

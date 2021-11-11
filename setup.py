@@ -13,7 +13,7 @@ with open('HISTORY.rst') as history_file:
 
 requirements = ['pip', 'bumpversion','wheel','watchdog',
                 'click==8.0.1', 'colored==1.4.2', 'ujson==4.2.0',  'beautifultable==1.0.1',
-                'requests>=2.25.1', 'dpath==2.0.5', 'redis==3.5.3', 'python-dateutil==2.8.2']
+                'dpath==2.0.5', 'redis==3.5.3', 'python-dateutil==2.8.2', 'fastapi==0.70.0']
 setup_requirements = ['pytest-runner', ]
 test_requirements = ['pytest', ]
 
@@ -47,6 +47,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/Curtis241/taskmgr',
-    version='0.2.2',
+    version='0.2.3',
     zip_safe=False,
 )

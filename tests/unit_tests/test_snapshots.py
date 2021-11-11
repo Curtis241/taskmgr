@@ -41,6 +41,7 @@ class TestSnapshots(unittest.TestCase):
         task1.project = "work"
         task1.label = "current"
         task1.text = "task1"
+        task1.date_expression = "today"
         task1.complete()
         task1.priority = 1
 
@@ -48,12 +49,14 @@ class TestSnapshots(unittest.TestCase):
         task2.project = "work"
         task2.label = "current"
         task2.text = "task2"
+        task2.date_expression = "today"
         task2.priority = 1
 
         task3 = Task()
         task3.project = "work"
         task3.label = "current"
         task3.text = "task1"
+        task3.date_expression = "today"
         task3.deleted = True
         task3.priority = 1
 
@@ -61,7 +64,7 @@ class TestSnapshots(unittest.TestCase):
         tasks.append(task2)
         tasks.append(task3)
 
-        snapshot = self.snapshots.total_count("all", "work", tasks.get_object_list())
+        snapshot = self.snapshots.count_total(tasks.get_object_list())
         self.assertIsNotNone(snapshot)
         self.assertTrue(snapshot.count == 3)
         self.assertTrue(snapshot.deleted == 1)

@@ -21,11 +21,8 @@ class Snapshots(Model):
         return self.get_object_list()
 
     @staticmethod
-    def total_count(context: str, project_name: str, task_list: list) -> Snapshot:
-
+    def count_total(task_list: list) -> Snapshot:
         snapshot = Snapshot()
-        snapshot.project = project_name
-        snapshot.context = context
         snapshot.timestamp = datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S")
         for task in task_list:
             if task.deleted:

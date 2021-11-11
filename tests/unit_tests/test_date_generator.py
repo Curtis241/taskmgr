@@ -145,7 +145,7 @@ class TestDateGenerator(unittest.TestCase):
 
     def test_get_due_date(self):
         due_date = self.date_generator.get_due_date("this week")
-        self.assertIsNone(due_date)
+        self.assertTrue(len(due_date.date_string) == 0)
         due_date = self.date_generator.get_due_date("sep 24")
         self.assertIn("09-24", due_date.date_string)
 

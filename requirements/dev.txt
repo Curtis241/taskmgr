@@ -8,3 +8,5 @@ twine
 pytest
 pluggy
 pytest-runner
+uvicorn
+requests>=2.25.1

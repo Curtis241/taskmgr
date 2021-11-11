@@ -77,10 +77,15 @@ class TestTasks(unittest.TestCase):
     def tearDown(self):
         self.db.clear()
 
+    def test_get_task(self):
+        task = self.tasks.get_task_by_index(1)
+        self.assertTrue(task.index == 1)
+
     def test_add_task(self):
         task = Task("Task11")
         self.tasks.append(task)
         task_list = self.tasks.get_object_list()
+        print(f"test_add_task: len {len(task_list)}")
         self.assertTrue(len(task_list) == 12)
 
     def test_deleted_task(self):
