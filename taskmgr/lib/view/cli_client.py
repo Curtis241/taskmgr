@@ -3,7 +3,6 @@ from typing import List
 
 from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.model.task import Task
-from taskmgr.lib.presenter.tasks import TaskKeyError
 from taskmgr.lib.presenter.file_manager import FileManager
 from taskmgr.lib.presenter.task_sync import CsvFileImporter
 from taskmgr.lib.view.client import Client
@@ -56,8 +55,7 @@ class CliClient(Client):
     def __print_tasks_table(self, task_list):
         self.task_table.clear()
         for task in task_list:
-            if task.deleted is False:
-                self.task_table.add_row(task)
+            self.task_table.add_row(task)
         return self.task_table.print()
 
     def __print_snapshots_table(self, snapshot_list):
@@ -106,13 +104,15 @@ class CliClient(Client):
         assert type(label) is str
         assert type(project) is str
         assert type(date_expression) is str
-        task_list = self.tasks.add(text, label, project, date_expression)
-        if len(task_list) == 1:
-            self.logger.info(f"Added task #{task_list[0].index}")
-        else:
-            self.logger.info(f"Added {len(task_list)} tasks")
-
-        return task_list
+        try:
+            task_list = self.tasks.add(text, label, project, date_expression)
+            if len(task_list) == 1:
+                self.logger.info(f"Added task #{task_list[0].index}")
+            else:
+                self.logger.info(f"Added {len(task_list)} tasks")
+            return task_list
+        except AttributeError as ex:
+            self.logger.info(ex)
 
     def display_invalid_index_error(self, index: int):
         assert type(index) is int
@@ -174,3 +174,10 @@ class CliClient(Client):
             else:
                 self.display_invalid_index_error(index)
         return results
+
+    def list_all_tasks(self, display_all: bool = False) -> List[Task]:
+        if display_all:
+            task_list = self.tasks.get_object_list()
+        else:
+            task_list = [task for task in self.tasks.get_object_list() if not task.deleted]
+        return self.display_tasks(task_list)

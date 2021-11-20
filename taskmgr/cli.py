@@ -60,8 +60,9 @@ def edit_task(**kwargs):
 
 @cli.command("list", help="Lists all tasks")
 @click.option('--export', is_flag=True, help="Outputs to csv file")
+@click.option('--all', is_flag=True, help="Shows deleted tasks")
 def list_tasks(**kwargs):
-    task_list = cli_client.list_all_tasks()
+    task_list = cli_client.list_all_tasks(kwargs.get("all"))
     if kwargs.get("export"):
         cli_client.export_tasks(task_list)
 

@@ -9,14 +9,18 @@ class ApiClient(Client):
     def display_tasks(self, task_list: list):
         return {"tasks": [dict(task) for task in task_list]}
 
-    def display_invalid_index_error(self, index: int):
-        return {"tasks": [], "message": f"Provided index {index} is invalid"}
+    @staticmethod
+    def display_error(message: str):
+        return {"tasks": [], "message": message}
 
     def display_snapshots(self, snapshot_list: list):
         return {"snapshots": [dict(snapshot) for snapshot in snapshot_list]}
 
     def add_task(self, text: str, label: str, project: str, date_expression: str) -> dict:
-        return self.display_tasks(self.tasks.add(text, label, project, date_expression))
+        try:
+            return self.display_tasks(self.tasks.add(text, label, project, date_expression))
+        except AttributeError as ex:
+            return ApiClient.display_error(str(ex))
 
     def delete_task(self, unique_id: str) -> dict:
         result = self.tasks.delete(unique_id)
@@ -33,3 +37,8 @@ class ApiClient(Client):
     def reset_task(self, unique_id: str) -> dict:
         result = self.tasks.reset(unique_id)
         return self.display_tasks([result])
+
+    def list_all_tasks(self) -> dict:
+        task_list = self.tasks.get_object_list()
+        return self.display_tasks(task_list)
+

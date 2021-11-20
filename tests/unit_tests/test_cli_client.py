@@ -93,7 +93,9 @@ class TestCliClient(unittest.TestCase):
 
     def test_edit_task_using_all_fields(self):
         self.client.add_task("Clean car", "deprecated", "home", "today")
-        task = self.client.edit_task(1, "text_value", "current", "work", "apr 14")
+        task_list = self.client.edit_task(1, "text_value", "current", "work", "apr 14")
+        self.assertTrue(len(task_list) == 1)
+        task = task_list[0]
         self.assertEqual(task.text, 'text_value')
         self.assertEqual(task.label, "current")
         self.assertEqual(task.deleted, False)

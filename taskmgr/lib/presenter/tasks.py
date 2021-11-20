@@ -48,7 +48,8 @@ class Tasks(Model):
                 self.append(task)
                 task_list.append(task)
         else:
-            self.logger.info(f"Provided due date {date_expression} is invalid")
+            raise AttributeError(f"Provided due date {date_expression} is invalid")
+
         return task_list
 
     def append(self, obj: Task):

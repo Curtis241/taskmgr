@@ -2,8 +2,10 @@
 from typing import Optional
 
 import uvicorn
+from fastapi.responses import JSONResponse
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from pydantic.class_validators import validator
 
 from taskmgr.lib.model.database_manager import DatabaseManager
 from taskmgr.lib.view.api_client import ApiClient
@@ -12,15 +14,17 @@ api_client = ApiClient(DatabaseManager())
 app = FastAPI()
 
 
-def contains_spaces(text_string: str) -> bool: pass
-
-
 class TaskModel(BaseModel):
     index: Optional[int] = 0
     text: str
     label: str
     project: str
     date_expression: str
+
+    @validator('*')
+    def check_values_not_empty(cls, value):
+        assert value != '', 'Empty strings are not allowed.'
+        return value
 
 
 class RequestBody(BaseModel):
@@ -45,7 +49,7 @@ async def delete_tasks():
     return api_client.count_all_tasks()
 
 
-@app.put("/tasks/")
+@app.put("/tasks")
 async def edit_task(task: TaskModel):
     return api_client.edit_task(task.index, task.text,
                                 task.label, task.project, task.date_expression)
@@ -128,15 +132,18 @@ async def filter_tasks(body: RequestBody):
         raise HTTPException(status_code=418, detail="name: [project, label, text, due_date, status, due_date_range]")
 
 
+@app.get("/count_all")
+async def count_all_tasks():
+    return api_client.count_all_tasks()
+
+
 @app.put("/count/")
 async def count_tasks(body: RequestBody):
 
     if not body.value1:
         raise HTTPException(status_code=418, detail=f"value1 {body.value1} is invalid")
 
-    if body.name == "all":
-        return api_client.count_all_tasks()
-    elif body.name == "due_date":
+    if body.name == "due_date":
         return api_client.count_tasks_by_due_date(body.value1)
     elif body.name == "project":
         return api_client.count_tasks_by_project(body.value1)
@@ -147,7 +154,7 @@ async def count_tasks(body: RequestBody):
 
         return api_client.count_tasks_by_due_date_range(body.value1, body.value2)
     else:
-        raise HTTPException(status_code=418, detail="name: [all, due_date, project, due_date_range")
+        raise HTTPException(status_code=418, detail="name: [due_date, project, due_date_range")
 
 
 @app.put("/reschedule/")

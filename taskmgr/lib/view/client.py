@@ -37,8 +37,7 @@ class Client:
     @abstractmethod
     def display_invalid_index_error(self, index: int): pass
 
-
-    def edit_task(self, index: int, text: str, label: str, project: str, date_expression: str) -> Task:
+    def edit_task(self, index: int, text: str, label: str, project: str, date_expression: str) -> List[Task]:
         """
         Edits an existing task by replacing string values. None are allowed
         and handled by the Task object.
@@ -59,17 +58,14 @@ class Client:
             if self.__date_generator.validate_input(date_expression) is False:
                 self.logger.info(f"Provided due date {date_expression} is invalid")
             else:
-                return self.tasks.edit(index, text, label, project, date_expression)
+                task = self.tasks.edit(index, text, label, project, date_expression)
+                return self.display_tasks([task])
         except TaskKeyError:
             self.display_invalid_index_error(index)
 
     def get_task(self, task_index: int) -> List[Task]:
         task = self.tasks.get_task_by_index(int(task_index))
         return self.display_tasks([task])
-
-    def list_all_tasks(self) -> List[Task]:
-        task_list = self.tasks.get_object_list()
-        return self.display_tasks(task_list)
 
     def filter_tasks_by_today(self) -> List[Task]:
         date_string = Today().to_date_string()
