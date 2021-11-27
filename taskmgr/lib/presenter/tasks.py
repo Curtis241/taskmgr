@@ -48,7 +48,7 @@ class Tasks(Model):
                 self.append(task)
                 task_list.append(task)
         else:
-            raise AttributeError(f"Provided due date {date_expression} is invalid")
+            raise AttributeError(f"Provided date expression {date_expression} is invalid")
 
         return task_list
 
@@ -266,7 +266,7 @@ class Tasks(Model):
     def get_project_set(self) -> Set[Task]:
         return self.unique("project", self.get_task_list())
 
-    def get_due_date_set(self) -> Set[Task]:
+    def get_due_date_set(self) -> Set[str]:
         return set([task.due_date.date_string for task in self.get_task_list()])
 
     @staticmethod

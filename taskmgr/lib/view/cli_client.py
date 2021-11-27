@@ -4,6 +4,7 @@ from typing import List
 from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.model.task import Task
 from taskmgr.lib.presenter.file_manager import FileManager
+from taskmgr.lib.presenter.snapshots import Snapshots
 from taskmgr.lib.presenter.task_sync import CsvFileImporter
 from taskmgr.lib.view.client import Client
 from taskmgr.lib.view.snapshot_console_table import SnapshotConsoleTable
@@ -30,8 +31,8 @@ class CliClient(Client):
     def display_tasks(self, task_list):
         return self.__print_tasks_table(task_list)
 
-    def display_snapshots(self, snapshot_list):
-        return self.__print_snapshots_table(snapshot_list)
+    def display_snapshots(self, snapshots: Snapshots):
+        return self.__print_snapshots_table(snapshots.get_list())
 
     def list_labels(self):
         """

@@ -138,7 +138,7 @@ class CsvSnapshotsFile(File):
     @staticmethod
     def __write_row(snapshot):
         return {"due_date": snapshot.due_date, "index": snapshot.index,
-                "count": snapshot.count, "completed": snapshot.completed,
+                "count": snapshot.count_tasks, "completed": snapshot.completed,
                 "incomplete": snapshot.incomplete,
                 "deleted": snapshot.deleted
                 }

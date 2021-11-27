@@ -1,3 +1,6 @@
+from fastapi.exceptions import RequestValidationError
+
+from taskmgr.lib.presenter.snapshots import Snapshots
 from taskmgr.lib.view.client import Client
 
 
@@ -10,17 +13,17 @@ class ApiClient(Client):
         return {"tasks": [dict(task) for task in task_list]}
 
     @staticmethod
-    def display_error(message: str):
-        return {"tasks": [], "message": message}
+    def display_attribute_error(attribute_name: str, message: str):
+        return {"detail": [{"loc": ["param", attribute_name]}], "msg": message, "type": "attribute_error"}
 
-    def display_snapshots(self, snapshot_list: list):
-        return {"snapshots": [dict(snapshot) for snapshot in snapshot_list]}
+    def display_snapshots(self, snapshots: Snapshots):
+        return {"summary": snapshots.summarize(), "snapshots": [dict(snapshot) for snapshot in snapshots.get_list()]}
 
     def add_task(self, text: str, label: str, project: str, date_expression: str) -> dict:
         try:
             return self.display_tasks(self.tasks.add(text, label, project, date_expression))
         except AttributeError as ex:
-            return ApiClient.display_error(str(ex))
+            return ApiClient.display_attribute_error("date_expression", str(ex))
 
     def delete_task(self, unique_id: str) -> dict:
         result = self.tasks.delete(unique_id)

@@ -1,9 +1,10 @@
 
+
 from typing import Optional
 
 import uvicorn
-from fastapi.responses import JSONResponse
 from fastapi import FastAPI, HTTPException
+from fastapi import status
 from pydantic import BaseModel
 from pydantic.class_validators import validator
 
@@ -39,7 +40,7 @@ async def get_all_tasks():
 
 
 @app.post("/tasks")
-async def add_task(task: TaskModel):
+async def add_task(task: TaskModel, status_code=status.HTTP_201_CREATED):
     return api_client.add_task(task.text, task.label, task.project, task.date_expression)
 
 
@@ -138,7 +139,7 @@ async def count_all_tasks():
 
 
 @app.put("/count/")
-async def count_tasks(body: RequestBody):
+async def count_tasks_by_type(body: RequestBody):
 
     if not body.value1:
         raise HTTPException(status_code=418, detail=f"value1 {body.value1} is invalid")

@@ -37,7 +37,7 @@ class TestCrudOperations(unittest.TestCase):
 
         response = self.tasks.get_all()
         self.assertTrue(self.util.verify_structure(response))
-        self.assertTrue(self.util.count(response) == 3)
+        self.assertTrue(self.util.count_tasks(response) == 3)
 
     def test_get_single_task(self):
         response = self.tasks.add("single task", "project1", "label1", "today")

@@ -28,5 +28,3 @@ class DatabaseManager:
     def get_tasks_model(self):
         return Tasks(self.get_database())
 
-    def get_snapshots_model(self):
-        return Snapshots(self.get_database())

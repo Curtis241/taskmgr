@@ -171,7 +171,7 @@ class Tasks(RestApi):
         return self.put(self.__group_path, dict(RequestBody("due_date", due_date)))
 
     def count_all(self) -> dict:
-        return self.put(self.__count_path, dict(RequestBody("all")))
+        return self.get("count_all")
 
     def count_by_due_date(self, due_date: str) -> dict:
         return self.put(self.__count_path, dict(RequestBody("due_date", due_date)))
@@ -180,7 +180,8 @@ class Tasks(RestApi):
         return self.put(self.__count_path, dict(RequestBody("project", project_name)))
 
     def count_by_due_date_range(self, min_date: str, max_date: str) -> dict:
-        return self.put(self.__count_path, dict(RequestBody("project", min_date, max_date)))
+        request_body = dict(RequestBody("due_date_range", min_date, max_date))
+        return self.put(self.__count_path, request_body)
 
     def filter_by_project(self, project_name: str) -> dict:
         return self.put(self.__filter_path, dict(RequestBody("project", project_name)))

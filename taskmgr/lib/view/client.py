@@ -8,6 +8,7 @@ from taskmgr.lib.model.database_manager import DatabaseManager
 from taskmgr.lib.model.snapshot import Snapshot
 from taskmgr.lib.model.task import Task
 from taskmgr.lib.presenter.date_generator import DateGenerator
+from taskmgr.lib.presenter.snapshots import Snapshots
 from taskmgr.lib.presenter.tasks import TaskKeyError
 from taskmgr.lib.variables import CommonVariables
 
@@ -24,7 +25,6 @@ class Client:
         assert isinstance(db_manager, DatabaseManager)
 
         self.tasks = db_manager.get_tasks_model()
-        self.__snapshots = db_manager.get_snapshots_model()
         self.__date_generator = DateGenerator()
         self.__variables = CommonVariables()
 
@@ -32,7 +32,7 @@ class Client:
     def display_tasks(self, task_list: list): pass
 
     @abstractmethod
-    def display_snapshots(self, snapshot_list: list): pass
+    def display_snapshots(self, snapshots: Snapshots): pass
 
     @abstractmethod
     def display_invalid_index_error(self, index: int): pass
@@ -136,44 +136,31 @@ class Client:
         """Returns list of due_date strings from the tasks."""
         return list(sorted(self.tasks.get_due_date_set()))
 
-    def get_snapshot_list(self) -> List[Snapshot]:
-        return self.__snapshots.get_snapshot_list()
-
-    def __count_tasks_by_date(self, task_list) -> List[Snapshot]:
-        assert type(task_list) is list
-
-        snapshot_list = list()
-        unique_date_list = self.__get_unique_due_date_list()
-        for index, due_date_string in enumerate(unique_date_list, start=1):
-            task_list = self.tasks.get_tasks_by_date(due_date_string)
-            snapshot = self.__snapshots.count_total(task_list)
-            snapshot.due_date = due_date_string
-            snapshot.index = index
-            snapshot_list.append(snapshot)
-        return snapshot_list
-
     def count_all_tasks(self) -> List[Snapshot]:
-        task_list = self.tasks.get_object_list()
-        snapshot_list = self.__count_tasks_by_date(task_list)
-        return self.display_snapshots(snapshot_list)
+        snapshots = Snapshots(self.tasks)
+        snapshots.count_all_tasks()
+        return self.display_snapshots(snapshots)
 
     def count_tasks_by_due_date_range(self, min_date: str, max_date: str) -> List[Snapshot]:
         assert type(min_date) and type(max_date) is str
-        task_list = self.tasks.get_tasks_within_date_range(min_date, max_date)
-        snapshot_list = self.__count_tasks_by_date(task_list)
-        return self.display_snapshots(snapshot_list)
+
+        snapshots = Snapshots(self.tasks)
+        snapshots.count_tasks_by_due_date_range(min_date, max_date)
+        return self.display_snapshots(snapshots)
 
     def count_tasks_by_due_date(self, due_date: str) -> List[Snapshot]:
         assert type(due_date) is str
-        task_list = self.tasks.get_tasks_by_date(due_date)
-        snapshot_list = self.__count_tasks_by_date(task_list)
-        return self.display_snapshots(snapshot_list)
 
-    def count_tasks_by_project(self, project: str) -> List[Snapshot]:
-        assert type(project) is str
-        task_list = self.tasks.get_tasks_by_project(project)
-        snapshot_list = self.__count_tasks_by_date(task_list)
-        return self.display_snapshots(snapshot_list)
+        snapshots = Snapshots(self.tasks)
+        snapshots.count_tasks_by_due_date(due_date)
+        return self.display_snapshots(snapshots)
+
+    def count_tasks_by_project(self, project_name: str) -> List[Snapshot]:
+        assert type(project_name) is str
+
+        snapshots = Snapshots(self.tasks)
+        snapshots.count_tasks_by_project(project_name)
+        return self.display_snapshots(snapshots)
 
     def reschedule_tasks(self, today=Today()):
         self.tasks.reschedule(today)

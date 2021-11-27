@@ -19,6 +19,14 @@ class Snapshot(DatabaseObject):
         return 1
 
     @property
+    def due_date(self):
+        return self.__due_date
+
+    @due_date.setter
+    def due_date(self, due_date):
+        self.__due_date = due_date
+
+    @property
     def count(self):
         return self.__count
 
@@ -46,14 +54,6 @@ class Snapshot(DatabaseObject):
     def deleted(self):
         return self.__deleted
 
-    @property
-    def due_date(self):
-        return self.__due_date
-
-    @due_date.setter
-    def due_date(self, value):
-        self.__due_date = value
-
     @deleted.setter
     def deleted(self, deleted):
         self.__deleted = deleted
@@ -69,10 +69,8 @@ class Snapshot(DatabaseObject):
 
     def __iter__(self):
         yield 'index', self.index
-        yield 'unique_id', self.unique_id
+        yield 'due_date', self.due_date
         yield 'count', self.__count
         yield 'completed', self.__completed
         yield 'incomplete', self.__incomplete
         yield 'deleted', self.__deleted
-        yield 'last_updated', self.last_updated
-        yield 'due_date', self.__due_date

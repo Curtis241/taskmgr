@@ -8,6 +8,8 @@ class Common:
         return "tasks" in response
 
     @staticmethod
-    def count(response: dict) -> int:
+    def count_tasks(response: dict) -> int:
         task_list = util.get(response, "tasks")
         return len(task_list)
+
+

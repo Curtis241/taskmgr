@@ -11,65 +11,47 @@ class TestSnapshots(unittest.TestCase):
 
     def setUp(self) -> None:
         self.db = JsonFileDatabase()
-        self.db.initialize(Snapshot())
-        self.snapshots = Snapshots(self.db)
-
-        self.snapshot1 = Snapshot()
-        self.snapshot1.project = "work"
-        self.snapshot1.count = 100
-        self.snapshot1.deleted = 55
-        self.snapshot1.incomplete = 22
-        self.snapshot1.completed = 33
+        self.db.initialize(Task())
+        self.db.clear()
+        self.tasks = Tasks(self.db)
 
     def tearDown(self) -> None:
         self.db.clear()
 
-    def test_add_snapshot(self):
-        self.snapshots.clear_objects()
-        self.snapshots.add(self.snapshot1)
-        snapshot_list = self.snapshots.get_object_list()
-        self.assertIsNotNone(snapshot_list)
-        self.assertTrue(len(snapshot_list) == 1)
+    def test_summarize(self):
 
-    def test_count_tasks(self):
-        json_db = JsonFileDatabase()
-        json_db.initialize(Task())
-        json_db.clear()
-        tasks = Tasks(json_db)
+        self.tasks.add("task1", "label1", "project1", "today")
+        t1 = self.tasks.get_task_by_name("task1")
+        self.tasks.complete(t1.unique_id)
 
-        task1 = Task()
-        task1.project = "work"
-        task1.label = "current"
-        task1.text = "task1"
-        task1.date_expression = "today"
-        task1.complete()
-        task1.priority = 1
+        self.tasks.add("task2", "label1", "project1", "today")
+        t2 = self.tasks.get_task_by_name("task2")
+        self.tasks.delete(t2.unique_id)
 
-        task2 = Task()
-        task2.project = "work"
-        task2.label = "current"
-        task2.text = "task2"
-        task2.date_expression = "today"
-        task2.priority = 1
+        self.tasks.add("task3", "label1", "project1", "today")
+        self.tasks.add("task4", "label1", "project1", "today")
 
-        task3 = Task()
-        task3.project = "work"
-        task3.label = "current"
-        task3.text = "task1"
-        task3.date_expression = "today"
-        task3.deleted = True
-        task3.priority = 1
-
-        tasks.append(task1)
-        tasks.append(task2)
-        tasks.append(task3)
-
-        snapshot = self.snapshots.count_total(tasks.get_object_list())
+        snapshots = Snapshots(self.tasks)
+        snapshots.count_all_tasks()
+        snapshot = snapshots.summarize()
         self.assertIsNotNone(snapshot)
-        self.assertTrue(snapshot.count == 3)
+        self.assertTrue(snapshot.count == 4)
         self.assertTrue(snapshot.deleted == 1)
         self.assertTrue(snapshot.incomplete == 2)
         self.assertTrue(snapshot.completed == 1)
+
+    def test_get_list(self):
+        self.tasks.add("task1", "label1", "project1", "2021-07-14")
+        self.tasks.add("task2", "label1", "project1", "2021-09-01")
+        self.tasks.add("task3", "label1", "project1", "2021-09-01")
+        self.tasks.add("task4", "label1", "project1", "2021-11-01")
+        self.tasks.add("task5", "label1", "project1", "empty")
+        self.tasks.add("task6", "label1", "project1", "empty")
+
+        snapshots = Snapshots(self.tasks)
+        snapshots.count_tasks_by_due_date_range("2021-07-13", "2021-11-02")
+        snapshot_list = snapshots.get_list()
+        self.assertTrue(len(snapshot_list), 3)
 
 
 

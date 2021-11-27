@@ -195,18 +195,18 @@ def task_count(): pass
 @task_count.command("all")
 @click.option('--export', is_flag=True, help="Outputs to csv file")
 def count_all_tasks(**kwargs):
-    task_list = cli_client.count_all_tasks()
+    snapshot_list = cli_client.count_all_tasks()
     if kwargs.get("export"):
-        cli_client.export_snapshots(task_list)
+        cli_client.export_snapshots(snapshot_list)
 
 
 @task_count.command("date")
 @click.option('--export', is_flag=True, help="Outputs to csv file")
 @click.argument('date', type=DateFormatString(), required=True, metavar="<date>")
 def count_tasks_by_date(**kwargs):
-    task_list = cli_client.count_tasks_by_due_date(kwargs.get("date"))
+    snapshot_list = cli_client.count_tasks_by_due_date(kwargs.get("date"))
     if kwargs.get("export"):
-        cli_client.export_snapshots(task_list)
+        cli_client.export_snapshots(snapshot_list)
 
 
 @task_count.command("date_range")
@@ -214,18 +214,18 @@ def count_tasks_by_date(**kwargs):
 @click.option('--min_date', required=True, type=DateFormatString())
 @click.option('--max_date', required=True, type=DateFormatString())
 def count_tasks_by_date_range(**kwargs):
-    task_list = cli_client.count_tasks_by_due_date_range(kwargs.get("min_date"), kwargs.get("max_date"))
+    snapshot_list = cli_client.count_tasks_by_due_date_range(kwargs.get("min_date"), kwargs.get("max_date"))
     if kwargs.get("export"):
-        cli_client.export_snapshots(task_list)
+        cli_client.export_snapshots(snapshot_list)
 
 
 @task_count.command("project")
 @click.option('--export', is_flag=True, help="Outputs to csv file")
 @click.argument('project', type=str, required=True, metavar="<project>")
 def count_tasks_by_project(**kwargs):
-    task_list = cli_client.count_tasks_by_project(kwargs.get("project"))
+    snapshot_list = cli_client.count_tasks_by_project(kwargs.get("project"))
     if kwargs.get("export"):
-        cli_client.export_snapshots(task_list)
+        cli_client.export_snapshots(snapshot_list)
 
 
 @cli.command("reschedule", help="Moves all tasks from the past to today")
