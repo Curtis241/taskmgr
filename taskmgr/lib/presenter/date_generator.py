@@ -257,7 +257,8 @@ class DateGenerator(object):
         self.handler_1.next_handler = self.handler_2
         self.handler_2.next_handler = self.handler_4
         self.handler_4.next_handler = self.handler_5
-        self.handler_5.next_handler = ErrorHandler()
+        self.handler_5.next_handler = self.handler_7
+        self.handler_7.next_handler = ErrorHandler()
         self.handler_1.handle(parser)
 
         if len(parser.day_list) == 1:

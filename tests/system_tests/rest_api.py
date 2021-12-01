@@ -74,29 +74,6 @@ class RestApi:
             return self.__parse_response(response)
 
 
-class DefaultProperty(RestApi):
-
-    def __init__(self):
-        super().__init__()
-        self.__path = "default/"
-
-    def set_default_expression(self, value: str) -> dict:
-        body = RequestBody("default_date_expression", value)
-        return self.put(self.__path, dict(body))
-
-    def set_default_label(self, value: str) -> dict:
-        body = RequestBody("default_label", value)
-        return self.put(self.__path, dict(body))
-
-    def set_default_project(self, value: str) -> dict:
-        body = RequestBody("default_project_name", value)
-        return self.put(self.__path, dict(body))
-
-    def set_month_limit(self, value: str) -> dict:
-        body = RequestBody("default_month_limit", value)
-        return self.put(self.__path, dict(body))
-
-
 class Project(RestApi):
 
     def __init__(self):
@@ -161,14 +138,14 @@ class Tasks(RestApi):
     def reschedule(self):
         self.put("reschedule/")
 
-    def group_by_label(self, label: str):
-        return self.put(self.__group_path, dict(RequestBody("label", label)))
+    def group_by_label(self):
+        return self.put(self.__group_path, dict(RequestBody("label")))
 
-    def group_by_project(self, project: str):
-        return self.put(self.__group_path, dict(RequestBody("project", project)))
+    def group_by_project(self):
+        return self.put(self.__group_path, dict(RequestBody("project")))
 
-    def group_by_due_date(self, due_date: str):
-        return self.put(self.__group_path, dict(RequestBody("due_date", due_date)))
+    def group_by_due_date(self):
+        return self.put(self.__group_path, dict(RequestBody("due_date")))
 
     def count_all(self) -> dict:
         return self.get("count_all")

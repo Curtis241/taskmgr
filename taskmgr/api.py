@@ -163,19 +163,6 @@ async def reschedule():
     api_client.reschedule_tasks()
 
 
-@app.put("/default/")
-async def set_default(body: RequestBody):
-
-    if not body.value1:
-        raise HTTPException(status_code=418, detail=f"value1 {body.value1} is invalid")
-
-    if body.name:
-        api_client.set_default_variables(**{body.name: body.value1})
-    else:
-        detail = "name: [default_date_expression, default_project_name, default_label, default_month_limit]"
-        raise HTTPException(status_code=418, detail=detail)
-
-
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
 

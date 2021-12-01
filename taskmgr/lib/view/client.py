@@ -126,15 +126,15 @@ class Client:
 
     def get_unique_label_list(self) -> List[str]:
         """Returns a list of labels from the tasks."""
-        return list(self.tasks.get_label_set())
+        return self.tasks.get_label_list()
 
     def get_unique_project_list(self) -> List[str]:
         """Returns list of project names from the tasks. """
-        return list(self.tasks.get_project_set())
+        return self.tasks.get_project_list()
 
     def __get_unique_due_date_list(self) -> List[str]:
         """Returns list of due_date strings from the tasks."""
-        return list(sorted(self.tasks.get_due_date_set()))
+        return self.tasks.get_due_date_list()
 
     def count_all_tasks(self) -> List[Snapshot]:
         snapshots = Snapshots(self.tasks)

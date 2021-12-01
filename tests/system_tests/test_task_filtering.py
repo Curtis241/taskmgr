@@ -5,7 +5,6 @@ from dpath import util
 from system_tests.common import Common
 from system_tests.rest_api import RestApi, Tasks, Task
 from taskmgr.lib.model.calendar import Today
-from taskmgr.lib.variables import CommonVariables
 
 
 class TestTaskFiltering(unittest.TestCase):
@@ -14,7 +13,6 @@ class TestTaskFiltering(unittest.TestCase):
         self.api = RestApi()
         self.tasks = Tasks()
         self.task = Task()
-        self.vars = CommonVariables()
         self.today = Today()
         self.tasks.remove_all()
         self.util = Common()

@@ -12,4 +12,9 @@ class Common:
         task_list = util.get(response, "tasks")
         return len(task_list)
 
+    @staticmethod
+    def get_by_index(response: dict, index: int) -> dict:
+        task_list = util.get(response, "tasks")
+        return task_list[index]
+
 

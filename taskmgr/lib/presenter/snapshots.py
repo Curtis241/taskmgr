@@ -1,5 +1,3 @@
-from typing import List
-
 from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.model.snapshot import Snapshot
 from taskmgr.lib.presenter.tasks import Tasks
@@ -12,10 +10,10 @@ class Snapshots:
         self.__tasks = tasks
         self.__task_list = []
 
-    def summarize(self) -> Snapshot:
-
+    @staticmethod
+    def __summarize(task_list: list) -> Snapshot:
         snapshot = Snapshot()
-        for task in self.__task_list:
+        for task in task_list:
             if task.deleted:
                 snapshot.deleted += 1
             elif task.is_completed():
@@ -24,20 +22,28 @@ class Snapshots:
                 snapshot.incomplete += 1
 
             snapshot.due_date = task.due_date.date_string
-        snapshot.count = len(self.__task_list)
+        snapshot.count = len(task_list)
 
         return snapshot
 
-    def get_list(self) -> List[Snapshot]:
+    def get_snapshot(self) -> tuple:
 
-        snapshot_list = []
-        for index, due_date in enumerate(self.__tasks.get_due_date_set(), start=1):
-            self.__task_list = self.__tasks.get_tasks_by_date(due_date)
-            snapshot = self.summarize()
-            snapshot.index = index
-            snapshot_list.append(snapshot)
+        if len(self.__task_list) > 0:
+            # snapshot object has index and due_date that are not needed
+            # for the summary because there is always one object.
+            summary = self.__summarize(self.__task_list)
 
-        return snapshot_list
+            snapshot_list = []
+            due_date_list = list(set([task.due_date.date_string for task in self.__task_list]))
+            for index, due_date in enumerate(due_date_list, start=1):
+                task_list = self.__tasks.get_tasks_by_date(due_date)
+                snapshot = self.__summarize(task_list)
+                snapshot.index = index
+                snapshot_list.append(snapshot)
+
+            return summary.compose_summary(), snapshot_list
+        else:
+            return Snapshot().compose_summary(), list()
 
     def count_all_tasks(self):
         self.__task_list = self.__tasks.get_object_list()

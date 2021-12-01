@@ -67,6 +67,12 @@ class Snapshot(DatabaseObject):
             setattr(self, key, value)
         return self
 
+    def compose_summary(self):
+        return {"count": self.__count,
+                "completed": self.__completed,
+                "incomplete": self.__incomplete,
+                "deleted": self.__deleted}
+
     def __iter__(self):
         yield 'index', self.index
         yield 'due_date', self.due_date

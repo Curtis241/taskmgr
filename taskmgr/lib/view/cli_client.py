@@ -32,7 +32,8 @@ class CliClient(Client):
         return self.__print_tasks_table(task_list)
 
     def display_snapshots(self, snapshots: Snapshots):
-        return self.__print_snapshots_table(snapshots.get_list())
+        _, snapshot_list = snapshots.get_snapshot()
+        return self.__print_snapshots_table(snapshot_list)
 
     def list_labels(self):
         """

@@ -132,8 +132,8 @@ class TestTasks(unittest.TestCase):
         self.assertTrue(first_task.label == "call")
 
     def test_get_unique_labels(self):
-        unique_label_set = self.tasks.get_label_set()
-        self.assertSetEqual(unique_label_set, {'office', 'waiting', 'call', 'computer', 'current'})
+        unique_label_list = self.tasks.get_label_list()
+        self.assertListEqual(unique_label_list, ['call', 'computer', 'current', 'office', 'waiting'])
 
     def test_get_list_by_type(self):
         returned_result = self.tasks.get_list_by_type("label", "call", self.tasks.get_object_list())

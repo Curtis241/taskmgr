@@ -260,20 +260,21 @@ class Tasks(Model):
         assert type(parameter_name) is str
         return [t for t in sorted(self.get_task_list(), key=lambda t: getattr(t, parameter_name))]
 
-    def get_label_set(self) -> Set[Task]:
+    def get_label_list(self) -> List[str]:
         return self.unique("label", self.get_task_list())
 
-    def get_project_set(self) -> Set[Task]:
+    def get_project_list(self) -> List[str]:
         return self.unique("project", self.get_task_list())
 
-    def get_due_date_set(self) -> Set[str]:
-        return set([task.due_date.date_string for task in self.get_task_list()])
+    def get_due_date_list(self) -> List[str]:
+        return list(set([task.due_date.date_string for task in self.get_task_list()]))
 
     @staticmethod
-    def unique(parameter_name: str, task_list: list) -> Set[Task]:
+    def unique(parameter_name: str, task_list: list) -> List[str]:
         assert type(parameter_name) is str
         assert type(task_list) is list
-        return set([getattr(task, parameter_name) for task in task_list])
+        unique_set = set([getattr(task, parameter_name) for task in task_list])
+        return sorted(list(unique_set))
 
     def clear(self):
         self.clear_objects()
