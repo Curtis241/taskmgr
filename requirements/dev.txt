@@ -8,5 +8,8 @@ twine
 pytest
 pluggy
 pytest-runner
-uvicorn
+pip
+bumpversion
+wheel
+watchdog
 requests>=2.25.1

@@ -233,7 +233,7 @@ class Tasks(Model):
         assert type(today) is Today or Day
         task_list = self.get_task_list()
         for task in task_list:
-            if self.__calendar.is_past(task.due_date, today) and task.due_date.completed is False:
+            if self.__calendar.is_past(task.due_date, today) and task.due_date.completed is False and task.deleted is False:
                 task.due_date.date_string = today.to_date_string()
         self.update_objects(task_list)
 

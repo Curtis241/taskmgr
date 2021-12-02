@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from taskmgr.lib.model.calendar import Today
 from taskmgr.lib.model.database_manager import DatabaseManager
 from taskmgr.lib.model.day import Day
+from taskmgr.lib.model.task import Task
 from taskmgr.lib.presenter.date_generator import DateGenerator
 from taskmgr.lib.presenter.file_manager import FileManager
 from taskmgr.lib.variables import CommonVariables
@@ -105,25 +106,6 @@ class TestCliClient(unittest.TestCase):
         self.assertEqual(task.due_date.date_string, '2021-04-14')
         self.assertEqual(task.due_date.completed, False)
 
-    def test_reschedule_tasks(self):
-        today = Today()
-        task_list = self.client.add_task("Clean car", "@waiting_on", "home", "today")
-        self.assertTrue(len(task_list) == 1)
-        task1 = task_list[0]
-        self.assertIsNotNone(task1)
-        self.assertTrue(task1.due_date.date_string == today.to_date_string())
-
-        future_day = today.to_date_time() + timedelta(days=1)
-        future_day = Day(future_day)
-        self.client.reschedule_tasks(future_day)
-
-        kwargs = {"text": task1.text}
-        task_list = self.client.filter_tasks_by_text(**kwargs)
-        self.assertTrue(len(task_list) == 1)
-        task1 = task_list[0]
-        self.assertIsNotNone(task1)
-        self.assertTrue(task1.due_date.date_string == future_day.to_date_string())
-
     def test_today(self):
         self.client.add_task("task1", "home", "home", "empty")
         self.client.add_task("task2", "home", "home", "today")
@@ -172,7 +154,7 @@ class TestCliClient(unittest.TestCase):
         self.tasks.add("task2", "current", "work", self.june7.to_date_string())
         self.tasks.add("task3", "current", "work", june9_date_string)
         snapshot_list = self.client.count_tasks_by_due_date_range(june4_date_string, june9_date_string)
-        self.assertTrue(len(snapshot_list) == 3)
+        self.assertTrue(len(snapshot_list) == 1)
 
     def test_count_by_project(self):
         date_string = Today().to_date_string()

@@ -166,6 +166,35 @@ class TestTasks(unittest.TestCase):
         current_date_string = Today().to_date_string()
         self.assertTrue(modified_task.due_date.date_string == current_date_string)
 
+    def test_reschedule_tasks(self):
+        tasks = Tasks(self.db)
+        tasks.clear_objects()
+        tasks.add("task1", "label1", "project1", "2021-10-22")
+        task1 = tasks.get_task_by_name("task1")
+        self.assertIsNotNone(task1)
+
+        # Deleted tasks should not be rescheduled
+        tasks.add("task2", "label2", "project2", "2021-10-22")
+        task2 = tasks.get_task_by_name("task2")
+        self.assertIsNotNone(task2)
+        tasks.delete(task2.unique_id)
+
+        # Completed tasks should not be rescheduled
+        tasks.add("task3", "label3", "project3", "2021-10-22")
+        task3 = tasks.get_task_by_name("task3")
+        self.assertIsNotNone(task3)
+        tasks.complete(task3.unique_id)
+
+        today = Today()
+        tasks.reschedule(today)
+
+        task_list = tasks.get_tasks_by_date(today.to_date_string())
+        self.assertTrue(len(task_list) == 1)
+        rescheduled_task = task_list[0]
+        self.assertEqual(rescheduled_task.text, "task1")
+        self.assertEqual(rescheduled_task.label, "label1")
+        self.assertEqual(rescheduled_task.project, "project1")
+
 
 if __name__ == "__main__":
     unittest.main()

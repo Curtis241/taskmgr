@@ -1,13 +1,11 @@
-pip
-bumpversion
-wheel
-watchdog
 click==8.0.1
 colored==1.4.2
 ujson==4.2.0
 beautifultable==1.0.1
 dpath==2.0.5
 redis==3.5.3
-fastapi==0.70.0
 python-dateutil==2.8.2
+fastapi==0.70.0
+pydantic==1.8.2
+uvicorn==0.15.0
 
