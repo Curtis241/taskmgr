@@ -1,15 +1,13 @@
 from datetime import datetime
-from typing import Set, List
+from typing import List
 
 from taskmgr.lib.logger import AppLogger
-from taskmgr.lib.model.model import Model
-from taskmgr.lib.model.task import Task
-
 from taskmgr.lib.model.calendar import Calendar, Today
 from taskmgr.lib.model.day import Day
 from taskmgr.lib.model.due_date import DueDate
+from taskmgr.lib.model.model import Model
+from taskmgr.lib.model.task import Task
 from taskmgr.lib.presenter.date_generator import DateGenerator
-
 from taskmgr.lib.variables import CommonVariables
 
 

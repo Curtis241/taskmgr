@@ -18,9 +18,9 @@ class ApiClient(Client):
     def display_attribute_error(attribute_name: str, message: str):
         return {"detail": [{"loc": ["param", attribute_name]}], "msg": message, "type": "attribute_error"}
 
-    def display_snapshots(self, snapshots: Snapshots):
+    def display_snapshots(self, snapshots: Snapshots, **kwargs):
         summary, snapshot_list = snapshots.get_snapshot()
-        return {"snapshot": {"summary": summary, "list": [dict(snapshot) for snapshot in snapshot_list]}}
+        return {"snapshot": {"summary": summary.compose_summary(), "list": [dict(snapshot) for snapshot in snapshot_list]}}
 
     def add_task(self, text: str, label: str, project: str, date_expression: str) -> dict:
         try:
@@ -47,15 +47,3 @@ class ApiClient(Client):
     def list_all_tasks(self) -> dict:
         task_list = self.tasks.get_object_list()
         return self.display_tasks(task_list)
-
-
-if __name__ == "__main__":
-    from taskmgr.lib.model.database_manager import DatabaseManager
-    api_client = ApiClient(DatabaseManager())
-    api_client.remove_all_tasks()
-    api_client.add_task("task1", "project1", "label1", "2021-07-11")
-    api_client.add_task("task2", "project1", "label1", "2021-07-15")
-    api_client.add_task("task3", "project1", "label1", "2021-07-21")
-    api_client.add_task("task4", "project1", "label1", "2021-07-13")
-    #print(api_client.count_tasks_by_due_date("2021-07-11"))
-    print(api_client.count_tasks_by_due_date_range("2021-07-10", "2021-07-14"))

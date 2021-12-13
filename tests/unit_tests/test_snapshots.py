@@ -34,10 +34,10 @@ class TestSnapshots(unittest.TestCase):
         snapshots.count_all_tasks()
         summary, snapshot_list = snapshots.get_snapshot()
         self.assertIsNotNone(summary)
-        self.assertTrue(summary["count"] == 4)
-        self.assertTrue(summary["deleted"] == 1)
-        self.assertTrue(summary["incomplete"] == 2)
-        self.assertTrue(summary["completed"] == 1)
+        self.assertTrue(summary.count == 4)
+        self.assertTrue(summary.deleted == 1)
+        self.assertTrue(summary.incomplete == 2)
+        self.assertTrue(summary.completed == 1)
 
     def test_count_by_due_date_range(self):
         self.tasks.add("task1", "label1", "project1", "2021-07-14")
@@ -48,7 +48,11 @@ class TestSnapshots(unittest.TestCase):
         snapshots = Snapshots(self.tasks)
         snapshots.count_tasks_by_due_date_range("2021-07-13", "2021-11-02")
         summary, snapshot_list = snapshots.get_snapshot()
-        self.assertDictEqual(summary, {'count': 4, 'completed': 0, 'incomplete': 4, 'deleted': 0})
+        self.assertIsNotNone(summary)
+        self.assertEqual(summary.count, 4)
+        self.assertEqual(summary.completed, 0)
+        self.assertEqual(summary.incomplete, 4)
+        self.assertEqual(summary.deleted, 0)
         self.assertTrue(len(snapshot_list) == 3)
 
     def test_count_project(self):
@@ -60,13 +64,21 @@ class TestSnapshots(unittest.TestCase):
         snapshots = Snapshots(self.tasks)
         snapshots.count_tasks_by_project("project2")
         summary, snapshot_list = snapshots.get_snapshot()
-        self.assertDictEqual(summary, {'count': 3, 'completed': 0, 'incomplete': 3, 'deleted': 0})
+        self.assertIsNotNone(summary)
+        self.assertEqual(summary.count, 3)
+        self.assertEqual(summary.completed, 0)
+        self.assertEqual(summary.incomplete, 3)
+        self.assertEqual(summary.deleted, 0)
         self.assertTrue(len(snapshot_list) == 1)
 
     def test_invalid_operation(self):
         snapshots = Snapshots(self.tasks)
         summary, snapshot_list = snapshots.get_snapshot()
-        self.assertDictEqual(summary, {'count': 0, 'completed': 0, 'incomplete': 0, 'deleted': 0})
+        self.assertIsNotNone(summary)
+        self.assertEqual(summary.count, 0)
+        self.assertEqual(summary.completed, 0)
+        self.assertEqual(summary.incomplete, 0)
+        self.assertEqual(summary.deleted, 0)
         self.assertTrue(len(snapshot_list) == 0)
 
 

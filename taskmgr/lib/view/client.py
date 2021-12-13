@@ -32,7 +32,7 @@ class Client:
     def display_tasks(self, task_list: list): pass
 
     @abstractmethod
-    def display_snapshots(self, snapshots: Snapshots): pass
+    def display_snapshots(self, snapshots: Snapshots, **kwargs): pass
 
     @abstractmethod
     def display_invalid_index_error(self, index: int): pass
@@ -136,31 +136,31 @@ class Client:
         """Returns list of due_date strings from the tasks."""
         return self.tasks.get_due_date_list()
 
-    def count_all_tasks(self) -> List[Snapshot]:
+    def count_all_tasks(self, **kwargs) -> List[Snapshot]:
         snapshots = Snapshots(self.tasks)
         snapshots.count_all_tasks()
-        return self.display_snapshots(snapshots)
+        return self.display_snapshots(snapshots, **kwargs)
 
-    def count_tasks_by_due_date_range(self, min_date: str, max_date: str) -> List[Snapshot]:
+    def count_tasks_by_due_date_range(self, min_date: str, max_date: str, **kwargs) -> List[Snapshot]:
         assert type(min_date) and type(max_date) is str
 
         snapshots = Snapshots(self.tasks)
         snapshots.count_tasks_by_due_date_range(min_date, max_date)
-        return self.display_snapshots(snapshots)
+        return self.display_snapshots(snapshots, **kwargs)
 
-    def count_tasks_by_due_date(self, due_date: str) -> List[Snapshot]:
+    def count_tasks_by_due_date(self, due_date: str, **kwargs) -> List[Snapshot]:
         assert type(due_date) is str
 
         snapshots = Snapshots(self.tasks)
         snapshots.count_tasks_by_due_date(due_date)
-        return self.display_snapshots(snapshots)
+        return self.display_snapshots(snapshots, **kwargs)
 
-    def count_tasks_by_project(self, project_name: str) -> List[Snapshot]:
+    def count_tasks_by_project(self, project_name: str, **kwargs) -> List[Snapshot]:
         assert type(project_name) is str
 
         snapshots = Snapshots(self.tasks)
         snapshots.count_tasks_by_project(project_name)
-        return self.display_snapshots(snapshots)
+        return self.display_snapshots(snapshots, **kwargs)
 
     def reschedule_tasks(self, today=Today()):
         self.tasks.reschedule(today)

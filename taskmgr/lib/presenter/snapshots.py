@@ -41,9 +41,9 @@ class Snapshots:
                 snapshot.index = index
                 snapshot_list.append(snapshot)
 
-            return summary.compose_summary(), snapshot_list
+            return summary, sorted(snapshot_list, key=lambda sn: sn.due_date)
         else:
-            return Snapshot().compose_summary(), list()
+            return Snapshot(), list()
 
     def count_all_tasks(self):
         self.__task_list = self.__tasks.get_object_list()

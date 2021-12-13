@@ -23,7 +23,7 @@ class CommonVariables:
     def create_file(self):
         if not Path(self.__get_file_path()).exists():
             self.cfg['DEFAULT'] = {'recurring_month_limit': 2,
-                                   'default_date_expression': 'empty',
+                                   'default_date_expression': 'today',
                                    'default_text_field_length': 50,
                                    'date_format': '%Y-%m-%d',
                                    'date_time_format': '%Y-%m-%d %H:%M:%S',
@@ -35,7 +35,8 @@ class CommonVariables:
                                    'default_text': '',
                                    'enable_redis': False,
                                    'redis_host': 'localhost',
-                                   'redis_port': 6379}
+                                   'redis_port': 6379,
+                                   'max_snapshot_rows': 10}
             os.makedirs(self.resources_dir, exist_ok=True)
             self.__save()
 
@@ -63,7 +64,7 @@ class CommonVariables:
 
     def __set(self, key, value, section):
         self.__read_file()
-        if not self.cfg.has_section(section):
+        if section is not self.default_section and self.cfg.has_section(section) is False:
             self.cfg.add_section(section)
         self.cfg.set(section, key, value)
         self.__save()
@@ -116,6 +117,15 @@ class CommonVariables:
         return self.__get("file_name_timestamp", self.default_section)
 
     @property
+    def max_snapshot_rows(self):
+        return self.__getint("max_snapshot_rows", self.default_section)
+
+    @max_snapshot_rows.setter
+    def max_snapshot_rows(self, value):
+        if value is not None:
+            self.__set("max_snapshot_rows", int(value), self.default_section)
+
+    @property
     def default_text(self):
         return self.__get("default_text", self.task_section)
 
@@ -140,11 +150,6 @@ class CommonVariables:
     @property
     def default_date_expression(self):
         return self.__get("default_date_expression", self.task_section)
-
-    @default_date_expression.setter
-    def default_date_expression(self, value):
-        if value is not None:
-            self.__set("default_date_expression", value, self.task_section)
 
     @property
     def default_project_name(self):
@@ -200,3 +205,4 @@ class CommonVariables:
         yield 'enable_redis', self.enable_redis
         yield 'redis_host', self.redis_host
         yield 'redis_port', self.redis_port
+        yield 'max_snapshot_rows', self.max_snapshot_rows

@@ -135,14 +135,14 @@ class TestCliClient(unittest.TestCase):
 
     def test_count_all_tasks(self):
         self.tasks.add("task1", "label1", "project1", "today")
-        snapshot_list = self.client.count_all_tasks()
+        snapshot_list = self.client.count_all_tasks(**{"page": 1})
         self.assertIsNotNone(snapshot_list)
         self.assertTrue(len(snapshot_list) == 1)
 
     def test_count_by_date(self):
         self.tasks.add("task1", "label1", "project1", "today")
         date_string = Today().to_date_string()
-        snapshot_list = self.client.count_tasks_by_due_date(date_string)
+        snapshot_list = self.client.count_tasks_by_due_date(date_string, **{"page": 1})
         self.assertTrue(len(snapshot_list) == 1)
         snapshot = snapshot_list[0]
         self.assertTrue(snapshot.count == 1)
@@ -153,7 +153,7 @@ class TestCliClient(unittest.TestCase):
         self.tasks.add("task1", "current", "work", june4_date_string)
         self.tasks.add("task2", "current", "work", self.june7.to_date_string())
         self.tasks.add("task3", "current", "work", june9_date_string)
-        snapshot_list = self.client.count_tasks_by_due_date_range(june4_date_string, june9_date_string)
+        snapshot_list = self.client.count_tasks_by_due_date_range(june4_date_string, june9_date_string, **{"page": 1})
         self.assertTrue(len(snapshot_list) == 1)
 
     def test_count_by_project(self):
@@ -161,10 +161,15 @@ class TestCliClient(unittest.TestCase):
         self.tasks.add("task1", "current", "work", date_string)
         self.tasks.add("task2", "current", "work", date_string)
         self.tasks.add("task3", "current", "work", date_string)
-        snapshot_list = self.client.count_tasks_by_project("work")
+        snapshot_list = self.client.count_tasks_by_project("work", **{"page": 1})
         self.assertTrue(len(snapshot_list) == 1)
         snapshot = snapshot_list[0]
         self.assertTrue(snapshot.count == 3)
+
+    def test_count_by_project_with_incorrect_value(self):
+        self.tasks.add("task1", "current", "work", "today")
+        snapshot_list = self.client.count_tasks_by_project("work2", **{"page": 1})
+        self.assertTrue(len(snapshot_list) == 0)
 
 
 

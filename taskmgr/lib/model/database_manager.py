@@ -1,6 +1,5 @@
 from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.model.database import RedisDatabase, JsonFileDatabase
-from taskmgr.lib.presenter.snapshots import Snapshots
 from taskmgr.lib.presenter.tasks import Tasks
 from taskmgr.lib.variables import CommonVariables
 

@@ -73,9 +73,9 @@ simulate_user(){
 
 SECONDS=0
 #add_tasks "$COUNT"
-#add_tasks_with_random_date "$COUNT"
+add_tasks_with_random_date "$COUNT"
 #complete_tasks "$COUNT"
 #simulate_user "$COUNT"
-delete_tasks "$COUNT"
+#delete_tasks "$COUNT"
 duration=$SECONDS
 echo "$(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed."

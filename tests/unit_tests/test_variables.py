@@ -36,16 +36,12 @@ class TestVariables(unittest.TestCase):
     def test_set_variable(self):
         self.vars.default_project_name = "work"
         self.assertTrue(self.vars.default_project_name == "work")
-        self.vars.default_date_expression = "today"
-        self.assertTrue(self.vars.default_date_expression == "today")
 
         vars = CommonVariables('test_variables.ini')
         self.assertTrue(vars.default_project_name == "work")
-        self.assertTrue(vars.default_date_expression == "today")
 
         vars.reset()
         self.assertTrue(len(str(vars.default_project_name)) == 0)
-        self.assertTrue(str(vars.default_date_expression) == 'empty')
 
     def test_date_format_validation(self):
         self.assertTrue(self.vars.validate_date_format('2020-01-01'))

@@ -388,3 +388,87 @@ class RedisDatabase(GenericDatabase):
         for db_item in self.build_db_list():
             for key in db_item[0].keys():
                 db_item[0].delete(key)
+
+
+class RedisExperimentDatabase(GenericDatabase):
+    """
+    Manages saving and retrieving objects to a redis database. Retrieve method should be called
+    before save to maintain a consistent state.
+    """
+
+    logger = AppLogger("redis_experiment_database").get_logger()
+
+    def __init__(self, host, port):
+        super().__init__()
+        self.host = host
+        self.port = port
+        self.db = None
+
+    def build_db_list(self):
+        # Max number of keys in a redis logical databases is 16. Scan all
+        # logical databases to identify what object belongs in each.
+        db_list = []
+        for index in range(0, 16):
+            db = redis.Redis(host=self.host, port=self.port, db=index)
+            keys = db.keys("1:*")
+            if len(keys) == 1:
+                key = str(keys[0].decode("utf-8")).lstrip("1:")
+                db_list.append((db, key))
+            else:
+                db_list.append((db, None))
+        return db_list
+
+    def initialize(self, obj, test_mode=False):
+        """
+        Retrieves the redis db id from the object so it can be saved or updated.
+        :param obj: Object that subclasses DatabaseObject
+        :param test_mode: Unsupported
+        :return: None
+        """
+        self.db = redis.Redis(host=self.host, port=self.port, db=obj.get_redis_db_id())
+
+    @staticmethod
+    def __key(obj):
+        return f"{obj.index}:{obj.object_name}"
+
+    def replace(self, obj):
+        assert isinstance(obj, DatabaseObject)
+        assert obj.index > 0
+        self.set([obj])
+
+    def append(self, obj):
+        assert isinstance(obj, DatabaseObject)
+        self.set([obj])
+
+    def set(self, obj_list):
+        """
+        Updates or inserts new objects that inherit from DatabaseObject. When key matches existing key an update
+        occurs, but if there is no match then a new key is created.
+        :param obj_list: List containing class objects
+        :return: None
+        """
+        assert self.contains_database_object(obj_list)
+        if self.exists():
+            for obj in obj_list:
+                if not self.db.exists(self.__key(obj)):
+                    obj.index = self.get_last_index(self.db.keys())
+
+                obj = self.set_unique_id(obj)
+                obj.last_updated = self.get_last_updated()
+                self.db.hset(self.__key(obj), "last_updated", obj.last_updated)
+                self.db.hset(self.__key(obj), "data", self.to_json(obj))
+
+    def get(self) -> List[dict]:
+        if self.db is not None:
+            return [json.loads(self.db.hget(key, "data")) for key in sorted(self.db.keys())]
+        else:
+            return []
+
+    def exists(self):
+        db = redis.Redis(host=self.host, port=self.port, db=0)
+        return db.ping()
+
+    def clear(self):
+        for db_item in self.build_db_list():
+            for key in db_item[0].keys():
+                db_item[0].delete(key)

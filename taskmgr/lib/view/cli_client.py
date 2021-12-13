@@ -2,12 +2,15 @@ from datetime import datetime
 from typing import List
 
 from taskmgr.lib.logger import AppLogger
+from taskmgr.lib.model.snapshot import Snapshot
 from taskmgr.lib.model.task import Task
 from taskmgr.lib.presenter.file_manager import FileManager
 from taskmgr.lib.presenter.snapshots import Snapshots
 from taskmgr.lib.presenter.task_sync import CsvFileImporter
 from taskmgr.lib.view.client import Client
-from taskmgr.lib.view.snapshot_console_table import SnapshotConsoleTable
+from taskmgr.lib.view.console_table_pager import Pager
+from taskmgr.lib.view.snapshot_list_console_table import SnapshotListConsoleTable
+from taskmgr.lib.view.snapshot_summary_console_table import SnapshotSummaryConsoleTable
 from taskmgr.lib.view.task_console_table import TaskConsoleTable
 from taskmgr.lib.view.variable_console_table import VariableConsoleTable
 
@@ -25,15 +28,17 @@ class CliClient(Client):
         self.__file_manager = file_manager
 
         self.task_table = TaskConsoleTable()
-        self.snapshots_table = SnapshotConsoleTable()
+        self.snapshot_list_table = SnapshotListConsoleTable()
+        self.snapshot_summary_table = SnapshotSummaryConsoleTable()
         self.variables_table = VariableConsoleTable()
 
     def display_tasks(self, task_list):
         return self.__print_tasks_table(task_list)
 
-    def display_snapshots(self, snapshots: Snapshots):
-        _, snapshot_list = snapshots.get_snapshot()
-        return self.__print_snapshots_table(snapshot_list)
+    def display_snapshots(self, snapshots: Snapshots, **kwargs):
+        summary, snapshot_list = snapshots.get_snapshot()
+        self.__print_snapshot_summary_table(summary)
+        return self.__print_snapshot_list_table(snapshot_list, kwargs.get("page"))
 
     def list_labels(self):
         """
@@ -60,11 +65,30 @@ class CliClient(Client):
             self.task_table.add_row(task)
         return self.task_table.print()
 
-    def __print_snapshots_table(self, snapshot_list):
-        self.snapshots_table.clear()
-        for snapshot in snapshot_list:
-            self.snapshots_table.add_row(snapshot)
-        return self.snapshots_table.print()
+    def __print_snapshot_summary_table(self, summary: Snapshot):
+        CliClient.logger.info("Snapshot summary:")
+        self.snapshot_summary_table.clear()
+        self.snapshot_summary_table.add_row(summary)
+        return self.snapshot_summary_table.print()
+
+    def __print_snapshot_list_table(self, snapshot_list: list, page_number: int):
+        assert type(snapshot_list) is list
+        assert type(page_number) is int
+
+        if snapshot_list:
+            self.snapshot_list_table.clear()
+            pager = Pager(snapshot_list).assemble()
+            page = pager.get_page(page_number)
+            snapshots = pager.get_items(page)
+
+            self.logger.info("Snapshot list:")
+            for snapshot in snapshots:
+                self.snapshot_list_table.add_row(snapshot)
+            snapshot_list = self.snapshot_list_table.print()
+
+            self.logger.info(f"Displayed {len(snapshots)} items - Page {page_number} of {pager.get_page_count()}")
+
+        return snapshot_list
 
     def export_tasks(self, task_list):
         self.__file_manager.save_tasks(task_list)

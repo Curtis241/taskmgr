@@ -54,8 +54,8 @@ def add_task(**kwargs):
 @click.option('--due_date', '-d', help="due date for task", default=variables.default_date_expression,
               type=str, metavar='<due_date>')
 def edit_task(**kwargs):
-    cli_client.edit_task(kwargs.get("index"), kwargs.get("text"), kwargs.get("project"),
-                         kwargs.get("label"), kwargs.get("due_date"))
+    cli_client.edit_task(kwargs.get("index"), kwargs.get("text"), kwargs.get("label"),
+                         kwargs.get("project"), kwargs.get("due_date"))
 
 
 @cli.command("list", help="Lists all tasks")
@@ -193,18 +193,20 @@ def task_count(): pass
 
 
 @task_count.command("all")
-@click.option('--export', is_flag=True, help="Outputs to csv file")
+@click.option('--export', is_flag=True, help="Outputs all to csv file")
+@click.option('--page', type=int, default=1)
 def count_all_tasks(**kwargs):
-    snapshot_list = cli_client.count_all_tasks()
+    snapshot_list = cli_client.count_all_tasks(**kwargs)
     if kwargs.get("export"):
         cli_client.export_snapshots(snapshot_list)
 
 
 @task_count.command("date")
 @click.option('--export', is_flag=True, help="Outputs to csv file")
+@click.option('--page', type=int, default=1)
 @click.argument('date', type=DateFormatString(), required=True, metavar="<date>")
 def count_tasks_by_date(**kwargs):
-    snapshot_list = cli_client.count_tasks_by_due_date(kwargs.get("date"))
+    snapshot_list = cli_client.count_tasks_by_due_date(kwargs.get("date"), **kwargs)
     if kwargs.get("export"):
         cli_client.export_snapshots(snapshot_list)
 
@@ -213,17 +215,19 @@ def count_tasks_by_date(**kwargs):
 @click.option('--export', is_flag=True, help="Outputs to csv file")
 @click.option('--min_date', required=True, type=DateFormatString())
 @click.option('--max_date', required=True, type=DateFormatString())
+@click.option('--page', type=int, default=1)
 def count_tasks_by_date_range(**kwargs):
-    snapshot_list = cli_client.count_tasks_by_due_date_range(kwargs.get("min_date"), kwargs.get("max_date"))
+    snapshot_list = cli_client.count_tasks_by_due_date_range(kwargs.get("min_date"), kwargs.get("max_date"), **kwargs)
     if kwargs.get("export"):
         cli_client.export_snapshots(snapshot_list)
 
 
 @task_count.command("project")
 @click.option('--export', is_flag=True, help="Outputs to csv file")
+@click.option('--page', type=int, default=1)
 @click.argument('project', type=str, required=True, metavar="<project>")
 def count_tasks_by_project(**kwargs):
-    snapshot_list = cli_client.count_tasks_by_project(kwargs.get("project"))
+    snapshot_list = cli_client.count_tasks_by_project(kwargs.get("project"), **kwargs)
     if kwargs.get("export"):
         cli_client.export_snapshots(snapshot_list)
 
@@ -253,8 +257,6 @@ def import_tasks(**kwargs):
 
 
 @cli.command("defaults", help="Sets the default variables")
-@click.option('--default_date_expression', help="Sets the default date expression (ie. today, empty)",
-              type=click.Choice(['today', 'empty']))
 @click.option('--default_project_name', help="Sets the default project name", type=str, default=None)
 @click.option('--default_label', help="Sets the default label", type=str, default=None)
 @click.option('--default_text_field_length', help="Sets the default text field length", type=str, default=None)
@@ -263,6 +265,7 @@ def import_tasks(**kwargs):
               type=click.Choice(['True', 'False']))
 @click.option('--redis_port', help="Port for redis database", type=int, default=None)
 @click.option('--redis_host', help="IPv4 address for redis database", type=str, default=None)
+@click.option('--max_snapshot_rows', help="Max number of snapshots to display on page", type=int, default=None)
 def set_defaults(**kwargs):
     cli_client.set_default_variables(**kwargs)
     cli_client.list_default_variables()
