@@ -21,13 +21,12 @@ setup(
     author="Curtis Peterson",
     author_email='copeterson07@gmail.com',
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Natural Language :: English',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Operating System :: POSIX :: Linux'
 
     ],
     description="Task Manager",
@@ -47,6 +46,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/Curtis241/taskmgr',
-    version='0.2.3',
+    version='0.2.4',
     zip_safe=False,
 )
