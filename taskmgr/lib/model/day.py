@@ -16,6 +16,9 @@ class Day:
         self.week = self.get_week(self.day_number, self.weekday_number, self.month, self.year)
         self.vars = CommonVariables()
 
+    def to_timestamp(self):
+        return int(self.dt.timestamp())
+
     def to_date_list(self):
         return [self.to_date_string()]
 

@@ -23,14 +23,12 @@ class TestVariables(unittest.TestCase):
     def test_task_variables(self):
         self.assertIsInstance(self.vars.default_label, str)
         self.assertIsInstance(self.vars.default_project_name, str)
-        self.assertIsInstance(self.vars.default_text, str)
+        self.assertIsInstance(self.vars.default_name, str)
         self.assertIsInstance(self.vars.recurring_month_limit, int)
-        self.assertIsInstance(self.vars.default_date_expression, str)
-        self.assertIsInstance(self.vars.default_text_field_length, int)
+        self.assertIsInstance(self.vars.default_name_field_length, int)
 
     def test_redisdb_variables(self):
         self.assertIsInstance(self.vars.redis_port, int)
-        self.assertIsInstance(self.vars.enable_redis, bool)
         self.assertIsInstance(self.vars.redis_host, str)
 
     def test_set_variable(self):

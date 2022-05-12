@@ -1,4 +1,3 @@
-import ast
 import os
 import re
 from configparser import RawConfigParser, NoSectionError
@@ -23,8 +22,7 @@ class CommonVariables:
     def create_file(self):
         if not Path(self.__get_file_path()).exists():
             self.cfg['DEFAULT'] = {'recurring_month_limit': 2,
-                                   'default_date_expression': 'today',
-                                   'default_text_field_length': 50,
+                                   'default_name_field_length': 50,
                                    'date_format': '%Y-%m-%d',
                                    'date_time_format': '%Y-%m-%d %H:%M:%S',
                                    'time_format': '%H:%M:%S',
@@ -32,8 +30,7 @@ class CommonVariables:
                                    'file_name_timestamp': '%Y%m%d_%H%M%S',
                                    'default_project_name': '',
                                    'default_label': '',
-                                   'default_text': '',
-                                   'enable_redis': False,
+                                   'default_name': '',
                                    'redis_host': 'localhost',
                                    'redis_port': 6379,
                                    'max_snapshot_rows': 10}
@@ -126,8 +123,8 @@ class CommonVariables:
             self.__set("max_snapshot_rows", int(value), self.default_section)
 
     @property
-    def default_text(self):
-        return self.__get("default_text", self.task_section)
+    def default_name(self):
+        return self.__get("default_name", self.task_section)
 
     @property
     def default_label(self):
@@ -148,10 +145,6 @@ class CommonVariables:
             self.__set("recurring_month_limit", value, self.task_section)
 
     @property
-    def default_date_expression(self):
-        return self.__get("default_date_expression", self.task_section)
-
-    @property
     def default_project_name(self):
         return self.__get("default_project_name", self.task_section)
 
@@ -161,22 +154,13 @@ class CommonVariables:
             self.__set("default_project_name", value, self.task_section)
 
     @property
-    def default_text_field_length(self):
-        return self.__getint("default_text_field_length", self.task_section)
+    def default_name_field_length(self):
+        return self.__getint("default_name_field_length", self.task_section)
 
-    @default_text_field_length.setter
-    def default_text_field_length(self, value):
+    @default_name_field_length.setter
+    def default_name_field_length(self, value):
         if value is not None:
-            self.__set("default_text_field_length", str(value), self.task_section)
-
-    @property
-    def enable_redis(self):
-        return ast.literal_eval(self.__get("enable_redis", self.database_section))
-
-    @enable_redis.setter
-    def enable_redis(self, value):
-        if value is not None:
-            self.__set("enable_redis", str(value), self.database_section)
+            self.__set("default_name_field_length", str(value), self.task_section)
 
     @property
     def redis_host(self):
@@ -197,12 +181,10 @@ class CommonVariables:
             self.__set("redis_port", int(value), self.database_section)
 
     def __iter__(self):
-        yield 'default_text_field_length', self.default_text_field_length
+        yield 'default_name_field_length', self.default_name_field_length
         yield 'default_project_name', self.default_project_name
         yield 'default_label', self.default_label
         yield 'recurring_month_limit', self.recurring_month_limit
-        yield 'default_date_expression', self.default_date_expression
-        yield 'enable_redis', self.enable_redis
         yield 'redis_host', self.redis_host
         yield 'redis_port', self.redis_port
         yield 'max_snapshot_rows', self.max_snapshot_rows

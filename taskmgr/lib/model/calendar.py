@@ -102,10 +102,8 @@ class Calendar:
         assert type(month_count) is int
 
         start = start_day.to_date_time()
-        end = start + relativedelta(months=month_count)
-        days = list(rrule(freq=DAILY, dtstart=start, until=end))
-
-        return [Day(dt) for dt in days]
+        days = list(rrule(MONTHLY, count=month_count * 2, bymonthday=(-1, 1,), dtstart=start))
+        return Calendar.fill(Day(days[0]), Day(days[-1]))
 
     @staticmethod
     def get_week_days(start_day: Day, weekday_number: int, month_count: int) -> List[Day]:
@@ -220,11 +218,19 @@ class Calendar:
 
     @staticmethod
     def is_short_date(expression: str) -> bool:
-        if re.match('^[a-z]{3} [1-3][0-9]$', str(expression).lower()) is not None:
+        if re.match('^[a-z]{3} \d{1,2}$', str(expression).lower()) is not None:
             month, day_number = str(expression).split()
             if 31 >= int(day_number) >= 1:
                 return True
         return False
+
+    @staticmethod
+    def is_valid(expression: str) -> bool:
+        try:
+            parse(expression)
+            return True
+        except ParserError:
+            return False
 
     @staticmethod
     def parse_date(expression: str) -> Day:

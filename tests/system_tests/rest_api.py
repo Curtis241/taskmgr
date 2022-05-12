@@ -1,39 +1,6 @@
 import requests
 
-
-class RequestBody:
-
-    def __init__(self, name: str, value1: str = None, value2: str = None):
-        self.__name = name
-        self.__value1 = value1
-        self.__value2 = value2
-
-    def __iter__(self):
-        yield "name", self.__name
-
-        if self.__value1 is not None:
-            yield "value1", self.__value1
-
-        if self.__value2 is not None:
-            yield "value2", self.__value2
-
-
-class TaskModel:
-    def __init__(self, text: str, project: str, label: str, date_expression: str):
-        self.index = None
-        self.text = text
-        self.project = project
-        self.label = label
-        self.date_expression = date_expression
-
-    def __iter__(self):
-        if self.index is not None:
-            yield "index", self.index
-
-        yield "text", self.text
-        yield "project", self.project
-        yield "label", self.label
-        yield "date_expression", self.date_expression
+from taskmgr.lib.view.client_args import *
 
 
 class RestApi:
@@ -80,7 +47,7 @@ class Project(RestApi):
         super().__init__()
 
     def get_list(self) -> dict:
-        return self.put("unique/", dict(RequestBody("project")))
+        return self.put("unique/project")
 
 
 class Label(RestApi):
@@ -89,7 +56,7 @@ class Label(RestApi):
         super().__init__()
 
     def get_list(self) -> dict:
-        return self.put("unique/", dict(RequestBody("label")))
+        return self.put("unique/label")
 
 
 class Task(RestApi):
@@ -100,37 +67,34 @@ class Task(RestApi):
     def get_task(self, index: str) -> dict:
         return self.get(f"tasks/task/{index}")
 
-    def delete_task(self, uuid: str) -> dict:
-        return self.delete(f"tasks/task/delete/{uuid}")
+    def delete_task(self, index: str) -> dict:
+        return self.delete(f"tasks/task/delete/{index}")
 
-    def undelete_task(self, uuid: str) -> dict:
-        return self.delete(f"tasks/task/undelete/{uuid}")
+    def undelete_task(self, index: str) -> dict:
+        return self.delete(f"tasks/task/undelete/{index}")
 
-    def complete_task(self, uuid: str) -> dict:
-        return self.put(f"tasks/task/complete/{uuid}")
+    def complete_task(self, index: str) -> dict:
+        return self.put(f"tasks/task/complete/{index}")
 
-    def incomplete_task(self, uuid: str) -> dict:
-        return self.put(f"tasks/task/incomplete/{uuid}")
+    def incomplete_task(self, index: str) -> dict:
+        return self.put(f"tasks/task/incomplete/{index}")
 
 
 class Tasks(RestApi):
 
     def __init__(self):
         super().__init__()
-        self.__group_path = "group/"
-        self.__count_path = "count/"
-        self.__filter_path = "filter/"
 
     def get_all(self) -> dict:
         return self.get("tasks")
 
-    def add(self, text: str, project: str, label: str, date_expression: str) -> dict:
-        return self.post("tasks", dict(TaskModel(text, project, label, date_expression)))
+    def add(self, name: str, label: str, project: str, due_date: str) -> dict:
+        args = AddArgs(name=name, label=label, project=project, due_date=due_date)
+        return self.post("tasks", args.dict())
 
-    def edit(self, index: str, text: str, project: str, label: str, date_expression: str) -> dict:
-        model = TaskModel(text, project, label, date_expression)
-        model.index = index
-        return self.put("tasks", dict(model))
+    def edit(self, index: int, name: str, project: str, label: str, due_date: str) -> dict:
+        args = EditArgs(index=index, name=name, project=project, label=label, due_date=due_date)
+        return self.put("tasks", args.dict())
 
     def remove_all(self) -> dict:
         return self.delete("tasks")
@@ -139,44 +103,52 @@ class Tasks(RestApi):
         self.put("reschedule/")
 
     def group_by_label(self):
-        return self.put(self.__group_path, dict(RequestBody("label")))
+        return self.put("group/label")
 
     def group_by_project(self):
-        return self.put(self.__group_path, dict(RequestBody("project")))
+        return self.put("group/project")
 
     def group_by_due_date(self):
-        return self.put(self.__group_path, dict(RequestBody("due_date")))
+        return self.put("group/due_date")
 
     def count_all(self) -> dict:
         return self.get("count_all")
 
     def count_by_due_date(self, due_date: str) -> dict:
-        return self.put(self.__count_path, dict(RequestBody("due_date", due_date)))
+        args = DueDateArgs(due_date=due_date)
+        return self.put("count/due_date", args.dict())
 
     def count_by_project(self, project_name: str) -> dict:
-        return self.put(self.__count_path, dict(RequestBody("project", project_name)))
+        args = ProjectArgs(project=project_name)
+        return self.put("count/project", args.dict())
 
     def count_by_due_date_range(self, min_date: str, max_date: str) -> dict:
-        request_body = dict(RequestBody("due_date_range", min_date, max_date))
-        return self.put(self.__count_path, request_body)
+        args = DueDateRangeArgs(min_date=min_date, max_date=max_date)
+        return self.put("count/due_date_range", args.dict())
 
     def filter_by_project(self, project_name: str) -> dict:
-        return self.put(self.__filter_path, dict(RequestBody("project", project_name)))
+        args = ProjectArgs(project=project_name)
+        return self.put("count/project", args.dict())
 
     def filter_by_label(self, label: str) -> dict:
-        return self.put(self.__filter_path, dict(RequestBody("label", label)))
+        args = LabelArgs(label=label)
+        return self.put("count/label", args.dict())
 
-    def filter_by_text(self, text: str) -> dict:
-        return self.put(self.__filter_path, dict(RequestBody("text", text)))
+    def filter_by_name(self, name: str) -> dict:
+        args = NameArgs(name=name)
+        return self.put("count/name", args.dict())
 
     def filter_by_due_date(self, due_date: str) -> dict:
-        return self.put(self.__filter_path, dict(RequestBody("due_date", due_date)))
+        args = DueDateArgs(due_date=due_date)
+        return self.put("count/due_date", args.dict())
 
     def filter_by_status(self, status: str) -> dict:
-        return self.put(self.__filter_path, dict(RequestBody("status", status)))
+        args = StatusArgs(status=status)
+        return self.put("count/status", args.dict())
 
     def filter_by_due_date_range(self, min_date: str, max_date: str) -> dict:
-        return self.put(self.__filter_path, dict(RequestBody("due_date_range", min_date, max_date)))
+        args = DueDateRangeArgs(min_date=min_date, max_date=max_date)
+        return self.put("count/due_date_range", args.dict())
 
 
 

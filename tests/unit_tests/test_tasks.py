@@ -1,12 +1,9 @@
 import unittest
-from datetime import datetime, timedelta
 
+from taskmgr.lib.database.manager import DatabaseManager
 from taskmgr.lib.model.calendar import Today
-from taskmgr.lib.model.database import JsonFileDatabase
-from taskmgr.lib.model.due_date import DueDate
 from taskmgr.lib.model.task import Task
 from taskmgr.lib.presenter.date_generator import DateGenerator
-from taskmgr.lib.presenter.tasks import Tasks
 from taskmgr.lib.variables import CommonVariables
 
 
@@ -14,117 +11,76 @@ class TestTasks(unittest.TestCase):
 
     def setUp(self):
         self.vars = CommonVariables()
-        self.db = JsonFileDatabase()
-        self.db.initialize(Task())
-        self.tasks = Tasks(self.db)
-        self.task1 = Task("Task1")
-        self.task1.label = "waiting"
-        self.task1.date_expression = "may 2"
-        self.task1.external_id = 1
-        self.tasks.append(self.task1)
-
-        self.task2 = Task("Task2")
-        self.task2.label = "computer"
-        self.task2.date_expression = "may 3"
-        self.tasks.append(self.task2)
-
-        self.task3 = Task("Task3")
-        self.task3.label = "office"
-        self.task3.date_expression = "may 4"
-        self.tasks.append(self.task3)
-
-        self.task4 = Task("Task4")
-        self.task4.label = "waiting"
-        self.task4.date_expression = "may 5"
-        self.tasks.append(self.task4)
-
-        self.task5 = Task("Task5")
-        self.task5.label = "office"
-        self.task5.date_expression = "may 6"
-        self.tasks.append(self.task5)
-
-        self.task6 = Task("Task6")
-        self.task6.label = "call"
-        self.task6.date_expression = "may 7"
-        self.tasks.append(self.task6)
-
-        self.task7 = Task("Task7")
-        self.task7.label = "computer"
-        self.task7.date_expression = "may 8"
-        self.tasks.append(self.task7)
-
-        self.task8 = Task("Task8")
-        self.task8.label = "call"
-        self.task8.date_expression = "may 9"
-        self.tasks.append(self.task8)
-
-        self.task9 = Task("Task9")
-        self.task9.label = "office"
-        self.task9.date_expression = "may 10"
-        self.tasks.append(self.task9)
-
-        self.task10 = Task("Task10")
-        self.task10.label = "waiting"
-        self.task10.date_expression = "may 11"
-        self.tasks.append(self.task10)
-
-        self.future_task = Task("Future Task")
-        future_datetime = datetime.now() + timedelta(days=1)
-        date_string = future_datetime.strftime(self.vars.date_format)
-        self.future_task.due_date = DueDate(date_string)
-        self.tasks.append(self.future_task)
+        self.tasks = DatabaseManager().get_tasks_model()
+        self.tasks.clear()
 
     def tearDown(self):
-        self.db.clear()
+        self.tasks.clear()
 
     def test_get_task(self):
+        self.tasks.add("Task1", "waiting", "work", "may 2")
         task = self.tasks.get_task_by_index(1)
         self.assertTrue(task.index == 1)
 
     def test_add_task(self):
-        task = Task("Task11")
-        self.tasks.append(task)
-        task_list = self.tasks.get_object_list()
-        print(f"test_add_task: len {len(task_list)}")
-        self.assertTrue(len(task_list) == 12)
+        self.tasks.add("Task1", "waiting", "work", "may 2")
+        self.tasks.add("Task2", "computer", "work", "may 3")
+        self.tasks.add("Task3", "office", "work", "may 4")
+        self.tasks.add("Task4", "waiting", "work", "may 5")
+        self.tasks.add("Task5", "office", "work", "may 6")
+        self.tasks.add("Task6", "call", "work", "may 7")
+        self.tasks.add("Task7", "computer", "work", "may 8")
+        self.tasks.add("Task8", "call", "work", "may 9")
+        self.tasks.add("Task9", "office", "work", "may 10")
+        self.tasks.add("Task10", "default", "default", "may 12")
+        task_list = self.tasks.get_task_list()
+        self.assertTrue(len(task_list) == 10)
+
+    def test_edit_label_task(self):
+        self.tasks.add("Task1", "waiting", "work", "may 2")
+        original_task = self.tasks.get_task_by_name("Task1")
+        modified_task = self.tasks.edit(original_task.index, label="waiting2")
+        self.assertEqual(modified_task.label, "waiting2")
+
+    def test_edit_project_task(self):
+        self.tasks.add("Task1", "waiting", "work", "may 2")
+        original_task = self.tasks.get_task_by_name("Task1")
+        modified_task = self.tasks.edit(original_task.index, project="work2")
+        self.assertEqual(modified_task.project, "work2")
 
     def test_deleted_task(self):
-        self.tasks.delete(self.task1.unique_id)
-        task_list = self.tasks.get_object_list()
-        self.assertTrue(len(task_list) == 11)
-        task = task_list[0]
-        self.assertEqual(task.unique_id, self.task1.unique_id)
-        self.assertTrue(task.deleted)
+        self.tasks.add("Task1", "waiting", "work", "may 2")
+        existing_task = self.tasks.get_task_by_name("Task1")
+        deleted_task = self.tasks.delete(existing_task)
+
+        self.assertEqual(existing_task, deleted_task)
+        self.assertTrue(deleted_task.deleted)
 
     def test_complete_task(self):
         due_date_list = DateGenerator().get_due_dates("every sa")
-
-        tasks = Tasks(self.db)
-        tasks.clear_objects()
-        tasks.add("Repetitive task","current","home", "every sa")
-        task_list = tasks.get_object_list()
+        self.tasks.add("RepetitiveTask", "current", "home", "every sa")
+        task_list = self.tasks.get_tasks_matching_name("RepetitiveTask")
 
         self.assertTrue(len(due_date_list) == len(task_list))
 
         for task in task_list:
-            task.complete()
+            task.completed = True
 
         for task in task_list:
-            self.assertTrue(task.is_completed())
+            self.assertTrue(task.completed)
 
     def test_task_is_complete(self):
-        tasks = Tasks(self.db)
-        tasks.clear_objects()
-        tasks.add("Simple Task", "current", "home", "today")
-        task_list = tasks.get_object_list()
+        task_list = self.tasks.add("Simple Task", "current", "home", "today")
         self.assertTrue(len(task_list) == 1)
         task1 = task_list[0]
-
-        self.assertTrue(task1.due_date.date_string == Today().to_date_string())
-        task1.complete()
-        self.assertTrue(task1.is_completed())
+        self.assertTrue(task1.due_date == Today().to_date_string())
+        task1.completed = 1
+        self.assertTrue(task1.completed)
 
     def test_sorting_by_label(self):
+        self.tasks.add("Task1", "call", "work", "may 7")
+        self.tasks.add("Task2", "call", "work", "may 9")
+
         task_list = self.tasks.get_tasks_by_label("call")
         self.assertTrue(type(task_list), list)
         self.assertTrue(len(task_list) == 2)
@@ -132,68 +88,74 @@ class TestTasks(unittest.TestCase):
         self.assertTrue(first_task.label == "call")
 
     def test_get_unique_labels(self):
+        self.tasks.add("Task1", "call", "work", "may 7")
+        self.tasks.add("Task2", "waiting", "work", "may 2")
+        self.tasks.add("Task3", "computer", "work", "may 3")
+        self.tasks.add("Task4", "office", "work", "may 4")
         unique_label_list = self.tasks.get_label_list()
-        self.assertListEqual(unique_label_list, ['call', 'computer', 'current', 'office', 'waiting'])
+        self.assertListEqual(unique_label_list, ['call', 'computer', 'office', 'waiting'])
 
     def test_get_list_by_type(self):
-        returned_result = self.tasks.get_list_by_type("label", "call", self.tasks.get_object_list())
+        self.tasks.add("Task1", "call", "work", "may 7")
+        self.tasks.add("Task2", "call", "work", "may 9")
+        returned_result = self.tasks.get_list_by_type("label", "call", self.tasks.get_task_list())
         self.assertTrue(len(returned_result) == 2)
 
     def test_get_list_by_date_expression(self):
+        self.tasks.add("FutureTask", "waiting", "work", "tomorrow")
         task_list = self.tasks.get_tasks_by_date("tomorrow")
         self.assertTrue(len(task_list) == 1)
         task = task_list[0]
-        self.assertTrue(task.text == "Future Task")
+        self.assertTrue(task.name == "FutureTask")
 
     def test_replace(self):
-        task = self.tasks.get_task_by_name("Task1")
-        task.deleted = True
+        self.tasks.add("Task1", "waiting", "work", "may 2")
+        local_task = self.tasks.get_task_by_name("Task1")
 
-        existing_task = self.tasks.replace(self.task1, task)
-        self.assertTrue(existing_task.deleted)
-        self.assertEqual(task.text, "Task1")
+        remote_task = Task("Task1")
+        remote_task.index = 1
+        remote_task.project = "work"
+        remote_task.label = "office"
+        remote_task.deleted = True
+
+        replaced_task = self.tasks.replace(local_task, remote_task)
+        self.assertTrue(replaced_task.deleted)
+        self.assertEqual(replaced_task.name, "Task1")
 
     def test_reset(self):
-        tasks = Tasks(self.db)
-        tasks.clear_objects()
-        tasks.add("InitialTask", "current", "home", "2020-05-11")
+        self.tasks.add("InitialTask", "current", "home", "2020-05-11")
 
-        initial_task = tasks.get_task_by_name("InitialTask")
-        tasks.reset(initial_task.unique_id)
-        self.assertEqual(initial_task.due_date.date_string, "2020-05-11")
+        initial_task = self.tasks.get_task_by_name("InitialTask")
+        self.assertEqual(initial_task.due_date, "2020-05-11")
+        modified_task = self.tasks.reset(initial_task)
 
-        modified_task = tasks.get_task_by_name("InitialTask")
         current_date_string = Today().to_date_string()
-        self.assertTrue(modified_task.due_date.date_string == current_date_string)
+        self.assertTrue(modified_task.due_date == current_date_string)
 
     def test_reschedule_tasks(self):
-        tasks = Tasks(self.db)
-        tasks.clear_objects()
-        tasks.add("task1", "label1", "project1", "2021-10-22")
-        task1 = tasks.get_task_by_name("task1")
+        self.tasks.add("CurrentTask", "waiting", "work", "today")
+        task1 = self.tasks.get_task_by_name("CurrentTask")
         self.assertIsNotNone(task1)
 
         # Deleted tasks should not be rescheduled
-        tasks.add("task2", "label2", "project2", "2021-10-22")
-        task2 = tasks.get_task_by_name("task2")
+        self.tasks.add("task2", "label2", "project2", "2021-10-22")
+        task2 = self.tasks.get_task_by_name("task2")
         self.assertIsNotNone(task2)
-        tasks.delete(task2.unique_id)
+        self.tasks.delete(task2)
 
         # Completed tasks should not be rescheduled
-        tasks.add("task3", "label3", "project3", "2021-10-22")
-        task3 = tasks.get_task_by_name("task3")
+        self.tasks.add("task3", "label3", "project3", "2021-10-22")
+        task3 = self.tasks.get_task_by_name("task3")
         self.assertIsNotNone(task3)
-        tasks.complete(task3.unique_id)
+        self.tasks.complete(task3)
 
-        today = Today()
-        tasks.reschedule(today)
+        self.tasks.reschedule()
 
-        task_list = tasks.get_tasks_by_date(today.to_date_string())
+        task_list = self.tasks.get_tasks_by_date(Today().to_date_string())
         self.assertTrue(len(task_list) == 1)
         rescheduled_task = task_list[0]
-        self.assertEqual(rescheduled_task.text, "task1")
-        self.assertEqual(rescheduled_task.label, "label1")
-        self.assertEqual(rescheduled_task.project, "project1")
+        self.assertEqual(rescheduled_task.name, "CurrentTask")
+
 
 
 if __name__ == "__main__":

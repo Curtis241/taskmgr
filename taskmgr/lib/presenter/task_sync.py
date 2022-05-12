@@ -182,7 +182,7 @@ class SyncAction(ABC):
 
     def names_match(self) -> Rule:
         if self.local_task is not None and self.remote_task is not None:
-            return Rule("names_match", self.local_task.text == self.remote_task.text)
+            return Rule("names_match", self.local_task.name == self.remote_task.name)
         else:
             return Rule("names_match", False)
 
@@ -214,11 +214,11 @@ class ImportAction(SyncAction):
         if local_task is not None:
             assert type(local_task) is Task
             assert hasattr(local_task, "deleted") is True
-            assert hasattr(local_task, "text") is True
+            assert hasattr(local_task, "name") is True
 
         assert type(remote_task) is Task
         assert hasattr(remote_task, "deleted") is True
-        assert hasattr(remote_task, "text") is True
+        assert hasattr(remote_task, "name") is True
 
     def get_name(self):
         return self.__class__.__name__
@@ -294,39 +294,48 @@ class Importer:
     def __init__(self, tasks):
         self.__tasks = tasks
 
-    @abstractmethod
-    def get_tasks_by_id(self, remote_task):
-        pass
+    def get_task_by_id(self, remote_task) -> Task:
+        return self.__tasks.get_task_by_id(remote_task.unique_id)
 
-    def import_tasks(self, remote_task_list) -> SyncResultsList:
+    def import_tasks(self, remote_task_list, bulk_save: bool = False) -> SyncResultsList:
         """
-        Manage task import from Google Tasks Service
-        :param remote_task_list:
+        Manage task import from csv file
+        :param remote_task_list: Tasks contained in file
+        :param bulk_save: Save all changes after sorting each Task object
         :return ImportResultsList:
         """
         assert type(remote_task_list) is list
         sync_results = SyncResultsList()
+        task_list = list()
+
         for remote_task in remote_task_list:
             assert type(remote_task) is Task
 
-            local_task = self.get_tasks_by_id(remote_task)
+            local_task = self.get_task_by_id(remote_task)
             action = ImportAction(local_task, remote_task)
 
             if action.can_delete():
-                self.__tasks.delete(local_task.unique_id)
+                self.logger.debug("deleting task")
+                task_list.append(self.__tasks.delete(local_task, not bulk_save))
                 sync_results.append(SyncAction.DELETED)
 
             elif action.can_update():
-                self.__tasks.replace(local_task, remote_task)
+                self.logger.debug("updating task")
+                task_list.append(self.__tasks.replace(local_task, remote_task, not bulk_save))
                 sync_results.append(SyncAction.UPDATED)
 
             elif action.can_insert():
-                self.__tasks.append(remote_task)
+                self.logger.debug("inserting task")
+                task_list.append(self.__tasks.insert(remote_task, not bulk_save))
                 sync_results.append(SyncAction.ADDED)
 
             else:
                 sync_results.append(SyncAction.SKIPPED)
-                self.logger.debug(f"Skipping local task {remote_task.text}")
+                self.logger.debug(f"Skipping local task {remote_task.name}")
+
+        if task_list and bulk_save is True:
+            self.logger.info(f"Saving all {len(task_list)} tasks to database")
+            self.__tasks.update_all(task_list)
 
         return sync_results
 
@@ -336,27 +345,23 @@ class CsvFileImporter(Importer):
 
     def __init__(self, tasks):
         super().__init__(tasks)
-        self.__tasks = tasks
-
-    def get_tasks_by_id(self, remote_task):
-        return self.__tasks.get_task_by_id(remote_task.unique_id)
 
     @staticmethod
     def convert(obj_list: list) -> List[Task]:
         task_list = list()
+
         for obj_dict in obj_list:
-            task = Task(obj_dict["text"])
+            task = Task(obj_dict["name"])
             for key, value in obj_dict.items():
                 if key == "deleted":
                     value = ast.literal_eval(value)
                     task.deleted = value
                 elif key == "due_date":
-                    task.due_date.date_string = value
+                    task.due_date = value
                 elif key == "done":
                     value = ast.literal_eval(value)
-                    task.due_date.completed = value
+                    task.completed = value
                 else:
                     setattr(task, key, value)
             task_list.append(task)
         return task_list
-

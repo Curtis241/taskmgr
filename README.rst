@@ -26,9 +26,7 @@ Task Manager
 Features
 --------
 
-taskmgr is a simple python command-line tool for storing tasks in a file database and
-can also import/export tasks from a Google tasks service. The service is the
-backend storage for the Android Google Tasks app.
+taskmgr is a simple python command-line tool for storing tasks in a redis database.
 
 * Contains basic functions add, edit, delete, complete tasks
 * The add and edit functions support normal language date expressions like:
@@ -44,12 +42,12 @@ backend storage for the Android Google Tasks app.
 * The list task feature displays all tasks that have not been deleted and exports to csv file.
 * The group command orders tasks by project and label. The results can be exported to a csv file.
 * The filter command selects tasks by the status, project, complete/incomplete status, and label.
-* The count command summarizes and displays the number of tasks in each project by date, date_range, label, project, and status. When the all command is used both the deleted and un-deleted tasks are included. The data is persisted to the selected database.
+* The count command summarizes and displays the number of tasks in each project by date, date_range, label, project, and status. When the all command is used both the deleted and un-deleted tasks are included.
 * The import command will now load tasks from a csv file
-* Added support for a json or redis database. The database type can be configured using the default command.
+* Added support for a redis database with the redisearch plugin installed. The database type can be configured using the default command.
 
 
-**The commands available in version 0.2.2.**
+**The commands available in version 0.2.3.**
 
 
 ::

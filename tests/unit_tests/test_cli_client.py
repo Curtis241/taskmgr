@@ -1,14 +1,14 @@
 import unittest
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from taskmgr.lib.model.calendar import Today
-from taskmgr.lib.model.database_manager import DatabaseManager
+from taskmgr.lib.database.manager import DatabaseManager
 from taskmgr.lib.model.day import Day
-from taskmgr.lib.model.task import Task
 from taskmgr.lib.presenter.date_generator import DateGenerator
 from taskmgr.lib.presenter.file_manager import FileManager
 from taskmgr.lib.variables import CommonVariables
 from taskmgr.lib.view.cli_client import CliClient
+from taskmgr.lib.view.client_args import *
 
 
 class MockFileManager(FileManager):
@@ -41,48 +41,52 @@ class TestCliClient(unittest.TestCase):
     def tearDown(self):
         self.client.remove_all_tasks()
 
+    @staticmethod
+    def params(name: str, label: str, project: str, due_date: str):
+        return {"name": name, "label": label, "project": project, "due_date": due_date}
+
     def test_add_task(self):
-        self.client.add_task("Clean garage", "", "home", "empty")
+        self.client.add(AddArgs(name="Clean garage", label="", project="home", due_date="today"))
         self.client.list_all_tasks()
         row_count = len(self.client.task_table.get_table().rows)
         self.assertTrue(row_count == 1)
 
     def test_list_all_tasks(self):
-        self.client.add_task("Clean car", "@waiting_on", "home", "today")
-        self.client.add_task("Clean bathroom", "", "home", "tomorrow")
-        self.client.add_task("Book flight to New York", "@at_computer", "work", "m")
-        self.client.add_task("Repair deck", "@waiting_on", "home", "sa")
-        self.client.add_task("Call friend for birthday", "@call", "home", "m")
-        self.client.add_task("Paint picture", "@idea", "home", "sa")
-        self.client.add_task("Build puzzle with family", "@idea", "home", "su")
-        self.client.add_task("Schedule meeting with SW team", "@meeting", "work", "m")
-        self.client.add_task("Create facebook 2.0 app", "@idea", "", "empty")
+        self.client.add(AddArgs(name="Clean car", label="@waiting_on", project="home", due_date="today"))
+        self.client.add(AddArgs(name="Clean bathroom", label="", project="home", due_date="tomorrow"))
+        self.client.add(AddArgs(name="Book flight to New York", label="@at_computer", project="work", due_date="m"))
+        self.client.add(AddArgs(name="Repair deck", label="@waiting_on", project="home", due_date="sa"))
+        self.client.add(AddArgs(name="Call friend for birthday", label="@call", project="home", due_date="m"))
+        self.client.add(AddArgs(name="Paint picture", label="@idea", project="home", due_date="sa"))
+        self.client.add(AddArgs(name="Build puzzle with family", label="@idea", project="home", due_date="su"))
+        self.client.add(AddArgs(name="Schedule meeting with SW team", label="@meeting", project="work", due_date="m"))
+        self.client.add(AddArgs(name="Create facebook 2.0 app", label="@idea", project="", due_date="today"))
         rows = self.client.list_all_tasks()
         self.assertTrue(len(rows) == 9)
 
     def test_list_tasks_by_label(self):
-        self.client.add_task("Clean car", "@waiting_on", "home", "today")
-        self.client.add_task("Clean bathroom", "", "home", "tomorrow")
-        self.client.add_task("Book flight to New York", "@at_computer", "work", "m")
-        self.client.add_task("Repair deck", "@waiting_on", "home", "sa")
-        self.client.add_task("Call friend for birthday", "@call", "home", "m")
-        self.client.add_task("Paint picture", "@idea", "home", "sa")
-        self.client.add_task("Build puzzle with family", "@idea", "home", "su")
-        self.client.add_task("Schedule meeting with SW team", "@meeting", "work", "m")
-        self.client.add_task("Create facebook 2.0 app", "@idea", "", "empty")
+        self.client.add(AddArgs(name="Clean car", label="@waiting_on", project="home", due_date="today"))
+        self.client.add(AddArgs(name="Clean bathroom", label="@idea", project="home", due_date="tomorrow"))
+        self.client.add(AddArgs(name="Book flight to New York", label="@at_computer", project="work", due_date="m"))
+        self.client.add(AddArgs(name="Repair deck", label="@waiting_on", project="home", due_date="sa"))
+        self.client.add(AddArgs(name="Call friend for birthday", label="@call", project="home", due_date="m"))
+        self.client.add(AddArgs(name="Paint picture", label="@idea", project="home", due_date="sa"))
+        self.client.add(AddArgs(name="Build puzzle with family", label="@idea", project="home", due_date="su"))
+        self.client.add(AddArgs(name="Schedule meeting with SW team", label="@meeting", project="work", due_date="m"))
+        self.client.add(AddArgs(name="Create facebook 2.0 app", label="@idea", project="work", due_date="today"))
         rows = self.client.group_tasks_by_label()
         self.assertTrue(len(rows) == 9)
 
     def test_list_tasks_by_project(self):
-        self.client.add_task("Clean car", "@waiting_on", "home", "today")
-        self.client.add_task("Clean bathroom", "", "home", "tomorrow")
-        self.client.add_task("Book flight to New York", "@at_computer", "work", "m")
-        self.client.add_task("Repair deck", "@waiting_on", "home", "sa")
-        self.client.add_task("Call friend for birthday", "@call", "home", "m")
-        self.client.add_task("Paint picture", "@idea", "home", "sa")
-        self.client.add_task("Build puzzle with family", "@idea", "home", "su")
-        self.client.add_task("Schedule meeting with SW team", "@meeting", "work", "m")
-        self.client.add_task("Create facebook 2.0 app", "@idea", "", "empty")
+        self.client.add(AddArgs(name="Clean car", label="@waiting_on", project="home", due_date="today"))
+        self.client.add(AddArgs(name="Clean bathroom", label="", project="home", due_date="tomorrow"))
+        self.client.add(AddArgs(name="Book flight to New York", label="@at_computer", project="work", due_date="m"))
+        self.client.add(AddArgs(name="Repair deck", label="@waiting_on", project="home", due_date="sa"))
+        self.client.add(AddArgs(name="Call friend for birthday", label="@call", project="home", due_date="m"))
+        self.client.add(AddArgs(name="Paint picture", label="@idea", project="home", due_date="sa"))
+        self.client.add(AddArgs(name="Build puzzle with family", label="@idea", project="home", due_date="su"))
+        self.client.add(AddArgs(name="Schedule meeting with SW team", label="@meeting", project="work", due_date="m"))
+        self.client.add(AddArgs(name="Create facebook 2.0 app", label="@idea", project="work", due_date="today"))
         rows = self.client.group_tasks_by_project()
         self.assertTrue(len(rows) == 9)
 
@@ -93,56 +97,58 @@ class TestCliClient(unittest.TestCase):
         self.assertIsInstance(date_object, datetime)
 
     def test_edit_task_using_all_fields(self):
-        self.client.add_task("Clean car", "deprecated", "home", "today")
-        task_list = self.client.edit_task(1, "text_value", "current", "work", "apr 14")
+        task_list = self.client.add(AddArgs(name="Clean car", label="deprecated", project="home", due_date="today"))
         self.assertTrue(len(task_list) == 1)
         task = task_list[0]
-        self.assertEqual(task.text, 'text_value')
+
+        args = EditArgs(index=task.index, name="New Text", label="current", project="work", due_date="apr 14")
+        task_list = self.client.edit(args)
+        task = task_list[0]
+
+        self.assertEqual(task.name, 'New Text')
         self.assertEqual(task.label, "current")
         self.assertEqual(task.deleted, False)
-        self.assertEqual(task.priority, 1)
         self.assertEqual(task.project, 'work')
-        self.assertEqual(task.date_expression, 'apr 14')
-        self.assertEqual(task.due_date.date_string, '2021-04-14')
-        self.assertEqual(task.due_date.completed, False)
+        self.assertEqual(task.due_date, '2022-04-14')
+        self.assertEqual(task.completed, False)
 
     def test_today(self):
-        self.client.add_task("task1", "home", "home", "empty")
-        self.client.add_task("task2", "home", "home", "today")
+        self.client.add(AddArgs(name="task1", label="home", project="home", due_date="empty"))
+        self.client.add(AddArgs(name="task2", label="home", project="home", due_date="today"))
         rows = self.client.filter_tasks_by_today()
         self.assertTrue(len(list(rows)) == 1)
 
     def test_delete(self):
-        self.client.add_task("Clean car", "@waiting_on", "home", "today")
-        self.client.add_task("Clean bathroom", "", "home", "tomorrow")
-        task_list = self.client.delete_tasks((1, 2,))
+        self.client.add(AddArgs(name="Clean car", label="@waiting_on", project="home", due_date="today"))
+        self.client.add(AddArgs(name="Clean bathroom", label="", project="home", due_date="tomorrow"))
+        task_list = self.client.delete(DeleteArgs(indexes=(1, 2,)))
         self.assertTrue(len(task_list) == 2)
         self.assertTrue(task_list[0].deleted)
         self.assertTrue(task_list[1].deleted)
 
     def test_complete(self):
         due_dates = self.date_generator.get_due_dates("every m")
-        task_list = self.client.add_task("task1", "home", "home", "every m")
+        task_list = self.client.add(AddArgs(name="task1", label="home", project="home", due_date="every m"))
         for task in task_list:
-            self.client.complete_tasks((task.index,))
+            self.client.complete(CompleteArgs(indexes=(task.index,), time_spent=0))
 
         rows = self.client.list_all_tasks()
         self.assertTrue(len(due_dates) == len(rows))
 
-        done_list = [row.due_date.completed for row in rows]
+        done_list = [row.completed for row in rows]
         self.assertIsNotNone(done_list)
         self.assertTrue("False" not in done_list)
 
     def test_count_all_tasks(self):
-        self.tasks.add("task1", "label1", "project1", "today")
-        snapshot_list = self.client.count_all_tasks(**{"page": 1})
+        self.client.add(AddArgs(name="task1", label="label1", project="project1", due_date="today"))
+        snapshot_list = self.client.count_all_tasks(page=1)
         self.assertIsNotNone(snapshot_list)
         self.assertTrue(len(snapshot_list) == 1)
 
     def test_count_by_date(self):
-        self.tasks.add("task1", "label1", "project1", "today")
-        date_string = Today().to_date_string()
-        snapshot_list = self.client.count_tasks_by_due_date(date_string, **{"page": 1})
+        self.client.add(AddArgs(name="task1", label="label1", project="project1", due_date="today"))
+        args = DueDateArgs(due_date=Today().to_date_string())
+        snapshot_list = self.client.count_tasks_by_due_date(args)
         self.assertTrue(len(snapshot_list) == 1)
         snapshot = snapshot_list[0]
         self.assertTrue(snapshot.count == 1)
@@ -150,25 +156,26 @@ class TestCliClient(unittest.TestCase):
     def test_count_by_due_date_range(self):
         june4_date_string = self.june4.to_date_string()
         june9_date_string = self.june9.to_date_string()
-        self.tasks.add("task1", "current", "work", june4_date_string)
-        self.tasks.add("task2", "current", "work", self.june7.to_date_string())
-        self.tasks.add("task3", "current", "work", june9_date_string)
-        snapshot_list = self.client.count_tasks_by_due_date_range(june4_date_string, june9_date_string, **{"page": 1})
+        self.client.add(AddArgs(name="task1", label="current", project="work", due_date=june4_date_string))
+        self.client.add(AddArgs(name="task2", label="current", project="work", due_date=self.june7.to_date_string()))
+        self.client.add(AddArgs(name="task3", label="current", project="work", due_date=june9_date_string))
+        args = DueDateRangeArgs(min_date=june4_date_string, max_date=june9_date_string)
+        snapshot_list = self.client.count_tasks_by_due_date_range(args)
         self.assertTrue(len(snapshot_list) == 1)
 
     def test_count_by_project(self):
         date_string = Today().to_date_string()
-        self.tasks.add("task1", "current", "work", date_string)
-        self.tasks.add("task2", "current", "work", date_string)
-        self.tasks.add("task3", "current", "work", date_string)
-        snapshot_list = self.client.count_tasks_by_project("work", **{"page": 1})
+        self.client.add(AddArgs(name="task1", label="current", project="work", due_date=date_string))
+        self.client.add(AddArgs(name="task2", label="current", project="work", due_date=date_string))
+        self.client.add(AddArgs(name="task3", label="current", project="work", due_date=date_string))
+        snapshot_list = self.client.count_tasks_by_project(ProjectArgs(project="work"))
         self.assertTrue(len(snapshot_list) == 1)
         snapshot = snapshot_list[0]
         self.assertTrue(snapshot.count == 3)
 
     def test_count_by_project_with_incorrect_value(self):
-        self.tasks.add("task1", "current", "work", "today")
-        snapshot_list = self.client.count_tasks_by_project("work2", **{"page": 1})
+        self.client.add(AddArgs(name="task1", label="current", project="work", due_date="today"))
+        snapshot_list = self.client.count_tasks_by_project(ProjectArgs(project="work2"))
         self.assertTrue(len(snapshot_list) == 0)
 
 

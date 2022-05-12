@@ -11,8 +11,9 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = ['click==8.0.1', 'colored==1.4.2', 'ujson==4.2.0',  'beautifultable==1.0.1',
-                'dpath>=2.0.1', 'redis==3.5.3', 'python-dateutil==2.8.2', 'fastapi==0.70.0']
+requirements = ['click==8.0.1', 'colored==1.4.2', 'beautifultable==1.0.1',
+                'redis==3.5.3', 'redisearch==2.1.1', 'python-dateutil==2.8.2',
+                'fastapi==0.75.1']
 setup_requirements = ['pytest-runner', ]
 test_requirements = ['pytest', ]
 

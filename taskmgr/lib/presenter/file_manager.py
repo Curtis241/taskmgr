@@ -10,7 +10,8 @@ from taskmgr.lib.model.task import Task
 from taskmgr.lib.variables import CommonVariables
 
 
-class UnexpectedColumnCount(Exception): pass
+class UnmatchedColumns(Exception):
+    pass
 
 
 class File:
@@ -67,6 +68,8 @@ class File:
 
 class CsvTasksFile(File):
 
+    logger = AppLogger("csv_tasks_file").get_logger()
+
     def __init__(self):
         super().__init__()
 
@@ -85,26 +88,31 @@ class CsvTasksFile(File):
         obj_list = list()
         with open(path, 'r') as csvfile:
             reader = csv.DictReader(csvfile)
-            expected_column_count = len(CsvTasksFile.__get_field_names())
-            for row in reader:
-                if len(row.keys()) == expected_column_count:
+            expected_field_names = set(CsvTasksFile.__get_field_names())
+            current_field_names = set(reader.fieldnames)
+            difference = list(current_field_names - expected_field_names)
+
+            if not difference:
+                for row in reader:
                     obj_list.append(row)
-                else:
-                    raise UnexpectedColumnCount(f"Expected {expected_column_count} columns in csv file")
+            else:
+                raise UnmatchedColumns(f"Found unexpected {''.join(difference)} column(s) in csv file")
+
         return obj_list
 
     @staticmethod
     def __get_field_names():
-        return ["index", "done", "text", "project", "label", "due_date",
+        return ["index", "done", "name", "project", "label", "time_spent", "due_date",
                 "last_updated", "deleted", "unique_id"]
 
     @staticmethod
     def __write_row(task):
         return {"index": task.index,
                 "done": task.is_completed(),
-                "text": task.text,
+                "name": task.text,
                 "project": task.project,
                 "label": task.label,
+                "time_spent": task.time_spent,
                 "due_date": task.due_date.date_string,
                 "last_updated": task.last_updated,
                 "deleted": task.deleted,
@@ -133,14 +141,16 @@ class CsvSnapshotsFile(File):
     @staticmethod
     def __get_field_names():
         return ["index", "count", "completed", "incomplete",
-                "deleted", "due_date"]
+                "deleted", "total_time", "average_time", "due_date"]
 
     @staticmethod
     def __write_row(snapshot):
         return {"due_date": snapshot.due_date, "index": snapshot.index,
                 "count": snapshot.count_tasks, "completed": snapshot.completed,
                 "incomplete": snapshot.incomplete,
-                "deleted": snapshot.deleted
+                "deleted": snapshot.deleted,
+                "total_time": snapshot.total_time,
+                "average_time": snapshot.average_time
                 }
 
 

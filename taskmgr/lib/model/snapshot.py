@@ -1,4 +1,4 @@
-from taskmgr.lib.model.database import DatabaseObject
+from taskmgr.lib.database.object import DatabaseObject
 
 
 class Snapshot(DatabaseObject):
@@ -13,10 +13,9 @@ class Snapshot(DatabaseObject):
         self.__completed = 0
         self.__incomplete = 0
         self.__deleted = 0
+        self.__total_time = 0
+        self.__average_time = 0
         self.__due_date = str()
-
-    def get_redis_db_id(self):
-        return 1
 
     @property
     def due_date(self):
@@ -31,36 +30,48 @@ class Snapshot(DatabaseObject):
         return self.__count
 
     @count.setter
-    def count(self, count):
-        self.__count = count
+    def count(self, value):
+        self.__count = value
 
     @property
     def completed(self):
         return self.__completed
 
     @completed.setter
-    def completed(self, completed):
-        self.__completed = completed
+    def completed(self, value):
+        self.__completed = value
 
     @property
     def incomplete(self):
         return self.__incomplete
 
     @incomplete.setter
-    def incomplete(self, incomplete):
-        self.__incomplete = incomplete
+    def incomplete(self, value):
+        self.__incomplete = value
 
     @property
     def deleted(self):
         return self.__deleted
 
     @deleted.setter
-    def deleted(self, deleted):
-        self.__deleted = deleted
+    def deleted(self, value):
+        self.__deleted = value
 
     @property
-    def entity_kind(self):
-        return self.__class__.__name__
+    def total_time(self):
+        return self.__total_time
+
+    @total_time.setter
+    def total_time(self, value):
+        self.__total_time = value
+
+    @property
+    def average_time(self):
+        return self.__average_time
+
+    @average_time.setter
+    def average_time(self, value):
+        self.__average_time = value
 
     def deserialize(self, obj_dict):
         for key, value in obj_dict.items():
@@ -71,7 +82,9 @@ class Snapshot(DatabaseObject):
         return {"count": self.__count,
                 "completed": self.__completed,
                 "incomplete": self.__incomplete,
-                "deleted": self.__deleted}
+                "deleted": self.__deleted,
+                "average_time": self.__average_time,
+                "total_time": self.__total_time}
 
     def __iter__(self):
         yield 'index', self.index
@@ -80,3 +93,5 @@ class Snapshot(DatabaseObject):
         yield 'completed', self.__completed
         yield 'incomplete', self.__incomplete
         yield 'deleted', self.__deleted
+        yield 'average_time', self.__average_time
+        yield 'total_time', self.__total_time

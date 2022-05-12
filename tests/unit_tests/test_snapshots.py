@@ -1,31 +1,25 @@
 import unittest
 
-from taskmgr.lib.model.database import JsonFileDatabase
-from taskmgr.lib.model.task import Task
+from taskmgr.lib.database.manager import DatabaseManager
 from taskmgr.lib.presenter.snapshots import Snapshots
-from taskmgr.lib.presenter.tasks import Tasks
 
 
 class TestSnapshots(unittest.TestCase):
 
     def setUp(self) -> None:
-        self.db = JsonFileDatabase()
-        self.db.initialize(Task())
-        self.db.clear()
-        self.tasks = Tasks(self.db)
+        self.tasks = DatabaseManager().get_tasks_model()
 
     def tearDown(self) -> None:
-        self.db.clear()
+        self.tasks.clear()
 
     def test_count_all(self):
-
         self.tasks.add("task1", "label1", "project1", "today")
         t1 = self.tasks.get_task_by_name("task1")
-        self.tasks.complete(t1.unique_id)
+        self.tasks.complete(t1)
 
         self.tasks.add("task2", "label1", "project1", "today")
         t2 = self.tasks.get_task_by_name("task2")
-        self.tasks.delete(t2.unique_id)
+        self.tasks.delete(t2)
 
         self.tasks.add("task3", "label1", "project1", "today")
         self.tasks.add("task4", "label1", "project1", "today")

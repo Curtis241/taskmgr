@@ -63,7 +63,7 @@ class TestDateGenerator(unittest.TestCase):
     def test_get_date_when_every_day(self):
         self.date_generator.current_day = Day(self.march1)
         due_date_list = self.date_generator.get_due_dates("every day")
-        self.assertTrue(len(due_date_list) == 62)
+        self.assertTrue(len(due_date_list) == 61)
 
     def test_get_date_count_when_every_weekday(self):
         self.vars.recurring_month_limit = 2
@@ -113,7 +113,7 @@ class TestDateGenerator(unittest.TestCase):
     def test_short_date(self):
         due_date_list = self.date_generator.get_due_dates("apr 14")
         self.assertTrue(len(due_date_list) == 1)
-        self.assertTrue(due_date_list[0].date_string == '2021-04-14')
+        self.assertTrue(due_date_list[0].date_string == '2022-04-14')
 
     def test_validate_input(self):
         self.assertTrue(self.date_generator.validate_input("every weekday"))
@@ -126,26 +126,21 @@ class TestDateGenerator(unittest.TestCase):
         self.assertTrue(self.date_generator.validate_input("apr 21"))
         self.assertFalse(self.date_generator.validate_input("apr"))
 
-    def test_empty_date_handler(self):
-        due_date_list = self.date_generator.get_due_dates("empty")
-        self.assertTrue(len(due_date_list) == 1)
-        due_date = due_date_list[0]
-        self.assertEqual(due_date.date_string, "")
-        self.assertFalse(due_date.completed)
+    def test_null_date_handler(self):
+        due_date_list = self.date_generator.get_due_dates("")
+        self.assertTrue(len(due_date_list) == 0)
 
     def test_year_month_date_handler(self):
         due_date_list = self.date_generator.get_due_dates("2019-03-019")
-        self.assertTrue(len(due_date_list) == 1)
-        self.assertFalse(due_date_list[0].completed)
+        self.assertTrue(len(due_date_list) == 0)
 
         due_date_list = self.date_generator.get_due_dates("2019-03-01")
         self.assertTrue(len(due_date_list) == 1)
-        self.assertFalse(due_date_list[0].completed)
         self.assertTrue(due_date_list[0].date_string == "2019-03-01")
 
     def test_get_due_date(self):
         due_date = self.date_generator.get_due_date("this week")
-        self.assertTrue(len(due_date.date_string) == 0)
+        self.assertIsNone(due_date)
         due_date = self.date_generator.get_due_date("sep 24")
         self.assertIn("09-24", due_date.date_string)
 

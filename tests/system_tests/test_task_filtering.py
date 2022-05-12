@@ -41,7 +41,7 @@ class TestTaskFiltering(unittest.TestCase):
     def test_filter_by_text(self):
         self.tasks.add("my_task", "project1", "label1", "today")
 
-        response = self.tasks.filter_by_text("my_task")
+        response = self.tasks.filter_by_name("my_task")
         self.assertTrue(self.util.verify_structure(response))
         self.assertTrue(self.util.count_tasks(response) == 1)
 

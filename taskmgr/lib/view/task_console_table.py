@@ -9,7 +9,7 @@ from taskmgr.lib.view.console_table import ConsoleTable
 class TaskConsoleTable(ConsoleTable):
 
     def __init__(self):
-        super().__init__(["#", "Done", "Text", "Project", "Label", "Due Date"])
+        super().__init__(["#", "Done", "Text", "Project", "Label", "Time Spent (hr)", "Due Date"])
         self.__task_list = list()
 
     def add_row(self, obj):
@@ -42,17 +42,17 @@ class TaskConsoleTable(ConsoleTable):
         :return: list
         """
         assert type(task) is Task
-        text = textwrap.shorten(task.text,
-                                CommonVariables().default_text_field_length,
+        name = textwrap.shorten(task.name,
+                                CommonVariables().default_name_field_length,
                                 placeholder="...")
 
-        if task.is_completed():
-            completed_text = fg('green') + str(task.due_date.completed)
+        if task.completed:
+            completed_text = fg('green') + str(task.completed)
         else:
-            completed_text = fg('blue') + str(task.due_date.completed)
+            completed_text = fg('blue') + str(task.completed)
 
         if task.deleted:
-            text = fg('red') + str(text)
+            name = fg('red') + str(name)
 
-        return [task.index, completed_text, text, task.project,
-                task.label, task.due_date.date_string]
+        return [task.index, completed_text, name, task.project,
+                task.label, task.time_spent, task.due_date]

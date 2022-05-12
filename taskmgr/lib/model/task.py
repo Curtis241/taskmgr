@@ -1,5 +1,5 @@
-from taskmgr.lib.model.database import DatabaseObject
-from taskmgr.lib.model.due_date import DueDate
+from taskmgr.lib.database.object import DatabaseObject
+from taskmgr.lib.model.calendar import Today
 from taskmgr.lib.variables import CommonVariables
 
 
@@ -9,122 +9,107 @@ class Task(DatabaseObject):
     contains only the properties that are used to maintain consistent data.
     """
 
-    def __init__(self, text="default"):
+    def __init__(self, name: str = "default"):
         super().__init__(self.__class__.__name__)
         self.vars = CommonVariables()
-        self.__external_id = str()
-        self.__text = text
+        self.__name = name
         self.__label = self.vars.default_label
-        self.__deleted = False
-        self.__priority = 1
+        self.__time_spent = 0
         self.__project = self.vars.default_project_name
-        self.__date_expression = self.vars.default_date_expression
-        self.__due_date = DueDate()
-
-    def get_redis_db_id(self):
-        return 0
-
-    @property
-    def date_expression(self):
-        return self.__date_expression
-
-    @date_expression.setter
-    def date_expression(self, expression):
-        assert type(expression) is str
-        self.__date_expression = expression
+        self.__due_date = Today().to_date_string()
+        self.__due_date_timestamp = Today().to_timestamp()
+        self.__completed = 0
+        self.__deleted = 0
 
     @property
-    def due_date(self):
+    def due_date(self) -> str:
         return self.__due_date
 
     @due_date.setter
-    def due_date(self, due_date):
-        self.__due_date = due_date
-
-    def complete(self) -> list:
-        self.due_date.completed = True
-        return [self.__due_date]
+    def due_date(self, due_date: str):
+        if due_date is not None:
+            self.__due_date = self.to_str(due_date)
 
     @property
-    def external_id(self):
-        return self.__external_id
+    def due_date_timestamp(self) -> int:
+        return self.__due_date_timestamp
 
-    @external_id.setter
-    def external_id(self, external_id):
-        self.__external_id = external_id
+    @due_date_timestamp.setter
+    def due_date_timestamp(self, value: int):
+        self.__due_date_timestamp = value
 
     @property
-    def project(self):
+    def completed(self) -> bool:
+        return bool(self.__completed)
+
+    @completed.setter
+    def completed(self, value: bool):
+        self.__completed = int(value)
+
+    @property
+    def deleted(self) -> bool:
+        return bool(self.__deleted)
+
+    @deleted.setter
+    def deleted(self, value: bool):
+        self.__deleted = int(value)
+
+    @property
+    def project(self) -> str:
         return self.__project
 
     @project.setter
-    def project(self, project):
-        if len(str(project)) > 0 and project is not None:
-            self.__project = project
+    def project(self, value: str):
+        if value is not None:
+            self.__project = self.to_str(value)
 
     @property
-    def text(self):
-        return self.__text
+    def name(self) -> str:
+        return self.__name
 
-    @text.setter
-    def text(self, text):
-        if len(str(text)) > 0 and text is not None:
-            self.__text = text
+    @name.setter
+    def name(self, value: str):
+        if value is not None:
+            self.__name = self.to_str(value)
 
     @property
-    def label(self):
+    def label(self) -> str:
         return self.__label
 
     @label.setter
-    def label(self, label):
-        if label is not None:
-            self.__label = label
+    def label(self, value: str):
+        if value is not None:
+            self.__label = self.to_str(value)
 
     @property
-    def deleted(self):
-        return self.__deleted
+    def time_spent(self) -> float:
+        return self.__time_spent
 
-    @deleted.setter
-    def deleted(self, deleted):
-        assert type(deleted) is bool
-        self.__deleted = deleted
+    @time_spent.setter
+    def time_spent(self, value: float):
+        if value is not None:
+            self.__time_spent = float(value)
 
-    @property
-    def priority(self):
-        return self.__priority
-
-    @priority.setter
-    def priority(self, priority):
-        assert type(priority) is int
-        self.__priority = priority
-
-    def is_completed(self):
-        return self.due_date.completed is True
-
-    def deserialize(self, obj_dict):
+    def deserialize(self, obj_dict: dict):
         for key, value in obj_dict.items():
-            if type(value) is list:
-                if key == "due_date" and len(value) == 1:
-                    self.due_date = DueDate().from_dict(value[0])
-            else:
-                setattr(self, key, value)
+            setattr(self, str(key, 'utf-8'), value)
         return self
 
     def __eq__(self, other):
-        existing = (self.unique_id, self.__text, self.__label, self.__project)
-        new = (other.unqiue_id, other.text, self.label, self.project)
+        existing = (self.unique_id, self.__name, self.__label, self.__project)
+        new = (other.unique_id, other.name, other.label, other.project)
         return existing == new
 
     def __iter__(self):
         yield 'index', self.index
-        yield 'external_id', self.external_id
-        yield 'text', self.__text
+        yield 'name', self.__name
         yield 'label', self.__label
         yield 'deleted', self.__deleted
-        yield 'priority', self.__priority
+        yield 'time_spent', self.__time_spent
         yield 'project', self.__project
-        yield 'date_expression', self.__date_expression
-        yield 'due_date', [self.__due_date.to_dict()]
+        yield 'due_date', self.__due_date
+        yield 'due_date_timestamp', self.__due_date_timestamp
+        yield 'completed', self.__completed
         yield 'unique_id', self.unique_id
         yield 'last_updated', self.last_updated
 
