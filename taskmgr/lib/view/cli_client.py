@@ -36,7 +36,10 @@ class CliClient(Client):
     def display_snapshots(self, snapshots: Snapshots, page: int):
         summary, snapshot_list = snapshots.get_snapshot()
         self.__print_snapshot_summary_table(summary)
-        return self.__print_snapshot_list_table(snapshot_list, page)
+        if len(snapshot_list) > 1:
+            return self.__print_snapshot_list_table(snapshot_list, page)
+        else:
+            return snapshot_list
 
     def display_due_date_error(self, message: str):
         self.logger.info(message)

@@ -118,7 +118,7 @@ class TasksDatabase(GenericDatabase):
             TextField("project"),
             TextField("completed"),
             TextField("unique_id"),
-            NumericField("due_date")
+            NumericField("due_date_timestamp")
         )
         definition = IndexDefinition(prefix=['Task:'])
         try:

@@ -1,9 +1,7 @@
-from datetime import datetime
 from typing import List
 
 from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.model.calendar import Calendar, Today
-from taskmgr.lib.model.day import Day
 from taskmgr.lib.model.due_date import DueDate
 from taskmgr.lib.model.task import Task
 from taskmgr.lib.presenter.date_generator import DateGenerator
@@ -56,16 +54,13 @@ class Tasks:
 
         return task_list
 
-    def contains_due_date_range(self, task: Task, min_date_string: str, max_date_string: str):
+    @staticmethod
+    def contains_due_date_range(task: Task, min_date: DueDate, max_date: DueDate):
         assert isinstance(task, Task)
-        assert type(min_date_string) and type(max_date_string) is str
+        assert type(min_date) and type(max_date) is DueDate
 
-        min_day = Day(datetime.strptime(min_date_string, self.__vars.date_format))
-        max_day = Day(datetime.strptime(max_date_string, self.__vars.date_format))
         if len(task.due_date) > 0:
-            day = Day(datetime.strptime(task.due_date, self.__vars.date_format))
-
-            if min_day.to_date_time() < day.to_date_time() < max_day.to_date_time():
+            if min_date.to_date_time() < DueDate(task.due_date).to_date_time() < max_date.to_date_time():
                 return task
 
     def get_task(self, func) -> Task:
@@ -118,11 +113,14 @@ class Tasks:
                     task_list.append(task)
         return task_list
 
-    def get_tasks_within_date_range(self, min_date_string: str, max_date_string: str) -> List[Task]:
-        assert type(min_date_string) is str
-        assert type(max_date_string) is str
+    def get_tasks_within_date_range(self, min_date_expression: str, max_date_expression: str) -> List[Task]:
+        assert type(min_date_expression) is str
+        assert type(max_date_expression) is str
+
+        min_date = self.__date_generator.get_due_date(min_date_expression)
+        max_date = self.__date_generator.get_due_date(max_date_expression)
         return [task for task in self.get_task_list()
-                if self.contains_due_date_range(task, min_date_string, max_date_string)]
+                if self.contains_due_date_range(task, min_date, max_date)]
 
     def get_tasks_by_status(self, is_completed: bool) -> List[Task]:
         assert type(is_completed) is bool
@@ -260,14 +258,6 @@ class Tasks:
                 self.__db.replace_object(task)
 
     def get_list_by_type(self, parameter_name: str, value: str, task_list=None) -> list:
-        """
-        Returns list of tasks when a task parameter (ie. project, name, label) matches
-        a single value.
-        :param parameter_name:
-        :param value:
-        :param task_list:
-        :return:
-        """
         assert type(parameter_name) is str
         assert type(value) is str
 

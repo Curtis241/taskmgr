@@ -108,12 +108,12 @@ class CsvTasksFile(File):
     @staticmethod
     def __write_row(task):
         return {"index": task.index,
-                "done": task.is_completed(),
-                "name": task.text,
+                "done": task.completed,
+                "name": task.name,
                 "project": task.project,
                 "label": task.label,
                 "time_spent": task.time_spent,
-                "due_date": task.due_date.date_string,
+                "due_date": task.due_date,
                 "last_updated": task.last_updated,
                 "deleted": task.deleted,
                 "unique_id": task.unique_id}

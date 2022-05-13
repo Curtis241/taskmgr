@@ -174,6 +174,18 @@ class Client:
     def get_variables_list():
         return dict(CommonVariables()).items()
 
+    def group_edit(self, args: GroupEditArgs) -> List[Task]:
+        task_list = list()
+        for index in args.indexes:
+            try:
+                task = self.tasks.edit(index, None, args.label,
+                                       args.project, args.due_date, args.time_spent)
+                task_list.append(task)
+            except TaskKeyError:
+                self.display_invalid_index_error(index)
+
+        return self.display_tasks(task_list)
+
     def edit(self, args: EditArgs) -> List[Task]:
         """
         Edits an existing task by replacing string values. None are allowed
@@ -210,9 +222,8 @@ class Client:
         for index in args.indexes:
             task = self.tasks.get_task_by_index(index)
             if task is not None:
-                if task.completed is False:
-                    task.time_spent = args.time_spent
-                    task_list.append(self.tasks.complete(task))
+                task.time_spent = args.time_spent
+                task_list.append(self.tasks.complete(task))
             else:
                 self.display_invalid_index_error(index)
         return self.display_tasks(task_list)

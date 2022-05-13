@@ -20,7 +20,7 @@ def cli():
     pass
 
 
-@cli.command("add", help="Appends a task using the provided or default parameters")
+@cli.command("add", help="Appends a task")
 @click.argument('name')
 @click.option('--label', '-l', help="label for task", default=variables.default_label, type=str, metavar='<label>')
 @click.option('--project', '-p', help="project for task", default=variables.default_project_name, type=str, metavar='<project>')
@@ -29,7 +29,7 @@ def add_task(**kwargs):
     cli_client.add(AddArgs.parse_obj(kwargs))
 
 
-@cli.command("edit", help="Replaces the task parameters with the provided parameters")
+@cli.command("edit", help="Replaces the task")
 @click.argument('index', type=int)
 @click.option('--name', '-n', help="title", type=str, default=None, metavar='<name>')
 @click.option('--label', '-l', help="label name", type=str, default=None, metavar='<label>')
@@ -76,13 +76,23 @@ def unique_project_list():
     cli_client.list_projects()
 
 
-@cli.group("group", help="Groups tasks")
+@cli.group("group", help="Works on groups or orders tasks by type")
 def task_group(): pass
+
+
+@task_group.command("edit")
+@click.argument('indexes', nargs=-1, required=True, type=int)
+@click.option('--label', '-l', help="label name", type=str, default=None, metavar='<label>')
+@click.option('--project', '-p', help="project name", type=str, default=None, metavar='<project>')
+@click.option('--time_spent', '-t', help="time spent", type=float, default=None, metavar='<time_spent>')
+@click.option('--due_date', '-d', help="due date for task", type=str, default=None, metavar='<due_date>')
+def group_edit(**kwargs):
+    cli_client.group_edit(GroupEditArgs.parse_obj(kwargs))
 
 
 @task_group.command("label")
 @click.option('--export', is_flag=True, help="Outputs to csv file")
-def task_group_by_label(**kwargs):
+def group_tasks_by_label(**kwargs):
     task_list = cli_client.group_tasks_by_label()
     if kwargs.get("export"):
         cli_client.export_tasks(task_list)
@@ -90,7 +100,7 @@ def task_group_by_label(**kwargs):
 
 @task_group.command("project")
 @click.option('--export', is_flag=True, help="Outputs to csv file")
-def task_group_by_project(**kwargs):
+def group_tasks_by_project(**kwargs):
     task_list = cli_client.group_tasks_by_project()
     if kwargs.get("export"):
         cli_client.export_tasks(task_list)
@@ -98,7 +108,7 @@ def task_group_by_project(**kwargs):
 
 @task_group.command("due_date")
 @click.option('--export', is_flag=True, help="Outputs to csv file")
-def task_group_by_due_date(**kwargs):
+def group_tasks_by_due_date(**kwargs):
     task_list = cli_client.group_tasks_by_due_date()
     if kwargs.get("export"):
         cli_client.export_tasks(task_list)

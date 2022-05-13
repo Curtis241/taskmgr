@@ -19,6 +19,13 @@ class EditArgs(BaseModel):
     time_spent: Optional[float] = None
 
 
+class GroupEditArgs(BaseModel):
+    indexes: tuple
+    label: Optional[str] = None
+    project: Optional[str] = None
+    due_date: Optional[str] = None
+    time_spent: Optional[float] = None
+
 class ListArgs(BaseModel):
     all: bool
     export: bool = False

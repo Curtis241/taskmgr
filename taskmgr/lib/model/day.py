@@ -17,7 +17,7 @@ class Day:
         self.vars = CommonVariables()
 
     def to_timestamp(self):
-        return int(self.dt.timestamp())
+        return int(self.timestamp)
 
     def to_date_list(self):
         return [self.to_date_string()]
