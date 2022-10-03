@@ -1,6 +1,6 @@
 import unittest
 
-from taskmgr.lib.database.manager import DatabaseManager
+from taskmgr.lib.database.db_manager import DatabaseManager
 from taskmgr.lib.model.calendar import Today
 from taskmgr.lib.model.task import Task
 from taskmgr.lib.presenter.date_generator import DateGenerator
@@ -12,7 +12,6 @@ class TestTasks(unittest.TestCase):
     def setUp(self):
         self.vars = CommonVariables()
         self.tasks = DatabaseManager().get_tasks_model()
-        self.tasks.clear()
 
     def tearDown(self):
         self.tasks.clear()
@@ -59,7 +58,7 @@ class TestTasks(unittest.TestCase):
     def test_complete_task(self):
         due_date_list = DateGenerator().get_due_dates("every sa")
         self.tasks.add("RepetitiveTask", "current", "home", "every sa")
-        task_list = self.tasks.get_tasks_matching_name("RepetitiveTask")
+        task_list = self.tasks.get_tasks_containing_name("RepetitiveTask")
 
         self.assertTrue(len(due_date_list) == len(task_list))
 
@@ -70,12 +69,12 @@ class TestTasks(unittest.TestCase):
             self.assertTrue(task.completed)
 
     def test_task_is_complete(self):
-        task_list = self.tasks.add("Simple Task", "current", "home", "today")
-        self.assertTrue(len(task_list) == 1)
-        task1 = task_list[0]
-        self.assertTrue(task1.due_date == Today().to_date_string())
-        task1.completed = 1
-        self.assertTrue(task1.completed)
+        self.tasks.add("Simple Task", "current", "home", "today")
+        task = self.tasks.get_task_by_name("Simple Task")
+        self.assertIsNotNone(task)
+        self.assertTrue(task.due_date == Today().to_date_string())
+        completed_task = self.tasks.complete(task)
+        self.assertTrue(completed_task.completed)
 
     def test_sorting_by_label(self):
         self.tasks.add("Task1", "call", "work", "may 7")
@@ -94,12 +93,6 @@ class TestTasks(unittest.TestCase):
         self.tasks.add("Task4", "office", "work", "may 4")
         unique_label_list = self.tasks.get_label_list()
         self.assertListEqual(unique_label_list, ['call', 'computer', 'office', 'waiting'])
-
-    def test_get_list_by_type(self):
-        self.tasks.add("Task1", "call", "work", "may 7")
-        self.tasks.add("Task2", "call", "work", "may 9")
-        returned_result = self.tasks.get_list_by_type("label", "call", self.tasks.get_task_list())
-        self.assertTrue(len(returned_result) == 2)
 
     def test_get_list_by_date_expression(self):
         self.tasks.add("FutureTask", "waiting", "work", "tomorrow")
@@ -155,7 +148,6 @@ class TestTasks(unittest.TestCase):
         self.assertTrue(len(task_list) == 1)
         rescheduled_task = task_list[0]
         self.assertEqual(rescheduled_task.name, "CurrentTask")
-
 
 
 if __name__ == "__main__":

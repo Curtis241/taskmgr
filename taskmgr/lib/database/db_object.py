@@ -10,27 +10,20 @@ class DatabaseObject(ABC):
         self.__object_name = object_name
 
     @staticmethod
-    def to_str(value) -> str:
-        if isinstance(value, bytes):
-            return str(value, 'utf-8')
-        else:
-            return value
-
-    @staticmethod
-    def to_bool(value) -> bool:
-        if isinstance(value, bytes):
+    def to_bool(value: str) -> bool:
+        if value in ['True', 'False']:
             return eval(value)
         else:
-            return value
+            return bool(value)
 
     @property
     def unique_id(self):
         return self.__unique_id
 
     @unique_id.setter
-    def unique_id(self, unique_id):
+    def unique_id(self, unique_id: str):
         if self.__unique_id is None:
-            self.__unique_id = self.to_str(unique_id)
+            self.__unique_id = unique_id
 
     @property
     def object_name(self):
@@ -38,7 +31,7 @@ class DatabaseObject(ABC):
 
     @object_name.setter
     def object_name(self, object_name):
-        self.__object_name = self.to_str(object_name)
+        self.__object_name = object_name
 
     @property
     def index(self):
@@ -54,8 +47,8 @@ class DatabaseObject(ABC):
         return self.__last_updated
 
     @last_updated.setter
-    def last_updated(self, last_updated):
-        self.__last_updated = self.to_str(last_updated)
+    def last_updated(self, last_updated: str):
+        self.__last_updated = last_updated
 
     @abstractmethod
     def deserialize(self, obj_dict): pass

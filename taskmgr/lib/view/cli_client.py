@@ -1,12 +1,9 @@
 from datetime import datetime
 
 from taskmgr.lib.logger import AppLogger
-from taskmgr.lib.model.snapshot import Snapshot
 from taskmgr.lib.presenter.file_manager import FileManager
-from taskmgr.lib.presenter.snapshots import Snapshots
 from taskmgr.lib.presenter.task_sync import CsvFileImporter
 from taskmgr.lib.view.client import Client
-from taskmgr.lib.view.console_table_pager import Pager
 from taskmgr.lib.view.snapshot_list_console_table import SnapshotListConsoleTable
 from taskmgr.lib.view.snapshot_summary_console_table import SnapshotSummaryConsoleTable
 from taskmgr.lib.view.task_console_table import TaskConsoleTable
@@ -33,13 +30,8 @@ class CliClient(Client):
     def display_tasks(self, task_list):
         return self.__print_tasks_table(task_list)
 
-    def display_snapshots(self, snapshots: Snapshots, page: int):
-        summary, snapshot_list = snapshots.get_snapshot()
-        self.__print_snapshot_summary_table(summary)
-        if len(snapshot_list) > 1:
-            return self.__print_snapshot_list_table(snapshot_list, page)
-        else:
-            return snapshot_list
+    def display_snapshots(self, snapshot_list: list):
+        self.__print_snapshot_list_table(snapshot_list)
 
     def display_due_date_error(self, message: str):
         self.logger.info(message)
@@ -72,30 +64,21 @@ class CliClient(Client):
             self.task_table.add_row(task)
         return self.task_table.print()
 
-    def __print_snapshot_summary_table(self, summary: Snapshot):
-        CliClient.logger.info("Snapshot summary:")
-        self.snapshot_summary_table.clear()
-        self.snapshot_summary_table.add_row(summary)
-        return self.snapshot_summary_table.print()
-
-    def __print_snapshot_list_table(self, snapshot_list: list, page_number: int):
+    def __print_snapshot_list_table(self, snapshot_list: list):
         assert type(snapshot_list) is list
-        assert type(page_number) is int
 
         if snapshot_list:
+            if snapshot_list[-1].is_summary:
+                self.snapshot_summary_table.clear()
+                self.snapshot_summary_table.add_row(snapshot_list.pop())
+                self.snapshot_summary_table.print()
+
             self.snapshot_list_table.clear()
-            pager = Pager(snapshot_list).assemble()
-            page = pager.get_page(page_number)
-            snapshots = pager.get_items(page)
-
-            self.logger.info("Snapshot list:")
-            for snapshot in snapshots:
+            for snapshot in snapshot_list:
                 self.snapshot_list_table.add_row(snapshot)
-            snapshot_list = self.snapshot_list_table.print()
-
-            self.logger.info(f"Displayed {len(snapshots)} items - Page {page_number} of {pager.get_page_count()}")
-
-        return snapshot_list
+            self.snapshot_list_table.print()
+        else:
+            self.logger.info("No rows to display")
 
     def export_tasks(self, task_list):
         self.__file_manager.save_tasks(task_list)
@@ -122,6 +105,8 @@ class CliClient(Client):
             self.logger.info(f"Converted rows into task objects")
             sync_results = csv_file_importer.import_tasks(task_list, bulk_save=True)
             self.logger.info(f"Import summary: {sync_results.get_summary()}")
+            self.snapshots.rebuild()
+            self.logger.info(f"Rebuilding snapshots")
 
             self.logger.info(f"Import complete: Duration: {self.get_duration(start_datetime)}")
         except Exception as ex:

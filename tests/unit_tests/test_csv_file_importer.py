@@ -1,6 +1,6 @@
 import unittest
 
-from taskmgr.lib.database.manager import DatabaseManager
+from taskmgr.lib.database.db_manager import DatabaseManager
 from taskmgr.lib.model.task import Task
 from taskmgr.lib.presenter.task_sync import CsvFileImporter, SyncAction
 
@@ -9,6 +9,7 @@ class TestCsvFileImporter(unittest.TestCase):
 
     def setUp(self):
         self.tasks = DatabaseManager().get_tasks_model()
+        self.tasks.clear()
         self.importer = CsvFileImporter(self.tasks)
 
     def tearDown(self):

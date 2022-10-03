@@ -1,16 +1,20 @@
 import unittest
 
-from taskmgr.lib.database.manager import DatabaseManager
-from taskmgr.lib.presenter.snapshots import Snapshots
+from taskmgr.lib.database.db_manager import DatabaseManager
 
 
 class TestSnapshots(unittest.TestCase):
 
     def setUp(self) -> None:
         self.tasks = DatabaseManager().get_tasks_model()
+        self.tasks.clear()
+
+        self.snapshots = DatabaseManager().get_snapshots_model()
+        self.snapshots.clear()
 
     def tearDown(self) -> None:
         self.tasks.clear()
+        self.snapshots.clear()
 
     def test_count_all(self):
         self.tasks.add("task1", "label1", "project1", "today")
@@ -24,14 +28,15 @@ class TestSnapshots(unittest.TestCase):
         self.tasks.add("task3", "label1", "project1", "today")
         self.tasks.add("task4", "label1", "project1", "today")
 
-        snapshots = Snapshots(self.tasks)
-        snapshots.count_all_tasks()
-        summary, snapshot_list = snapshots.get_snapshot()
+        snapshot_list = self.snapshots.get_all()
+        self.assertEqual(snapshot_list.count(), 1)
+        summary = snapshot_list[0]
+
         self.assertIsNotNone(summary)
-        self.assertTrue(summary.count == 4)
-        self.assertTrue(summary.deleted == 1)
-        self.assertTrue(summary.incomplete == 2)
-        self.assertTrue(summary.completed == 1)
+        self.assertTrue(summary.task_count == 4)
+        self.assertTrue(summary.delete_count == 1)
+        self.assertTrue(summary.incomplete_count == 3)
+        self.assertTrue(summary.complete_count == 1)
 
     def test_count_by_due_date_range(self):
         self.tasks.add("task1", "label1", "project1", "2021-07-14")
@@ -39,15 +44,8 @@ class TestSnapshots(unittest.TestCase):
         self.tasks.add("task3", "label1", "project1", "2021-09-01")
         self.tasks.add("task4", "label1", "project1", "2021-11-01")
 
-        snapshots = Snapshots(self.tasks)
-        snapshots.count_tasks_by_due_date_range("2021-07-13", "2021-11-02")
-        summary, snapshot_list = snapshots.get_snapshot()
-        self.assertIsNotNone(summary)
-        self.assertEqual(summary.count, 4)
-        self.assertEqual(summary.completed, 0)
-        self.assertEqual(summary.incomplete, 4)
-        self.assertEqual(summary.deleted, 0)
-        self.assertTrue(len(snapshot_list) == 3)
+        snapshot_list = self.snapshots.count_tasks_by_due_date_range("2021-07-13", "2021-11-02")
+        self.assertEqual(snapshot_list.count(), 3)
 
     def test_count_project(self):
         self.tasks.add("task1", "label1", "project1", "today")
@@ -55,25 +53,9 @@ class TestSnapshots(unittest.TestCase):
         self.tasks.add("task3", "label1", "project2", "today")
         self.tasks.add("task4", "label1", "project2", "today")
 
-        snapshots = Snapshots(self.tasks)
-        snapshots.count_tasks_by_project("project2")
-        summary, snapshot_list = snapshots.get_snapshot()
-        self.assertIsNotNone(summary)
-        self.assertEqual(summary.count, 3)
-        self.assertEqual(summary.completed, 0)
-        self.assertEqual(summary.incomplete, 3)
-        self.assertEqual(summary.deleted, 0)
-        self.assertTrue(len(snapshot_list) == 1)
+        snapshot_list = self.snapshots.count_tasks_by_project("project2")
+        self.assertEqual(snapshot_list.count(), 1)
 
-    def test_invalid_operation(self):
-        snapshots = Snapshots(self.tasks)
-        summary, snapshot_list = snapshots.get_snapshot()
-        self.assertIsNotNone(summary)
-        self.assertEqual(summary.count, 0)
-        self.assertEqual(summary.completed, 0)
-        self.assertEqual(summary.incomplete, 0)
-        self.assertEqual(summary.deleted, 0)
-        self.assertTrue(len(snapshot_list) == 0)
 
 
 

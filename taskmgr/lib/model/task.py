@@ -1,5 +1,5 @@
-from taskmgr.lib.database.object import DatabaseObject
-from taskmgr.lib.model.calendar import Today
+from taskmgr.lib.database.db_object import DatabaseObject
+from taskmgr.lib.model.due_date import DueDate
 from taskmgr.lib.variables import CommonVariables
 
 
@@ -16,10 +16,10 @@ class Task(DatabaseObject):
         self.__label = self.vars.default_label
         self.__time_spent = 0
         self.__project = self.vars.default_project_name
-        self.__due_date = Today().to_date_string()
-        self.__due_date_timestamp = Today().to_timestamp()
-        self.__completed = 0
-        self.__deleted = 0
+        self.__due_date = str()
+        self.__due_date_timestamp = 0
+        self.__completed = "False"
+        self.__deleted = "False"
 
     @property
     def due_date(self) -> str:
@@ -27,8 +27,9 @@ class Task(DatabaseObject):
 
     @due_date.setter
     def due_date(self, due_date: str):
-        if due_date is not None:
-            self.__due_date = self.to_str(due_date)
+        if due_date and due_date is not None:
+            self.__due_date = due_date
+            self.__due_date_timestamp = DueDate(due_date).to_timestamp()
 
     @property
     def due_date_timestamp(self) -> int:
@@ -40,19 +41,19 @@ class Task(DatabaseObject):
 
     @property
     def completed(self) -> bool:
-        return bool(self.__completed)
+        return self.__completed == "True"
 
     @completed.setter
-    def completed(self, value: bool):
-        self.__completed = int(value)
+    def completed(self, value: str):
+        self.__completed = str(value)
 
     @property
     def deleted(self) -> bool:
-        return bool(self.__deleted)
+        return self.__deleted == "True"
 
     @deleted.setter
-    def deleted(self, value: bool):
-        self.__deleted = int(value)
+    def deleted(self, value: str):
+        self.__deleted = str(value)
 
     @property
     def project(self) -> str:
@@ -61,7 +62,7 @@ class Task(DatabaseObject):
     @project.setter
     def project(self, value: str):
         if value is not None:
-            self.__project = self.to_str(value)
+            self.__project = value
 
     @property
     def name(self) -> str:
@@ -70,7 +71,7 @@ class Task(DatabaseObject):
     @name.setter
     def name(self, value: str):
         if value is not None:
-            self.__name = self.to_str(value)
+            self.__name = value
 
     @property
     def label(self) -> str:
@@ -79,7 +80,7 @@ class Task(DatabaseObject):
     @label.setter
     def label(self, value: str):
         if value is not None:
-            self.__label = self.to_str(value)
+            self.__label = value
 
     @property
     def time_spent(self) -> float:
@@ -92,7 +93,8 @@ class Task(DatabaseObject):
 
     def deserialize(self, obj_dict: dict):
         for key, value in obj_dict.items():
-            setattr(self, str(key, 'utf-8'), value)
+            if isinstance(key, str):
+                setattr(self, key, value)
         return self
 
     def __eq__(self, other):
@@ -112,7 +114,4 @@ class Task(DatabaseObject):
         yield 'completed', self.__completed
         yield 'unique_id', self.unique_id
         yield 'last_updated', self.last_updated
-
-
-
 

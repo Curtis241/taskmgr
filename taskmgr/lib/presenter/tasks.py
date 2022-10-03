@@ -1,5 +1,6 @@
-from typing import List
+from typing import List, Optional
 
+from taskmgr.lib.database.tasks_db import TasksDatabase
 from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.model.calendar import Calendar, Today
 from taskmgr.lib.model.due_date import DueDate
@@ -27,7 +28,9 @@ class Tasks:
     """
     logger = AppLogger("tasks").get_logger()
 
-    def __init__(self, database):
+    def __init__(self, database: TasksDatabase):
+        assert isinstance(database, TasksDatabase)
+
         self.__db = database
         self.__calendar = Calendar()
         self.__vars = CommonVariables()
@@ -54,94 +57,62 @@ class Tasks:
 
         return task_list
 
-    @staticmethod
-    def contains_due_date_range(task: Task, min_date: DueDate, max_date: DueDate):
-        assert isinstance(task, Task)
-        assert type(min_date) and type(max_date) is DueDate
+    def get_task_list(self, page: int = 0) -> List[Task]:
+        self.__db.set_page_number(page)
+        return self.__db.get_object_list()
 
-        if len(task.due_date) > 0:
-            if min_date.to_date_time() < DueDate(task.due_date).to_date_time() < max_date.to_date_time():
-                return task
-
-    def get_task(self, func) -> Task:
-        for task in self.__db.get_object_list():
-            if func(task) is not None:
-                self.logger.debug(f"Retrieved task by index: {task.index}, name: {task.name}")
-                return task
-
-    def get_task_list(self):
-        return sorted(self.__db.get_object_list(), key=lambda task: task.due_date)
-
-    def get_tasks_containing_name(self, value: str) -> List[Task]:
-        """
-        Selects all tasks that with a name value that contain the provided value
-        :param value:
-        :return: list of Task
-        """
+    def get_tasks_containing_name(self, value: str, page: int = 0) -> List[Task]:
         assert type(value) is str
-        return [task for task in self.get_task_list()
-                if str(value).lower() in str(task.name).lower()]
-
-    def get_tasks_matching_name(self, value: str) -> List[Task]:
-        """
-        Selects all tasks with a name value that matches the provided value
-        :param value:
-        :return:
-        """
-        assert type(value) is str
-        return [task for task in self.get_task_list()
-                if str(value).lower() == str(task.name).lower()]
+        self.__db.set_page_number(page)
+        return self.__db.get_filtered_objects("name", str(value).lower())
 
     def get_task_by_index(self, index: int) -> Task:
         assert type(index) is int
-        return self.get_task(lambda task: task if task.index == index else None)
+        return self.__db.get_object("index", index)
 
     def get_task_by_id(self, task_id: str) -> Task:
         assert type(task_id) is str
-        return self.get_task(lambda task: task if task.unique_id == task_id else None)
+        return self.__db.get_object("unique_id", task_id)
 
     def get_task_by_name(self, task_name: str) -> Task:
         assert type(task_name) is str
-        return self.get_task(lambda task: task if task.name == task_name else None)
+        return self.__db.get_object("name", task_name)
 
     def get_tasks_by_date(self, date_expression: str) -> List[Task]:
         assert type(date_expression) is str
         task_list = list()
         for due_date in self.__date_generator.get_due_dates(date_expression):
-            for task in self.get_task_list():
-                if task.due_date == due_date.date_string:
-                    task_list.append(task)
+            task_list.extend(self.__db.get_filtered_objects("due_date_timestamp", due_date.to_timestamp()))
         return task_list
 
-    def get_tasks_within_date_range(self, min_date_expression: str, max_date_expression: str) -> List[Task]:
+    def get_tasks_within_date_range(self, min_date_expression: str, max_date_expression: str, page: int) -> List[Task]:
         assert type(min_date_expression) is str
         assert type(max_date_expression) is str
 
         min_date = self.__date_generator.get_due_date(min_date_expression)
         max_date = self.__date_generator.get_due_date(max_date_expression)
-        return [task for task in self.get_task_list()
-                if self.contains_due_date_range(task, min_date, max_date)]
+        self.__db.set_page_number(page)
+        return self.__db.get_filtered_objects("due_date_timestamp", min_date.to_timestamp(), max_date.to_timestamp())
 
-    def get_tasks_by_status(self, is_completed: bool) -> List[Task]:
+    def get_tasks_by_status(self, is_completed: bool, page: int) -> List[Task]:
         assert type(is_completed) is bool
-
+        self.__db.set_page_number(page)
         if is_completed:
-            return [task for task in self.get_task_list() if task.completed]
+            return self.__db.get_filtered_objects("completed", "True")
         else:
-            return [task for task in self.get_task_list() if not task.completed]
+            return self.__db.get_filtered_objects("completed", "False")
 
-    def get_tasks_by_project(self, project: str) -> List[Task]:
+    def get_tasks_by_project(self, project: str, page: int) -> List[Task]:
         assert type(project) is str
-        return self.get_list_by_type("project", project)
+        self.__db.set_page_number(page)
+        return self.__db.get_filtered_objects("project", project)
 
-    def get_tasks_by_label(self, label: str) -> List[Task]:
+    def get_tasks_by_label(self, label: str, page: int=0) -> List[Task]:
         assert type(label) is str
-        return self.get_list_by_type("label", label)
+        self.__db.set_page_number(page)
+        return self.__db.get_filtered_objects("label", label)
 
-    def get_filtered_list(self) -> List[Task]:
-        return [task for task in self.get_task_list() if not task.deleted]
-
-    def delete(self, task: Task, save: bool = True) -> Task:
+    def delete(self, task: Task, save: bool = True) -> Optional[Task]:
         """
         Changes the deleted state to True
         :param task: Task object
@@ -158,7 +129,7 @@ class Tasks:
         else:
             raise TaskKeyError()
 
-    def undelete(self, task: Task) -> Task:
+    def undelete(self, task: Task) -> Optional[Task]:
         """
         Changes the deleted state to False
         :param task: Task object
@@ -171,7 +142,7 @@ class Tasks:
         else:
             raise TaskKeyError()
 
-    def complete(self, task: Task) -> Task:
+    def complete(self, task: Task) -> Optional[Task]:
         """
         Changes the completed state to True
         :param task: Task object
@@ -184,7 +155,7 @@ class Tasks:
         else:
             raise TaskKeyError()
 
-    def reset(self, task: Task) -> Task:
+    def reset(self, task: Task) -> Optional[Task]:
         """
         Resets the due date to today on the selected task
         :param task: Task object
@@ -221,14 +192,14 @@ class Tasks:
         return task
 
     def update_all(self, task_list: List[Task]) -> List[Task]:
-        return self.__db.update_objects(task_list)
+        return self.__db.append_objects(task_list)
 
     def edit(self, index: int,
              name: str = None,
              label: str = None,
              project: str = None,
              date_expression: str = None,
-             time_spent: int = None) -> Task:
+             time_spent: int = None) -> Optional[Task]:
 
         task = self.get_task_by_index(index)
         if task is not None:
@@ -249,45 +220,27 @@ class Tasks:
         else:
             raise TaskKeyError()
 
-    def reschedule(self) -> None:
+    def reschedule(self) -> List[Task]:
         today = Today()
+        task_list = list()
         for task in self.get_task_list():
-            if self.__calendar.is_past(DueDate(task.due_date), today) and task.completed is False and task.deleted is False:
+            if self.__calendar.is_past(DueDate(task.due_date), today) and \
+                    task.completed is False and task.deleted is False:
                 task.due_date = today.to_date_string()
                 task.due_date_timestamp = today.to_timestamp()
+                task_list.append(task)
                 self.__db.replace_object(task)
 
-    def get_list_by_type(self, parameter_name: str, value: str, task_list=None) -> list:
-        assert type(parameter_name) is str
-        assert type(value) is str
-
-        if task_list is None:
-            task_list = self.get_task_list()
-        else:
-            assert type(task_list) is list
-
-        return list(filter(lambda t: getattr(t, parameter_name) == value, task_list))
-
-    def __sort(self, parameter_name: str) -> list:
-        assert type(parameter_name) is str
-        return [t for t in sorted(self.get_task_list(), key=lambda t: getattr(t, parameter_name))]
+        return task_list
 
     def get_label_list(self) -> List[str]:
-        return self.unique("label", self.get_task_list())
+        return sorted(self.__db.unique("label"))
 
     def get_project_list(self) -> List[str]:
-        return self.unique("project", self.get_task_list())
+        return sorted(self.__db.unique("project"))
 
     def get_due_date_list(self) -> List[str]:
-        return list(set([task.due_date.date_string for task in self.get_task_list()]))
-
-    @staticmethod
-    def unique(parameter_name: str, task_list: list) -> List[str]:
-        assert type(parameter_name) is str
-        assert type(task_list) is list
-        unique_set = set([getattr(task, parameter_name) for task in task_list])
-        unique_set.discard("")
-        return sorted(list(unique_set))
+        return sorted(self.__db.unique("due_date"))
 
     def clear(self):
         self.__db.clear()

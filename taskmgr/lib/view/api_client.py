@@ -1,4 +1,3 @@
-from taskmgr.lib.presenter.snapshots import Snapshots
 from taskmgr.lib.view.client import Client
 
 
@@ -17,7 +16,6 @@ class ApiClient(Client):
     def display_due_date_error(self, message: str):
         return {"detail": [{"loc": ["param", "due_date"]}], "msg": message, "type": "attribute_error"}
 
-    def display_snapshots(self, snapshots: Snapshots, page: int):
-        summary, snapshot_list = snapshots.get_snapshot()
-        return {"snapshot": {"summary": summary.compose_summary(), "list": [dict(snapshot) for snapshot in snapshot_list]}}
+    def display_snapshots(self, snapshot_list: list):
+        return {"snapshot": {"list": [dict(snapshot) for snapshot in snapshot_list]}}
 

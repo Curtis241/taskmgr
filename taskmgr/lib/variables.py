@@ -33,7 +33,7 @@ class CommonVariables:
                                    'default_name': '',
                                    'redis_host': 'localhost',
                                    'redis_port': 6379,
-                                   'max_snapshot_rows': 10}
+                                   'max_rows': 10}
             os.makedirs(self.resources_dir, exist_ok=True)
             self.__save()
 
@@ -114,13 +114,13 @@ class CommonVariables:
         return self.__get("file_name_timestamp", self.default_section)
 
     @property
-    def max_snapshot_rows(self):
-        return self.__getint("max_snapshot_rows", self.default_section)
+    def max_rows(self):
+        return self.__getint("max_rows", self.default_section)
 
-    @max_snapshot_rows.setter
-    def max_snapshot_rows(self, value):
+    @max_rows.setter
+    def max_rows(self, value):
         if value is not None:
-            self.__set("max_snapshot_rows", int(value), self.default_section)
+            self.__set("max_rows", int(value), self.default_section)
 
     @property
     def default_name(self):
@@ -187,4 +187,4 @@ class CommonVariables:
         yield 'recurring_month_limit', self.recurring_month_limit
         yield 'redis_host', self.redis_host
         yield 'redis_port', self.redis_port
-        yield 'max_snapshot_rows', self.max_snapshot_rows
+        yield 'max_rows', self.max_rows

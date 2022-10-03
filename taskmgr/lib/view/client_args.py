@@ -26,9 +26,11 @@ class GroupEditArgs(BaseModel):
     due_date: Optional[str] = None
     time_spent: Optional[float] = None
 
+
 class ListArgs(BaseModel):
     all: bool
     export: bool = False
+    page: int = 0
 
 
 class DeleteArgs(BaseModel):
@@ -65,7 +67,7 @@ class StatusArgs(BaseModel):
 class ProjectArgs(BaseModel):
     project: str
     export: bool = False
-    page: int = 1
+    page: int = 0
 
 
 class LabelArgs(BaseModel):
@@ -84,7 +86,7 @@ class DueDateRangeArgs(BaseModel):
     min_date: str
     max_date: str
     export: bool = False
-    page: int = 1
+    page: int = 0
 
 
 class DueDateArgs(BaseModel):

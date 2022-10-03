@@ -24,9 +24,9 @@ class SnapshotListConsoleTable(ConsoleTable):
             print(self.get_table())
             return self.__snapshot_list
         else:
-            print("No rows to display. Use count command.")
+            print("No rows to display.")
 
     def format_row(self, obj):
         assert type(obj) is Snapshot
-        return [obj.due_date, obj.count, obj.completed, obj.incomplete,
-                obj.deleted, obj.total_time, obj.average_time]
+        return [obj.due_date, obj.task_count, obj.complete_count, obj.incomplete_count,
+                obj.delete_count, obj.total_time, obj.average_time]

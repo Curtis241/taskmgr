@@ -1,12 +1,14 @@
-from typing import List
+from typing import List, Optional
 
-import redis
 from redis import ResponseError
-from redisearch import IndexDefinition, TextField, NumericField, Client
+from redisearch import IndexDefinition, TextField, NumericField, reducers
+from redisearch.aggregation import AggregateRequest
+from redisearch.query import Query
 
-from taskmgr.lib.database.generic import GenericDatabase
+from taskmgr.lib.database.generic_db import GenericDatabase, QueryParams
 from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.model.task import Task
+from taskmgr.lib.variables import CommonVariables
 
 
 class TasksDatabase(GenericDatabase):
@@ -16,112 +18,85 @@ class TasksDatabase(GenericDatabase):
     """
     logger = AppLogger("task_database").get_logger()
 
-    def __init__(self, host: str, port: int):
-        super().__init__()
-        self.host = host
-        self.port = port
-        self.db = redis.Redis(host=self.host, port=self.port, db=0)
-        self.client = Client("idx:task")
+    def __init__(self, common_vars: CommonVariables):
+        super().__init__("tasks_inc_key")
+        self.__db, self.__client = self._build(common_vars, "task:idx")
+        self.__page_number = 0
 
-    @staticmethod
-    def __key(task: Task):
-        assert isinstance(task, Task), "Expecting type Task"
-        return f"{task.object_name}:{task.index}"
+    def set_page_number(self, page: int):
+        self.__page_number = page
 
-    def replace_object(self, task: Task, index: int = 0) -> Task:
-        """
-        Replaces an object in Redis database using Task.index value in object
-        OR uses index when it is provided.
-        :param task: Task object
-        :param index: External Task object index
-        :return: Task object
-        """
-        assert isinstance(task, Task), "Expecting type Task"
+    def exists(self) -> bool:
+        return self._exists(self.__db)
 
-        if self.exists():
-            with self.db.pipeline() as pipe:
-                if index != 0:
-                    task.index = index
-                task.last_updated = self.get_last_updated()
+    def append_object(self, obj: Task) -> Task:
+        return self._append_object(self.__db, obj)
 
-                self.logger.debug(f"replace_object: task {dict(task)}")
+    def get_object(self, key: str, value) -> Optional[Task]:
+        return self._get_object(self.__client, key, value)
 
-                for key, value in dict(task).items():
-                    task_key = self.__key(task)
-                    pipe.hset(task_key, key, value)
+    def append_objects(self, obj_list: List[Task]) -> List[Task]:
+        return self._append_objects(self.__db, obj_list)
 
-                pipe.execute()
-            self.db.save()
+    def get_filtered_objects(self, key: str, value1, value2=None) -> List[Task]:
+        query = QueryParams(key, value1, value2).build()
+        if query is None:
+            return []
+        try:
+            key_count = self.get_key_count()
+            offset, max_limit = self.calc_limits(key_count, self.__page_number)
+            query.paging(offset, max_limit)
+            query.sort_by("due_date_timestamp", asc=False)
+            return self._get_object_list(self.__db, self.__client, query)
+        except IndexError:
+            return []
 
-            return task
+    def get_key_count(self) -> int:
+        return len(self.__db.keys("Task:*"))
 
-    def update_objects(self, task_list: List[Task]) -> List[Task]:
-
-        if self.exists():
-            with self.db.pipeline() as pipe:
-                for task in task_list:
-                    task.index = self.db.incrby("task_incr")
-                    task.unique_id = self.get_unique_id()
-                    task.last_updated = self.get_last_updated()
-
-                    for key, value in dict(task).items():
-                        task_key = self.__key(task)
-                        pipe.hset(task_key, key, value)
-
-                    pipe.execute()
-            self.db.bgsave()
-
-            return task_list
-
-    def append_object(self, task: Task) -> Task:
-        """
-        Updates or inserts new objects that inherit from DatabaseObject.
-        When key matches existing key an update occurs, but if there
-        is no match then a new key is created.
-        :param task: Class object
-        :return: None
-        """
-        assert isinstance(task, Task), "Expecting type Task"
-
-        if self.exists():
-            with self.db.pipeline() as pipe:
-                task.index = self.db.incrby("task_incr")
-                task.unique_id = self.get_unique_id()
-                task.last_updated = self.get_last_updated()
-
-                self.logger.debug(f"append_object: task {dict(task)}")
-
-                for key, value in dict(task).items():
-                    task_key = self.__key(task)
-                    pipe.hset(task_key, key, value)
-
-                pipe.execute()
-            self.db.save()
-
-            return task
+    def replace_object(self, obj: Task, index: int = 0) -> Task:
+        return self._replace_object(self.__db, obj, index)
 
     def get_object_list(self) -> List[Task]:
-        return [Task().deserialize(self.db.hgetall(key)) for key in sorted(self.db.keys("Task:*"))]
+        try:
+            key_count = self.get_key_count()
+            offset, max_limit = self.calc_limits(key_count, self.__page_number)
+            query = Query("*").paging(offset, max_limit).sort_by("due_date_timestamp", asc=False)
+            return self._get_object_list(self.__db, self.__client, query)
+        except IndexError:
+            return []
 
-    def exists(self):
-        return self.db.ping()
+    def unique(self, key: str) -> List[str]:
+        if self.exists():
+            try:
+                request = AggregateRequest('*')
+                request.group_by(f"@{key}", reducers.count())
+                aggregate_result = self.__client.aggregate(request)
+                if aggregate_result.rows:
+                    return [str(row[1], 'utf-8') for row in aggregate_result.rows]
+            except ResponseError as ex:
+                self.logger.error(ex)
+
+    def deserialize(self, documents) -> List[Task]:
+        return [Task().deserialize(document.__dict__) for document in documents]
 
     def clear(self):
-        self.db.flushdb()
+        self._clear(self.__db, "Task:*")
 
     def create_index(self):
         schema = (
-            TextField("index"),
-            TextField("text"),
+            NumericField("index"),
+            TextField("name"),
             TextField("label"),
             TextField("deleted"),
             TextField("project"),
             TextField("completed"),
             TextField("unique_id"),
+            TextField("due_date"),
             NumericField("due_date_timestamp")
         )
         definition = IndexDefinition(prefix=['Task:'])
         try:
-            self.client.info()
+            self.__client.info()
         except ResponseError:
-            self.client.create_index(schema, definition=definition)
+            self.__client.create_index(schema, definition=definition)

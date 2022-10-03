@@ -2,13 +2,12 @@ from abc import abstractmethod
 from datetime import datetime
 from typing import List
 
-from taskmgr.lib.database.manager import DatabaseManager
+from taskmgr.lib.database.db_manager import DatabaseManager
 from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.model.calendar import Today
 from taskmgr.lib.model.snapshot import Snapshot
 from taskmgr.lib.model.task import Task
 from taskmgr.lib.presenter.date_generator import DateGenerator
-from taskmgr.lib.presenter.snapshots import Snapshots
 from taskmgr.lib.presenter.tasks import TaskKeyError, DueDateError
 from taskmgr.lib.variables import CommonVariables
 from taskmgr.lib.view.client_args import *
@@ -16,8 +15,9 @@ from taskmgr.lib.view.client_args import *
 
 class Client:
     """
-    Base client facade that that provides access to all the application features. It integrates the import/export, tasks,
-    snapshot, common variables, and date generator classes. It also makes it possible to support additional clients.
+    Base client facade that that provides access to all the application features.
+    It integrates the import/export, tasks, snapshot, common variables,
+    and date generator classes. It also makes it possible to support additional clients.
     Only the console client is supported, but a rest api could also extend this class.
     """
     logger = AppLogger("client").get_logger()
@@ -26,6 +26,7 @@ class Client:
         assert isinstance(db_manager, DatabaseManager)
 
         self.tasks = db_manager.get_tasks_model()
+        self.snapshots = db_manager.get_snapshots_model()
         self.__date_generator = DateGenerator()
         self.__variables = CommonVariables()
 
@@ -33,7 +34,7 @@ class Client:
     def display_tasks(self, task_list: list): pass
 
     @abstractmethod
-    def display_snapshots(self, snapshots: Snapshots, page: int): pass
+    def display_snapshots(self, snapshot_list: list): pass
 
     @abstractmethod
     def display_invalid_index_error(self, index: int): pass
@@ -55,27 +56,27 @@ class Client:
         return self.display_tasks(task_list)
 
     def filter_tasks_by_due_date_range(self, args: DueDateRangeArgs) -> List[Task]:
-        task_list = self.tasks.get_tasks_within_date_range(args.min_date, args.max_date)
+        task_list = self.tasks.get_tasks_within_date_range(args.min_date, args.max_date, args.page)
         return self.display_tasks(task_list)
 
     def filter_tasks_by_status(self, args: StatusArgs) -> List[Task]:
         assert args.status in ["incomplete", "complete"]
         if args.status == "incomplete":
-            task_list = self.tasks.get_tasks_by_status(is_completed=False)
+            task_list = self.tasks.get_tasks_by_status(False, args.page)
         else:
-            task_list = self.tasks.get_tasks_by_status(is_completed=True)
+            task_list = self.tasks.get_tasks_by_status(True, args.page)
         return self.display_tasks(task_list)
 
     def filter_tasks_by_project(self, args: ProjectArgs) -> List[Task]:
-        task_list = self.tasks.get_tasks_by_project(args.project)
+        task_list = self.tasks.get_tasks_by_project(args.project, args.page)
         return self.display_tasks(task_list)
 
     def filter_tasks_by_label(self, args: LabelArgs) -> List[Task]:
-        task_list = self.tasks.get_tasks_by_label(args.label)
+        task_list = self.tasks.get_tasks_by_label(args.label, args.page)
         return self.display_tasks(task_list)
 
     def filter_tasks_by_name(self, args: NameArgs) -> List[Task]:
-        task_list = self.tasks.get_tasks_containing_name(args.name)
+        task_list = self.tasks.get_tasks_containing_name(args.name, args.page)
         return self.display_tasks(task_list)
 
     def group_tasks_by_project(self) -> List[Task]:
@@ -111,41 +112,46 @@ class Client:
         """Returns list of due_date strings from the tasks."""
         return self.tasks.get_due_date_list()
 
-    def count_all_tasks(self, page: int) -> List[Snapshot]:
-        snapshots = Snapshots(self.tasks)
-        snapshots.count_all_tasks()
-        return self.display_snapshots(snapshots, page)
+    def count_all_tasks(self, page: int = 0) -> List[Snapshot]:
+        snapshot_list = self.snapshots.get_all(page)
+        self.display_snapshots(snapshot_list)
+        return snapshot_list
 
     def count_tasks_by_due_date_range(self, args: DueDateRangeArgs) -> List[Snapshot]:
-        snapshots = Snapshots(self.tasks)
-        snapshots.count_tasks_by_due_date_range(args.min_date, args.max_date)
-        return self.display_snapshots(snapshots, args.page)
+        snapshot_list = self.snapshots.get_by_due_date_range(args.min_date, args.max_date, args.page)
+        self.display_snapshots(snapshot_list)
+        return snapshot_list
 
     def count_tasks_by_due_date(self, args: DueDateArgs) -> List[Snapshot]:
-        snapshots = Snapshots(self.tasks)
-        snapshots.count_tasks_by_due_date(args.due_date)
-        return self.display_snapshots(snapshots, args.page)
+        snapshot_list = self.snapshots.get_by_due_date(args.due_date)
+        self.display_snapshots(snapshot_list)
+        return snapshot_list
 
     def count_tasks_by_project(self, args: ProjectArgs) -> List[Snapshot]:
-        snapshots = Snapshots(self.tasks)
-        snapshots.count_tasks_by_project(args.project)
-        return self.display_snapshots(snapshots, args.page)
+        task_list = self.tasks.get_tasks_by_project(args.project, args.page)
+        snapshot_list = self.snapshots.build_snapshot_list(task_list)
+        self.display_snapshots(snapshot_list)
+        return snapshot_list
 
     def count_tasks_by_label(self, args: LabelArgs) -> List[Snapshot]:
-        snapshots = Snapshots(self.tasks)
-        snapshots.count_tasks_by_label(args.label)
-        return self.display_snapshots(snapshots, args.page)
+        task_list = self.tasks.get_tasks_by_label(args.label, args.page)
+        snapshot_list = self.snapshots.build_snapshot_list(task_list)
+        self.display_snapshots(snapshot_list)
+        return snapshot_list
 
     def count_tasks_by_name(self, args: NameArgs) -> List[Snapshot]:
-        snapshots = Snapshots(self.tasks)
-        snapshots.count_tasks_by_name(args.name)
-        return self.display_snapshots(snapshots, args.page)
+        task_list = self.tasks.get_tasks_containing_name(args.name, args.page)
+        snapshot_list = self.snapshots.build_snapshot_list(task_list)
+        self.display_snapshots(snapshot_list)
+        return snapshot_list
 
     def reschedule_tasks(self):
-        self.tasks.reschedule()
+        task_list = self.tasks.reschedule()
+        self.snapshots.rebuild(task_list)
 
     def remove_all_tasks(self):
         self.tasks.clear()
+        self.snapshots.clear()
 
     def set_default_variables(self, **kwargs):
         """
@@ -184,7 +190,9 @@ class Client:
             except TaskKeyError:
                 self.display_invalid_index_error(index)
 
-        return self.display_tasks(task_list)
+        self.display_tasks(task_list)
+        self.snapshots.update(task_list)
+        return task_list
 
     def edit(self, args: EditArgs) -> List[Task]:
         """
@@ -196,14 +204,20 @@ class Client:
         try:
             task = self.tasks.edit(args.index, args.name, args.label,
                                    args.project, args.due_date, args.time_spent)
-            return self.display_tasks([task])
+
+            task_list = [task]
+            self.display_tasks(task_list)
+            self.snapshots.update(task_list)
+            return task_list
         except TaskKeyError:
             self.display_invalid_index_error(args.index)
 
     def add(self, args: AddArgs) -> List[Task]:
         try:
             task_list = self.tasks.add(args.name, args.label, args.project, args.due_date)
-            return self.display_tasks(task_list)
+            self.display_tasks(task_list)
+            self.snapshots.update(task_list)
+            return task_list
         except DueDateError as ex:
             self.display_due_date_error(str(ex))
 
@@ -215,18 +229,25 @@ class Client:
                 task_list.append(self.tasks.delete(task))
             else:
                 self.display_invalid_index_error(index)
-        return self.display_tasks(task_list)
+
+        self.display_tasks(task_list)
+        self.snapshots.update(task_list)
+        return task_list
 
     def complete(self, args: CompleteArgs) -> List[Task]:
         task_list = list()
         for index in args.indexes:
             task = self.tasks.get_task_by_index(index)
             if task is not None:
-                task.time_spent = args.time_spent
+                if args.time_spent > 0:
+                    task.time_spent = args.time_spent
                 task_list.append(self.tasks.complete(task))
             else:
                 self.display_invalid_index_error(index)
-        return self.display_tasks(task_list)
+
+        self.display_tasks(task_list)
+        self.snapshots.update(task_list)
+        return task_list
 
     def undelete(self, args: UndeleteArgs) -> List[Task]:
         task_list = list()
@@ -236,7 +257,10 @@ class Client:
                 task_list.append(self.tasks.undelete(task))
             else:
                 self.display_invalid_index_error(index)
-        return self.display_tasks(task_list)
+
+        self.display_tasks(task_list)
+        self.snapshots.update(task_list)
+        return task_list
 
     def reset(self, args: ResetArgs) -> List[Task]:
         task_list = list()
@@ -246,11 +270,14 @@ class Client:
                 task_list.append(self.tasks.reset(task))
             else:
                 self.display_invalid_index_error(index)
-        return self.display_tasks(task_list)
 
-    def list_all_tasks(self, display_all: bool = False) -> List[Task]:
-        if display_all:
-            task_list = self.tasks.get_task_list()
+        self.display_tasks(task_list)
+        self.snapshots.update(task_list)
+        return task_list
+
+    def list_all_tasks(self, args: ListArgs) -> List[Task]:
+        if args.all:
+            task_list = self.tasks.get_task_list(args.page)
         else:
-            task_list = [task for task in self.tasks.get_task_list() if not task.deleted]
+            task_list = [task for task in self.tasks.get_task_list(args.page) if not task.deleted]
         return self.display_tasks(task_list)

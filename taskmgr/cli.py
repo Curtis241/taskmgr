@@ -3,7 +3,7 @@ import sys
 import click
 
 from taskmgr.lib.logger import AppLogger
-from taskmgr.lib.database.manager import DatabaseManager
+from taskmgr.lib.database.db_manager import DatabaseManager
 from taskmgr.lib.presenter.file_manager import FileManager
 from taskmgr.lib.presenter.task_sync import CsvFileImporter
 from taskmgr.lib.variables import CommonVariables
@@ -42,10 +42,11 @@ def edit_task(**kwargs):
 
 @cli.command("list", help="Lists all tasks")
 @click.option('--export', is_flag=True, help="Outputs to csv file")
+@click.option('--page', type=int, default=0)
 @click.option('--all', is_flag=True, help="Shows deleted tasks")
 def list_tasks(**kwargs):
     args = ListArgs.parse_obj(kwargs)
-    task_list = cli_client.list_all_tasks(args.all)
+    task_list = cli_client.list_all_tasks(args)
     if args.export:
         cli_client.export_tasks(task_list)
 
@@ -121,6 +122,7 @@ def task_filter(): pass
 @task_filter.command("project")
 @click.argument('project', type=str, required=True, metavar="<project>")
 @click.option('--export', is_flag=True, help="Outputs to csv file")
+@click.option('--page', type=int, default=0)
 def filter_tasks_by_project(**kwargs):
     args = ProjectArgs.parse_obj(kwargs)
     task_list = cli_client.filter_tasks_by_project(args)
@@ -131,6 +133,7 @@ def filter_tasks_by_project(**kwargs):
 @task_filter.command("status")
 @click.argument('status', type=click.Choice(['incomplete', 'complete']), required=True, metavar="<status>")
 @click.option('--export', is_flag=True, help="Outputs to csv file")
+@click.option('--page', type=int, default=0)
 def filter_tasks_by_status(**kwargs):
     args = StatusArgs.parse_obj(kwargs)
     task_list = cli_client.filter_tasks_by_status(args)
@@ -141,6 +144,7 @@ def filter_tasks_by_status(**kwargs):
 @task_filter.command("name")
 @click.argument('name', type=str, required=True, metavar="<name>")
 @click.option('--export', is_flag=True, help="Outputs to csv file")
+@click.option('--page', type=int, default=0)
 def filter_tasks_by_name(**kwargs):
     args = NameArgs.parse_obj(kwargs)
     task_list = cli_client.filter_tasks_by_name(args)
@@ -151,6 +155,7 @@ def filter_tasks_by_name(**kwargs):
 @task_filter.command("label")
 @click.argument('label', type=str, required=True, metavar="<label>")
 @click.option('--export', is_flag=True, help="Outputs to csv file")
+@click.option('--page', type=int, default=0)
 def filter_tasks_by_label(**kwargs):
     args = LabelArgs.parse_obj(kwargs)
     task_list = cli_client.filter_tasks_by_label(args)
@@ -161,6 +166,7 @@ def filter_tasks_by_label(**kwargs):
 @task_filter.command("date_range")
 @click.option('--min_date', required=True, help='Minimum date', type=str)
 @click.option('--max_date', required=True, help='Maximum date', type=str)
+@click.option('--page', type=int, default=0)
 @click.option('--export', is_flag=True, help="Outputs to csv file")
 def filter_tasks_by_date_range(**kwargs):
     args = DueDateRangeArgs.parse_obj(kwargs)
@@ -193,7 +199,7 @@ def task_count(): pass
 
 @task_count.command("all")
 @click.option('--export', is_flag=True, help="Outputs all to csv file")
-@click.option('--page', type=int, default=1)
+@click.option('--page', type=int, default=0)
 def count_all_tasks(**kwargs):
     snapshot_list = cli_client.count_all_tasks(kwargs.get("page"))
     if kwargs.get("export"):
@@ -202,7 +208,6 @@ def count_all_tasks(**kwargs):
 
 @task_count.command("date")
 @click.option('--export', is_flag=True, help="Outputs to csv file")
-@click.option('--page', type=int, default=1)
 @click.argument('due_date', type=str, required=True, metavar="<due_date>")
 def count_tasks_by_date(**kwargs):
     args = DueDateArgs.parse_obj(kwargs)
@@ -224,36 +229,27 @@ def count_tasks_by_date_range(**kwargs):
 
 
 @task_count.command("project")
-@click.option('--export', is_flag=True, help="Outputs to csv file")
 @click.option('--page', type=int, default=1)
 @click.argument('project', type=str, required=True, metavar="<project>")
 def count_tasks_by_project(**kwargs):
     args = ProjectArgs.parse_obj(kwargs)
-    snapshot_list = cli_client.count_tasks_by_project(args)
-    if args.export:
-        cli_client.export_snapshots(snapshot_list)
+    cli_client.count_tasks_by_project(args)
 
 
 @task_count.command("label")
-@click.option('--export', is_flag=True, help="Outputs to csv file")
-@click.option('--page', type=int, default=1)
 @click.argument('label', type=str, required=True, metavar="<label>")
+@click.option('--page', type=int, default=1)
 def count_tasks_by_label(**kwargs):
     args = LabelArgs.parse_obj(kwargs)
-    snapshot_list = cli_client.count_tasks_by_label(args)
-    if args.export:
-        cli_client.export_snapshots(snapshot_list)
+    cli_client.count_tasks_by_label(args)
 
 
 @task_count.command("name")
-@click.option('--export', is_flag=True, help="Outputs to csv file")
-@click.option('--page', type=int, default=1)
 @click.argument('name', type=str, required=True, metavar="<name>")
+@click.option('--page', type=int, default=1)
 def count_tasks_by_name(**kwargs):
     args = NameArgs.parse_obj(kwargs)
-    snapshot_list = cli_client.count_tasks_by_name(args)
-    if args.export:
-        cli_client.export_snapshots(snapshot_list)
+    cli_client.count_tasks_by_name(args)
 
 
 @cli.command("reschedule", help="Moves all tasks from the past to today")
@@ -290,7 +286,7 @@ def import_tasks(**kwargs):
               type=click.Choice(['True', 'False']))
 @click.option('--redis_port', help="Port for redis database", type=int, default=None)
 @click.option('--redis_host', help="IPv4 address for redis database", type=str, default=None)
-@click.option('--max_snapshot_rows', help="Max number of snapshots to display on page", type=int, default=None)
+@click.option('--max_rows', help="Max number of rows to display on page", type=int, default=None)
 def set_defaults(**kwargs):
     cli_client.set_default_variables(**kwargs)
     cli_client.list_default_variables()

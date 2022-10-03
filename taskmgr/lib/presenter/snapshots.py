@@ -1,71 +1,105 @@
+from typing import List
+
+from taskmgr.lib.database.snapshots_db import SnapshotsDatabase
 from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.model.snapshot import Snapshot
+from taskmgr.lib.model.task import Task
+from taskmgr.lib.presenter.date_generator import DateGenerator
 from taskmgr.lib.presenter.tasks import Tasks
 
 
 class Snapshots:
     logger = AppLogger("snapshots").get_logger()
 
-    def __init__(self, tasks: Tasks):
+    def __init__(self, tasks: Tasks, database: SnapshotsDatabase):
+        assert isinstance(tasks, Tasks)
+        assert isinstance(database, SnapshotsDatabase)
+
         self.__tasks = tasks
-        self.__task_list = []
+        self.__db = database
+        self.__date_generator = DateGenerator()
 
     @staticmethod
-    def __summarize(task_list: list) -> Snapshot:
+    def build_snapshot(task_list: List[Task]) -> Snapshot:
         snapshot = Snapshot()
-        for task in task_list:
-            if task.deleted:
-                snapshot.deleted += 1
-            elif task.completed:
-                snapshot.completed += 1
-            elif not task.completed:
-                snapshot.incomplete += 1
+        if len(task_list) > 0:
+            for task in task_list:
+                if task.deleted:
+                    snapshot.delete_count += 1
 
-            snapshot.total_time = snapshot.total_time + task.time_spent
-            snapshot.count = len(task_list)
-            snapshot.due_date = task.due_date
+                if task.completed is True:
+                    snapshot.complete_count += 1
+                else:
+                    snapshot.incomplete_count += 1
 
-            try:
-                snapshot.average_time = round(float(snapshot.total_time / snapshot.count), 2)
-            except ZeroDivisionError:
-                snapshot.average_time = 0
+                snapshot.total_time = snapshot.total_time + task.time_spent
+                snapshot.task_count = len(task_list)
+                snapshot.due_date = task.due_date
+                snapshot.due_date_timestamp = task.due_date_timestamp
+
+                try:
+                    snapshot.average_time = round(float(snapshot.total_time / snapshot.task_count), 2)
+                except ZeroDivisionError:
+                    snapshot.average_time = 0
 
         return snapshot
 
-    def get_snapshot(self) -> tuple:
-
-        if len(self.__task_list) > 0:
-            # snapshot object has index and due_date that are not needed
-            # for the summary because there is always one object.
-            summary = self.__summarize(self.__task_list)
-
+    def build_snapshot_list(self, task_list: list) -> List[Snapshot]:
+        snapshot_list = list()
+        if len(task_list) > 0:
             snapshot_list = []
-            due_date_list = list(set([task.due_date for task in self.__task_list]))
+            due_date_list = list(set([task.due_date for task in task_list]))
             for index, due_date in enumerate(due_date_list, start=1):
                 task_list = self.__tasks.get_tasks_by_date(due_date)
-                snapshot = self.__summarize(task_list)
+                snapshot = self.build_snapshot(task_list)
                 snapshot.index = index
                 snapshot_list.append(snapshot)
 
-            return summary, sorted(snapshot_list, key=lambda sn: sn.due_date)
+        return snapshot_list
+
+    def update(self, task_list: List[Task]):
+        if task_list is not None:
+            snapshot_list = self.build_snapshot_list(task_list)
+            for snapshot in snapshot_list:
+                existing_snapshot = self.__db.get_object("unique_id", snapshot.unique_id)
+                if existing_snapshot is None:
+                    self.__db.append_object(snapshot)
+                else:
+                    self.__db.replace_object(snapshot, existing_snapshot.index)
+
+    def rebuild(self):
+        task_list = self.__tasks.get_task_list()
+        snapshot_list = self.build_snapshot_list(task_list)
+        self.__db.append_objects(snapshot_list)
+
+    def get_all(self, page: int = 0) -> List[Snapshot]:
+        self.__db.set_page_number(page)
+        return self.__db.get_object_list()
+
+    def get_by_due_date_range(self, min_date: str, max_date: str, page: int) -> List[Snapshot]:
+        assert type(min_date) is str
+        assert type(max_date) is str
+
+        min_date = self.__date_generator.get_due_date(min_date)
+        max_date = self.__date_generator.get_due_date(max_date)
+        if min_date is not None and max_date is not None:
+            self.__db.set_page_number(page)
+            snapshot_list = self.__db.get_filtered_objects("due_date_timestamp",
+                                                           min_date.to_timestamp(),
+                                                           max_date.to_timestamp())
+
+            return snapshot_list
         else:
-            return Snapshot(), list()
+            return []
 
-    def count_all_tasks(self):
-        self.__task_list = self.__tasks.get_task_list()
+    def get_by_due_date(self, due_date: str) -> List[Snapshot]:
+        due_date = self.__date_generator.get_due_date(due_date)
+        if due_date is not None:
+            snapshot = self.__db.get_object("due_date_timestamp", due_date.to_timestamp())
+            if snapshot is not None:
+                return [snapshot]
+            else:
+                return []
 
-    def count_tasks_by_due_date_range(self, min_date: str, max_date: str):
-        self.__task_list = self.__tasks.get_tasks_within_date_range(min_date, max_date)
-
-    def count_tasks_by_due_date(self, due_date: str):
-        self.__task_list = self.__tasks.get_tasks_by_date(due_date)
-
-    def count_tasks_by_project(self, project_name: str):
-        self.__task_list = self.__tasks.get_tasks_by_project(project_name)
-
-    def count_tasks_by_label(self, label: str):
-        self.__task_list = self.__tasks.get_tasks_by_label(label)
-
-    def count_tasks_by_name(self, name: str):
-        self.__task_list = self.__tasks.get_tasks_matching_name(name)
-
+    def clear(self):
+        self.__db.clear()
