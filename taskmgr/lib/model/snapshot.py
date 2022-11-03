@@ -100,6 +100,14 @@ class Snapshot(DatabaseObject):
                 "average_time": self.__average_time,
                 "total_time": self.__total_time}
 
+    def update(self, snapshot):
+        self.__task_count = snapshot.task_count
+        self.__complete_count = snapshot.complete_count
+        self.__incomplete_count = snapshot.incomplete_count
+        self.__delete_count = snapshot.delete_count
+        self.__average_time = snapshot.average_time
+        self.__total_time = snapshot.total_time
+
     def __iter__(self):
         yield 'index', self.index
         yield 'unique_id', self.unique_id

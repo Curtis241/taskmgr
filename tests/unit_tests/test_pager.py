@@ -14,7 +14,19 @@ class TestPager(unittest.TestCase):
         pager.assemble_pages()
         self.assertTrue(pager.page_count == 65)
 
-    def test_get_page(self):
+    def test_when_item_count_is_one_offset_should_start_at_zero(self):
+        pager = Pager(1, 11)
+        pager.assemble_pages()
+        page = pager.get_page(1)
+        self.assertEqual(page.offset, 0)
+
+    def test_when_item_count_is_zero_page_should_be_none(self):
+        pager = Pager(0, 10)
+        pager.assemble_pages()
+        page = pager.get_page(1)
+        self.assertIsNone(page)
+
+    def test_get_pages(self):
         pager = Pager(58, 10)
         pager.assemble_pages()
 

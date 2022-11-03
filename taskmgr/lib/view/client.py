@@ -40,7 +40,7 @@ class Client:
     def display_invalid_index_error(self, index: int): pass
 
     @abstractmethod
-    def display_due_date_error(self, message: str): pass
+    def display_attribute_error(self, param: str, message: str): pass
 
     def get_task(self, args: GetArg) -> List[Task]:
         task = self.tasks.get_task_by_index(args.index)
@@ -114,36 +114,30 @@ class Client:
 
     def count_all_tasks(self, page: int = 0) -> List[Snapshot]:
         snapshot_list = self.snapshots.get_all(page)
-        self.display_snapshots(snapshot_list)
-        return snapshot_list
+        return self.display_snapshots(snapshot_list)
 
     def count_tasks_by_due_date_range(self, args: DueDateRangeArgs) -> List[Snapshot]:
         snapshot_list = self.snapshots.get_by_due_date_range(args.min_date, args.max_date, args.page)
-        self.display_snapshots(snapshot_list)
-        return snapshot_list
+        return self.display_snapshots(snapshot_list)
 
     def count_tasks_by_due_date(self, args: DueDateArgs) -> List[Snapshot]:
         snapshot_list = self.snapshots.get_by_due_date(args.due_date)
-        self.display_snapshots(snapshot_list)
-        return snapshot_list
+        return self.display_snapshots(snapshot_list)
 
     def count_tasks_by_project(self, args: ProjectArgs) -> List[Snapshot]:
         task_list = self.tasks.get_tasks_by_project(args.project, args.page)
         snapshot_list = self.snapshots.build_snapshot_list(task_list)
-        self.display_snapshots(snapshot_list)
-        return snapshot_list
+        return self.display_snapshots(snapshot_list)
 
     def count_tasks_by_label(self, args: LabelArgs) -> List[Snapshot]:
         task_list = self.tasks.get_tasks_by_label(args.label, args.page)
         snapshot_list = self.snapshots.build_snapshot_list(task_list)
-        self.display_snapshots(snapshot_list)
-        return snapshot_list
+        return self.display_snapshots(snapshot_list)
 
     def count_tasks_by_name(self, args: NameArgs) -> List[Snapshot]:
         task_list = self.tasks.get_tasks_containing_name(args.name, args.page)
         snapshot_list = self.snapshots.build_snapshot_list(task_list)
-        self.display_snapshots(snapshot_list)
-        return snapshot_list
+        return self.display_snapshots(snapshot_list)
 
     def reschedule_tasks(self):
         task_list = self.tasks.reschedule()
@@ -188,11 +182,10 @@ class Client:
                                        args.project, args.due_date, args.time_spent)
                 task_list.append(task)
             except TaskKeyError:
-                self.display_invalid_index_error(index)
+                return self.display_invalid_index_error(index)
 
-        self.display_tasks(task_list)
         self.snapshots.update(task_list)
-        return task_list
+        return self.display_tasks(task_list)
 
     def edit(self, args: EditArgs) -> List[Task]:
         """
@@ -206,20 +199,21 @@ class Client:
                                    args.project, args.due_date, args.time_spent)
 
             task_list = [task]
-            self.display_tasks(task_list)
             self.snapshots.update(task_list)
-            return task_list
+            return self.display_tasks(task_list)
         except TaskKeyError:
-            self.display_invalid_index_error(args.index)
+            return self.display_invalid_index_error(args.index)
 
     def add(self, args: AddArgs) -> List[Task]:
         try:
-            task_list = self.tasks.add(args.name, args.label, args.project, args.due_date)
-            self.display_tasks(task_list)
-            self.snapshots.update(task_list)
-            return task_list
+            if not args.name:
+                return self.display_attribute_error("name", f"Empty name parameter")
+            else:
+                task_list = self.tasks.add(args.name, args.label, args.project, args.due_date)
+                self.snapshots.update(task_list)
+                return self.display_tasks(task_list)
         except DueDateError as ex:
-            self.display_due_date_error(str(ex))
+            return self.display_attribute_error("due_date", str(ex))
 
     def delete(self, args: DeleteArgs) -> List[Task]:
         task_list = list()
@@ -228,11 +222,10 @@ class Client:
             if task is not None:
                 task_list.append(self.tasks.delete(task))
             else:
-                self.display_invalid_index_error(index)
+                return self.display_invalid_index_error(index)
 
-        self.display_tasks(task_list)
         self.snapshots.update(task_list)
-        return task_list
+        return self.display_tasks(task_list)
 
     def complete(self, args: CompleteArgs) -> List[Task]:
         task_list = list()
@@ -243,11 +236,10 @@ class Client:
                     task.time_spent = args.time_spent
                 task_list.append(self.tasks.complete(task))
             else:
-                self.display_invalid_index_error(index)
+                return self.display_invalid_index_error(index)
 
-        self.display_tasks(task_list)
         self.snapshots.update(task_list)
-        return task_list
+        return self.display_tasks(task_list)
 
     def undelete(self, args: UndeleteArgs) -> List[Task]:
         task_list = list()
@@ -256,11 +248,10 @@ class Client:
             if task is not None:
                 task_list.append(self.tasks.undelete(task))
             else:
-                self.display_invalid_index_error(index)
+                return self.display_invalid_index_error(index)
 
-        self.display_tasks(task_list)
         self.snapshots.update(task_list)
-        return task_list
+        return self.display_tasks(task_list)
 
     def reset(self, args: ResetArgs) -> List[Task]:
         task_list = list()
@@ -269,11 +260,10 @@ class Client:
             if task is not None:
                 task_list.append(self.tasks.reset(task))
             else:
-                self.display_invalid_index_error(index)
+                return self.display_invalid_index_error(index)
 
-        self.display_tasks(task_list)
         self.snapshots.update(task_list)
-        return task_list
+        return self.display_tasks(task_list)
 
     def list_all_tasks(self, args: ListArgs) -> List[Task]:
         if args.all:

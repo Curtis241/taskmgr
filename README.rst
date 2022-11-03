@@ -3,25 +3,9 @@ taskmgr
 =======
 
 
-.. image:: https://img.shields.io/pypi/v/taskmgr.svg
-        :target: https://pypi.python.org/pypi/taskmgr
-
-.. image:: https://img.shields.io/travis/Curtis241/taskmgr.svg
-        :target: https://travis-ci.org/Curtis241/taskmgr
-
-.. image:: https://readthedocs.org/projects/taskmgr/badge/?version=latest
-        :target: https://taskmgr.readthedocs.io/en/latest/?badge=latest
-        :alt: Documentation Status
-
-
-
-
 Task Manager
 
-
 * Free software: MIT license
-* Documentation: https://taskmgr.readthedocs.io.
-
 
 Features
 --------
@@ -38,6 +22,7 @@ taskmgr is a simple python command-line tool for storing tasks in a redis databa
         every day, every weekday, every [su,m,tu,w,th,f,sa]
     * Short date 
         jan-dec 1-31 (ie. jan 21)
+
 * Attractive table structure provided by the BeautifulTable library https://pypi.org/project/beautifultable/
 * The list task feature displays all tasks that have not been deleted and exports to csv file.
 * The group command orders tasks by project and label. The results can be exported to a csv file.
@@ -45,9 +30,9 @@ taskmgr is a simple python command-line tool for storing tasks in a redis databa
 * The count command summarizes and displays the number of tasks in each project by date, date_range, label, project, and status. When the all command is used both the deleted and un-deleted tasks are included.
 * The import command will now load tasks from a csv file
 * Added support for a redis database with the redisearch plugin installed. The database type can be configured using the default command.
+* Added rest api using FastApi library
 
-
-**The commands available in version 0.2.3.**
+**The commands available in version 0.2.5.**
 
 
 ::

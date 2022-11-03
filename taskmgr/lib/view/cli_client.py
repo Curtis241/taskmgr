@@ -28,13 +28,34 @@ class CliClient(Client):
         self.variables_table = VariableConsoleTable()
 
     def display_tasks(self, task_list):
-        return self.__print_tasks_table(task_list)
+        assert type(task_list) is list
+
+        self.task_table.clear()
+        for task in task_list:
+            self.task_table.add_row(task)
+
+        return self.task_table.print()
 
     def display_snapshots(self, snapshot_list: list):
-        self.__print_snapshot_list_table(snapshot_list)
+        assert type(snapshot_list) is list
 
-    def display_due_date_error(self, message: str):
-        self.logger.info(message)
+        if snapshot_list:
+            if snapshot_list[-1].is_summary:
+                self.snapshot_summary_table.clear()
+                self.snapshot_summary_table.add_row(snapshot_list.pop())
+                self.snapshot_summary_table.print()
+
+            self.snapshot_list_table.clear()
+            for snapshot in snapshot_list:
+                self.snapshot_list_table.add_row(snapshot)
+            self.snapshot_list_table.print()
+        else:
+            self.logger.info("No rows to display")
+
+        return snapshot_list
+
+    def display_attribute_error(self, param: str, message: str):
+        self.logger.info(f"Invalid value. {message}")
 
     def display_invalid_index_error(self, index: int):
         self.logger.info(f"Provided index {index} is invalid")
@@ -57,28 +78,6 @@ class CliClient(Client):
         for key, value in self.get_variables_list():
             self.variables_table.add_row([key, value])
         self.variables_table.print()
-
-    def __print_tasks_table(self, task_list):
-        self.task_table.clear()
-        for task in task_list:
-            self.task_table.add_row(task)
-        return self.task_table.print()
-
-    def __print_snapshot_list_table(self, snapshot_list: list):
-        assert type(snapshot_list) is list
-
-        if snapshot_list:
-            if snapshot_list[-1].is_summary:
-                self.snapshot_summary_table.clear()
-                self.snapshot_summary_table.add_row(snapshot_list.pop())
-                self.snapshot_summary_table.print()
-
-            self.snapshot_list_table.clear()
-            for snapshot in snapshot_list:
-                self.snapshot_list_table.add_row(snapshot)
-            self.snapshot_list_table.print()
-        else:
-            self.logger.info("No rows to display")
 
     def export_tasks(self, task_list):
         self.__file_manager.save_tasks(task_list)

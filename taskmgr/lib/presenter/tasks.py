@@ -102,12 +102,12 @@ class Tasks:
         else:
             return self.__db.get_filtered_objects("completed", "False")
 
-    def get_tasks_by_project(self, project: str, page: int) -> List[Task]:
+    def get_tasks_by_project(self, project: str, page: int = 0) -> List[Task]:
         assert type(project) is str
         self.__db.set_page_number(page)
         return self.__db.get_filtered_objects("project", project)
 
-    def get_tasks_by_label(self, label: str, page: int=0) -> List[Task]:
+    def get_tasks_by_label(self, label: str, page: int = 0) -> List[Task]:
         assert type(label) is str
         self.__db.set_page_number(page)
         return self.__db.get_filtered_objects("label", label)

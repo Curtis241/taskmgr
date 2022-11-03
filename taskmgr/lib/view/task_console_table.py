@@ -9,7 +9,7 @@ from taskmgr.lib.view.console_table import ConsoleTable
 class TaskConsoleTable(ConsoleTable):
 
     def __init__(self):
-        super().__init__(["#", "Done", "Text", "Project", "Label", "Time Spent (hr)", "Due Date"])
+        super().__init__(["#", "Done", "Name", "Project", "Label", "Time Spent (hr)", "Due Date"])
         self.__task_list = list()
 
     def add_row(self, obj):

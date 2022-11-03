@@ -1,6 +1,8 @@
+from redis import Redis
+
 from taskmgr.lib.database.snapshots_db import SnapshotsDatabase
-from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.database.tasks_db import TasksDatabase
+from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.presenter.snapshots import Snapshots
 from taskmgr.lib.presenter.tasks import Tasks
 from taskmgr.lib.variables import CommonVariables
@@ -13,13 +15,11 @@ class DatabaseManager:
         if common_vars is None:
             common_vars = CommonVariables()
 
-        self.__tasks_db = TasksDatabase(common_vars)
-        self.__snapshots_db = SnapshotsDatabase(common_vars)
+        host = common_vars.redis_host
+        port = common_vars.redis_port
+        self.__connection = Redis(host=host, port=port, db=0)
 
-        self.__tasks = Tasks(self.setup_db(self.__tasks_db))
-        self.__snapshots = Snapshots(self.__tasks, self.setup_db(self.__snapshots_db))
-
-    def setup_db(self, redis_db):
+    def initialize(self, redis_db):
         if redis_db.exists():
             self.logger.debug("Connecting to redis")
             redis_db.create_index()
@@ -29,14 +29,19 @@ class DatabaseManager:
             self.logger.info("Failed to connect to redis. Check redis host and port")
 
     def get_tasks_model(self):
-        return self.__tasks
+        tasks_db = self.get_tasks_db()
+        return Tasks(tasks_db)
 
     def get_snapshots_model(self):
-        return self.__snapshots
+        tasks = self.get_tasks_model()
+        snapshot_db = self.get_snapshots_db()
+        return Snapshots(tasks, snapshot_db)
 
     def get_tasks_db(self):
-        return self.__tasks_db
+        tasks_db = TasksDatabase(self.__connection)
+        return self.initialize(tasks_db)
 
     def get_snapshots_db(self):
-        return self.__snapshots_db
+        snapshots_db = SnapshotsDatabase(self.__connection)
+        return self.initialize(snapshots_db)
 

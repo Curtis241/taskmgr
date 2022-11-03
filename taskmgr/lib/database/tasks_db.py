@@ -1,14 +1,14 @@
 from typing import List, Optional
 
-from redis import ResponseError
+from redis import ResponseError, Redis
 from redisearch import IndexDefinition, TextField, NumericField, reducers
 from redisearch.aggregation import AggregateRequest
+from redisearch.client import Client
 from redisearch.query import Query
 
 from taskmgr.lib.database.generic_db import GenericDatabase, QueryParams
 from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.model.task import Task
-from taskmgr.lib.variables import CommonVariables
 
 
 class TasksDatabase(GenericDatabase):
@@ -18,9 +18,11 @@ class TasksDatabase(GenericDatabase):
     """
     logger = AppLogger("task_database").get_logger()
 
-    def __init__(self, common_vars: CommonVariables):
-        super().__init__("tasks_inc_key")
-        self.__db, self.__client = self._build(common_vars, "task:idx")
+    def __init__(self, db: Redis):
+        super().__init__()
+        # self.__inc_key_name = "tasks_inc_key"
+        self.__db = db
+        self.__client = Client("tasks:idx", conn=db)
         self.__page_number = 0
 
     def set_page_number(self, page: int):

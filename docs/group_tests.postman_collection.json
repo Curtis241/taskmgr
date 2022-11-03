@@ -1,0 +1,520 @@
+{
+	"info": {
+		"_postman_id": "7aab36af-8893-4dc2-9099-bba2648ba895",
+		"name": "group_tests",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "deleteAllTasks",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"text\": \"task999\", \n    \"project\": \"project1\", \n    \"label\": \"label1\", \n    \"date_expression\": \"today\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/tasks",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"tasks"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "addTask1",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"task1\", \n    \"project\": \"project1\", \n    \"label\": \"label1\", \n    \"due_date\": \"yesterday\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/tasks",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"tasks"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "addTask2",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"task2\", \n    \"project\": \"project2\", \n    \"label\": \"label2\", \n    \"due_date\": \"yesterday\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/tasks",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"tasks"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "addTask3",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"task3\", \n    \"project\": \"project3\", \n    \"label\": \"label3\", \n    \"due_date\": \"yesterday\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/tasks",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"tasks"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "addTask4",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"task4\", \n    \"project\": \"project1\", \n    \"label\": \"label1\", \n    \"due_date\": \"today\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/tasks",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"tasks"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "addTask5",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"task5\", \n    \"project\": \"project2\", \n    \"label\": \"label2\", \n    \"due_date\": \"today\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/tasks",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"tasks"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "addTask6",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"task6\", \n    \"project\": \"project3\", \n    \"label\": \"label3\", \n    \"due_date\": \"today\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/tasks",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"tasks"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "groupByLabel",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Verify that task4 has label1\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.tasks[0].label).to.eql(\"label1\");",
+							"});",
+							"",
+							"pm.test(\"Verify that task1 has label1\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.tasks[1].label).to.eql(\"label1\");",
+							"});",
+							"",
+							"pm.test(\"Verify that task5 has label2\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.tasks[2].label).to.eql(\"label2\");",
+							"});",
+							"",
+							"pm.test(\"Verify that task2 has label2\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.tasks[3].label).to.eql(\"label2\");",
+							"});",
+							"",
+							"pm.test(\"Verify that task6 has label3\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.tasks[4].label).to.eql(\"label3\");",
+							"});",
+							"",
+							"pm.test(\"Verify that task3 has label3\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.tasks[5].label).to.eql(\"label3\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8000/group/label",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"group",
+						"label"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "groupByProject",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Verify that task4 has project1\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.tasks[0].project).to.eql(\"project1\");",
+							"});",
+							"",
+							"pm.test(\"Verify that task1 has project1\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.tasks[1].project).to.eql(\"project1\");",
+							"});",
+							"",
+							"pm.test(\"Verify that task5 has project2\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.tasks[2].label).to.eql(\"project2\");",
+							"});",
+							"",
+							"pm.test(\"Verify that task2 has project2\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.tasks[3].label).to.eql(\"project2\");",
+							"});",
+							"",
+							"pm.test(\"Verify that task6 has project3\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.tasks[4].label).to.eql(\"project3\");",
+							"});",
+							"",
+							"pm.test(\"Verify that task3 has project3\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.tasks[5].label).to.eql(\"project3\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8000/group/project",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"group",
+						"project"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "groupByDueDate",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Verify that task1 has 2022-10-26\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.tasks[0].due_date).to.eql(\"2022-10-26\");",
+							"});",
+							"",
+							"pm.test(\"Verify that task2 has 2022-10-26\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.tasks[1].due_date).to.eql(\"2022-10-26\");",
+							"});",
+							"",
+							"pm.test(\"Verify that task3 has 2022-10-26\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.tasks[2].due_date).to.eql(\"2022-10-26\");",
+							"});",
+							"",
+							"pm.test(\"Verify that task4 has 2022-10-27\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.tasks[3].due_date).to.eql(\"2022-10-27\");",
+							"});",
+							"",
+							"pm.test(\"Verify that task5 has 2022-10-27\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.tasks[4].due_date).to.eql(\"2022-10-27\");",
+							"});",
+							"",
+							"pm.test(\"Verify that task6 has 2022-10-27\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.tasks[5].due_date).to.eql(\"2022-10-27\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8000/group/due_date",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"group",
+						"due_date"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "deleteAllTasks",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"text\": \"task999\", \n    \"project\": \"project1\", \n    \"label\": \"label1\", \n    \"date_expression\": \"today\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/tasks",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"tasks"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

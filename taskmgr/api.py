@@ -1,7 +1,10 @@
+import asyncio
+
 import uvicorn
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import JSONResponse
 
-from taskmgr.lib.database.manager import DatabaseManager
+from taskmgr.lib.database.db_manager import DatabaseManager
 from taskmgr.lib.view.api_client import ApiClient
 from taskmgr.lib.view.client_args import *
 
@@ -9,19 +12,28 @@ api_client = ApiClient(DatabaseManager())
 app = FastAPI()
 
 
+def handle_response(json):
+    if "error" in json:
+        return JSONResponse(status_code=422, content=json)
+    else:
+        return JSONResponse(status_code=200, content=json)
+
+
 @app.get("/tasks")
-async def get_all_tasks():
-    return api_client.list_all_tasks()
+async def get_all_tasks(args: ListArgs):
+    return api_client.list_all_tasks(args)
 
 
 @app.post("/tasks")
 async def add_task(args: AddArgs):
-    return api_client.add(args)
+    json = api_client.add(args)
+    return handle_response(json)
 
 
 @app.delete("/tasks")
 async def delete_tasks():
-    return api_client.remove_all_tasks()
+    api_client.remove_all_tasks()
+    return api_client.count_all_tasks()
 
 
 @app.put("/tasks")
@@ -29,12 +41,12 @@ async def edit_task(args: EditArgs):
     return api_client.edit(args)
 
 
-@app.get("/tasks/task/{task_index}")
+@app.get("/task/{task_index}")
 async def get_task(task_index: int):
     return api_client.get_task(GetArg(index=task_index))
 
 
-@app.delete("/tasks/task/{action}/{task_index}")
+@app.delete("/task/{action}/{task_index}")
 async def delete_task(action: str, task_index: int):
 
     if action == "undelete":
@@ -47,15 +59,16 @@ async def delete_task(action: str, task_index: int):
         raise HTTPException(status_code=418, detail="action: [undelete, delete]")
 
 
-@app.put("/tasks/task/{action}/{task_index}")
-async def update_task_status(action: str, task_index: int, time_spent: float = 0):
+@app.put("/task/complete/{task_index}")
+async def complete_task(task_index: int, time_spent: float = 0.0):
+    args = CompleteArgs(indexes=(task_index,), time_spent=time_spent)
+    return api_client.complete(args)
 
-    if action == "complete":
-        return api_client.complete(CompleteArgs(indexes=(task_index,), time_spent=time_spent))
-    elif action == "incomplete":
-        return api_client.reset(ResetArgs(indexes=(task_index,)))
-    else:
-        raise HTTPException(status_code=418, detail="action: [complete, incomplete]")
+
+@app.put("/task/incomplete/{task_index}")
+async def incomplete_task(task_index: int):
+    args = ResetArgs(indexes=(task_index,))
+    return api_client.reset(args)
 
 
 @app.put("/unique/{unique_type}")
@@ -112,7 +125,7 @@ async def filter_tasks_by_due_date_range(args: DueDateRangeArgs):
     return api_client.filter_tasks_by_due_date_range(args)
 
 
-@app.get("/count_all")
+@app.put("/count_all")
 async def count_all_tasks(page: int = 1):
     return api_client.count_all_tasks(page)
 
@@ -142,12 +155,8 @@ async def count_tasks_by_name(args: NameArgs):
     return api_client.count_tasks_by_name(args)
 
 
-@app.put("/reschedule/")
+@app.put("/reschedule")
 async def reschedule():
     api_client.reschedule_tasks()
-
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
 
 

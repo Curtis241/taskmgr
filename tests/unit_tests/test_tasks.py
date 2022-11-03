@@ -149,6 +149,16 @@ class TestTasks(unittest.TestCase):
         rescheduled_task = task_list[0]
         self.assertEqual(rescheduled_task.name, "CurrentTask")
 
+    def test_get_task_containing_name(self):
+        # special characters - : need to be escaped using \.
+        # https://redis.io/docs/stack/search/reference/escaping/
+        self.tasks.add("ABC\-1343\: Task1", "project", "work", "may 2")
+        self.tasks.add("ABC\-1344\: Task2", "project", "work", "may 3")
+        self.tasks.add("ABC\-1344\: Task3", "project", "work", "may 4")
+        self.tasks.add("ABC\-1422\: Task4", "project", "work", "may 5")
+        task_list = self.tasks.get_tasks_containing_name("ABC\-1344\:")
+        self.assertEqual(len(task_list), 2)
+
 
 if __name__ == "__main__":
     unittest.main()

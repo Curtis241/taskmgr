@@ -33,7 +33,6 @@ setup(
     entry_points='''
         [console_scripts]
         taskmgr=taskmgr.cli:cli
-        taskmgrapi=taskmgr.api
     ''',
     packages=['taskmgr', 'taskmgr.lib'],
     install_requires=requirements,
@@ -46,6 +45,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/Curtis241/taskmgr',
-    version='0.2.4',
+    version='0.2.5',
     zip_safe=False,
 )

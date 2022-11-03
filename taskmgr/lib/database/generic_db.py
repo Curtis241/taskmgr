@@ -1,17 +1,17 @@
 import uuid
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import List, Optional, TypeVar, Tuple
+from typing import List, Optional, TypeVar
 
 from redis import Redis, ResponseError
 from redisearch.client import Client
 from redisearch.query import Query
 
+from taskmgr.lib.database.pager import Pager
 from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.model.snapshot import Snapshot
 from taskmgr.lib.model.task import Task
 from taskmgr.lib.variables import CommonVariables
-from taskmgr.lib.database.pager import Pager
 
 T = TypeVar("T", Snapshot, Task)
 
@@ -35,8 +35,7 @@ class GenericDatabase(ABC):
     """Generic base class to support redis databases."""
     logger = AppLogger("generic_database").get_logger()
 
-    def __init__(self, increment_key: str):
-        self.__increment_key_name = increment_key
+    def __init__(self):
         self.__page_number = 0
 
     @abstractmethod
@@ -55,9 +54,9 @@ class GenericDatabase(ABC):
     def set_page_number(self, page: int): pass
 
     def calc_limits(self, item_count: int, page_number: int) -> tuple:
-        row_count = CommonVariables().max_rows
-        pager = Pager(item_count, row_count).assemble_pages()
         if page_number > 0:
+            row_count = CommonVariables().max_rows
+            pager = Pager(item_count, row_count).assemble_pages()
             page = pager.get_page(page_number)
             if page is not None:
                 self.logger.info(f"Displaying {row_count} items on page {page_number} of {pager.page_count}")
@@ -75,7 +74,7 @@ class GenericDatabase(ABC):
 
         if self._exists(db):
             with db.pipeline() as pipe:
-                if index != 0:
+                if index != 0 and obj.index != index:
                     obj.index = index
                 obj.last_updated = self.get_last_updated()
 
@@ -97,7 +96,7 @@ class GenericDatabase(ABC):
     def _append_object(self, db: Redis, obj: T) -> T:
         if self._exists(db):
             with db.pipeline() as pipe:
-                obj.index = db.incrby(self.__increment_key_name)
+                obj.index = self.get_key_count() + 1
                 obj.unique_id = self.get_unique_id()
                 obj.last_updated = self.get_last_updated()
 
@@ -150,7 +149,7 @@ class GenericDatabase(ABC):
         if self._exists(db):
             with db.pipeline() as pipe:
                 for obj in obj_list:
-                    obj.index = db.incrby(self.__increment_key_name)
+                    obj.index = self.get_key_count() + 1
                     obj.unique_id = self.get_unique_id()
                     obj.last_updated = self.get_last_updated()
 
@@ -175,7 +174,7 @@ class GenericDatabase(ABC):
         if self._exists(db):
             for key in db.keys(pattern):
                 db.delete(key)
-            db.set(self.__increment_key_name, 0)
+            # db.set(inc_key_name, 0)
 
     @abstractmethod
     def exists(self) -> bool:
@@ -188,14 +187,6 @@ class GenericDatabase(ABC):
     @staticmethod
     def get_key(obj: T):
         return f"{obj.object_name}:{obj.index}"
-
-    @staticmethod
-    def _build(common_vars: CommonVariables, index_name: str) -> Tuple[Redis, Client]:
-        host = common_vars.redis_host
-        port = common_vars.redis_port
-        db = Redis(host=host, port=port, db=0)
-        client = Client(index_name, conn=db)
-        return db, client
 
     @staticmethod
     def get_last_updated() -> str:

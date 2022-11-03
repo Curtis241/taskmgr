@@ -61,11 +61,12 @@ class Snapshots:
         if task_list is not None:
             snapshot_list = self.build_snapshot_list(task_list)
             for snapshot in snapshot_list:
-                existing_snapshot = self.__db.get_object("unique_id", snapshot.unique_id)
+                existing_snapshot = self.__db.get_object("due_date_timestamp", snapshot.due_date_timestamp)
                 if existing_snapshot is None:
                     self.__db.append_object(snapshot)
                 else:
-                    self.__db.replace_object(snapshot, existing_snapshot.index)
+                    existing_snapshot.update(snapshot)
+                    self.__db.replace_object(existing_snapshot)
 
     def rebuild(self):
         task_list = self.__tasks.get_task_list()
@@ -76,7 +77,7 @@ class Snapshots:
         self.__db.set_page_number(page)
         return self.__db.get_object_list()
 
-    def get_by_due_date_range(self, min_date: str, max_date: str, page: int) -> List[Snapshot]:
+    def get_by_due_date_range(self, min_date: str, max_date: str, page: int = 0) -> List[Snapshot]:
         assert type(min_date) is str
         assert type(max_date) is str
 

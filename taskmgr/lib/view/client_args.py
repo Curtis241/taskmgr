@@ -30,7 +30,7 @@ class GroupEditArgs(BaseModel):
 class ListArgs(BaseModel):
     all: bool
     export: bool = False
-    page: int = 0
+    page: int
 
 
 class DeleteArgs(BaseModel):
@@ -61,25 +61,25 @@ class IncompleteArgs(BaseModel):
 class StatusArgs(BaseModel):
     status: str
     export: bool = False
-    page: int = 1
+    page: int
 
 
 class ProjectArgs(BaseModel):
     project: str
     export: bool = False
-    page: int = 0
+    page: int
 
 
 class LabelArgs(BaseModel):
     label: str
     export: bool = False
-    page: int = 1
+    page: int
 
 
 class NameArgs(BaseModel):
     name: str
     export: bool = False
-    page: int = 1
+    page: int
 
 
 class DueDateRangeArgs(BaseModel):

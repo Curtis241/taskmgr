@@ -1,22 +1,23 @@
 from typing import List, Optional
 
-from redis import ResponseError
+from redis import ResponseError, Redis
 from redisearch import IndexDefinition, TextField, NumericField
+from redisearch.client import Client
 from redisearch.query import Query
 
 from taskmgr.lib.database.generic_db import GenericDatabase, QueryParams
 from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.model.snapshot import Snapshot
-from taskmgr.lib.variables import CommonVariables
 
 
 class SnapshotsDatabase(GenericDatabase):
 
     logger = AppLogger("snapshot_database").get_logger()
 
-    def __init__(self, common_vars: CommonVariables):
-        super().__init__("snapshots_inc_key")
-        self.__db, self.__client = self._build(common_vars, "snapshot:idx")
+    def __init__(self, db: Redis):
+        super().__init__()
+        self.__db = db
+        self.__client = Client("snapshot:idx", conn=db)
         self.__page_number = 0
 
     def exists(self) -> bool:

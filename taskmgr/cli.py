@@ -2,8 +2,8 @@ import sys
 
 import click
 
-from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.database.db_manager import DatabaseManager
+from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.presenter.file_manager import FileManager
 from taskmgr.lib.presenter.task_sync import CsvFileImporter
 from taskmgr.lib.variables import CommonVariables

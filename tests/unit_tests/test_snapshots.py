@@ -20,16 +20,20 @@ class TestSnapshots(unittest.TestCase):
         self.tasks.add("task1", "label1", "project1", "today")
         t1 = self.tasks.get_task_by_name("task1")
         self.tasks.complete(t1)
+        self.snapshots.update([t1])
 
         self.tasks.add("task2", "label1", "project1", "today")
         t2 = self.tasks.get_task_by_name("task2")
         self.tasks.delete(t2)
+        self.snapshots.update([t2])
 
-        self.tasks.add("task3", "label1", "project1", "today")
-        self.tasks.add("task4", "label1", "project1", "today")
+        t3_list = self.tasks.add("task3", "label1", "project1", "today")
+        self.snapshots.update(t3_list)
+        t4_list = self.tasks.add("task4", "label1", "project1", "today")
+        self.snapshots.update(t4_list)
 
         snapshot_list = self.snapshots.get_all()
-        self.assertEqual(snapshot_list.count(), 1)
+        self.assertEqual(len(snapshot_list), 1)
         summary = snapshot_list[0]
 
         self.assertIsNotNone(summary)
@@ -39,22 +43,18 @@ class TestSnapshots(unittest.TestCase):
         self.assertTrue(summary.complete_count == 1)
 
     def test_count_by_due_date_range(self):
-        self.tasks.add("task1", "label1", "project1", "2021-07-14")
-        self.tasks.add("task2", "label1", "project1", "2021-09-01")
-        self.tasks.add("task3", "label1", "project1", "2021-09-01")
-        self.tasks.add("task4", "label1", "project1", "2021-11-01")
+        t1_list = self.tasks.add("task1", "label1", "project1", "2021-07-14")
+        self.snapshots.update(t1_list)
+        t2_list = self.tasks.add("task2", "label1", "project1", "2021-09-01")
+        self.snapshots.update(t2_list)
+        t3_list = self.tasks.add("task3", "label1", "project1", "2021-09-01")
+        self.snapshots.update(t3_list)
+        t4_list = self.tasks.add("task4", "label1", "project1", "2021-11-01")
+        self.snapshots.update(t4_list)
 
-        snapshot_list = self.snapshots.count_tasks_by_due_date_range("2021-07-13", "2021-11-02")
-        self.assertEqual(snapshot_list.count(), 3)
+        snapshot_list = self.snapshots.get_by_due_date_range("2021-07-13", "2021-11-02")
+        self.assertEqual(len(snapshot_list), 3)
 
-    def test_count_project(self):
-        self.tasks.add("task1", "label1", "project1", "today")
-        self.tasks.add("task2", "label1", "project2", "today")
-        self.tasks.add("task3", "label1", "project2", "today")
-        self.tasks.add("task4", "label1", "project2", "today")
-
-        snapshot_list = self.snapshots.count_tasks_by_project("project2")
-        self.assertEqual(snapshot_list.count(), 1)
 
 
 

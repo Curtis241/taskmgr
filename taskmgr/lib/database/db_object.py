@@ -39,8 +39,7 @@ class DatabaseObject(ABC):
 
     @index.setter
     def index(self, index):
-        if self.__index == 0:
-            self.__index = int(index)
+        self.__index = int(index)
 
     @property
     def last_updated(self):

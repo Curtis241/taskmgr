@@ -14,17 +14,22 @@ class Pager:
         self.row_limit = row_limit
         self.item_count = item_count
         self.page_count = 1
+        self.offset = 1
         self.__page_list = list()
 
     def assemble_pages(self):
-        offset = 1
+        # resets offset
+        if self.item_count <= self.row_limit:
+            self.offset = 0
 
+        # adjusts for the last page
         if self.item_count >= self.row_limit:
             self.page_count = int(round(self.item_count / self.row_limit))
 
-        for page_number in range(1, self.page_count+1):
-            self.__page_list.append(Page(page_number, offset, self.row_limit))
-            offset += self.row_limit
+        if self.item_count > 0:
+            for page_number in range(1, self.page_count+1):
+                self.__page_list.append(Page(page_number, self.offset, self.row_limit))
+                self.offset += self.row_limit
 
         return self
 

@@ -1,0 +1,1109 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "FastAPI",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/tasks": {
+      "get": {
+        "summary": "Get All Tasks",
+        "operationId": "get_all_tasks_tasks_get",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ListArgs"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Edit Task",
+        "operationId": "edit_task_tasks_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditArgs"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Add Task",
+        "operationId": "add_task_tasks_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddArgs"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Tasks",
+        "operationId": "delete_tasks_tasks_delete",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/task/{task_index}": {
+      "get": {
+        "summary": "Get Task",
+        "operationId": "get_task_task__task_index__get",
+        "parameters": [
+          {
+            "required": true,
+            "schema": {
+              "title": "Task Index",
+              "type": "integer"
+            },
+            "name": "task_index",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/task/{action}/{task_index}": {
+      "delete": {
+        "summary": "Delete Task",
+        "operationId": "delete_task_task__action___task_index__delete",
+        "parameters": [
+          {
+            "required": true,
+            "schema": {
+              "title": "Action",
+              "type": "string"
+            },
+            "name": "action",
+            "in": "path"
+          },
+          {
+            "required": true,
+            "schema": {
+              "title": "Task Index",
+              "type": "integer"
+            },
+            "name": "task_index",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/task/complete": {
+      "put": {
+        "summary": "Complete Task",
+        "operationId": "complete_task_task_complete_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteArgs"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/task/incomplete": {
+      "put": {
+        "summary": "Incomplete Task",
+        "operationId": "incomplete_task_task_incomplete_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetArgs"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/unique/{unique_type}": {
+      "put": {
+        "summary": "Get Unique Object",
+        "operationId": "get_unique_object_unique__unique_type__put",
+        "parameters": [
+          {
+            "required": true,
+            "schema": {
+              "title": "Unique Type",
+              "type": "string"
+            },
+            "name": "unique_type",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/group/{group_type}": {
+      "put": {
+        "summary": "Group By Object",
+        "operationId": "group_by_object_group__group_type__put",
+        "parameters": [
+          {
+            "required": true,
+            "schema": {
+              "title": "Group Type",
+              "type": "string"
+            },
+            "name": "group_type",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/filter/project": {
+      "put": {
+        "summary": "Filter Tasks By Project",
+        "operationId": "filter_tasks_by_project_filter_project_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectArgs"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/filter/label": {
+      "put": {
+        "summary": "Filter Tasks By Label",
+        "operationId": "filter_tasks_by_label_filter_label_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LabelArgs"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/filter/name": {
+      "put": {
+        "summary": "Filter Tasks By Name",
+        "operationId": "filter_tasks_by_name_filter_name_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NameArgs"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/filter/due_date": {
+      "put": {
+        "summary": "Filter Tasks By Due Date",
+        "operationId": "filter_tasks_by_due_date_filter_due_date_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DueDateArgs"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/filter/status": {
+      "put": {
+        "summary": "Filter Tasks By Status",
+        "operationId": "filter_tasks_by_status_filter_status_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatusArgs"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/filter/due_date_range": {
+      "put": {
+        "summary": "Filter Tasks By Due Date Range",
+        "operationId": "filter_tasks_by_due_date_range_filter_due_date_range_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DueDateRangeArgs"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/count_all": {
+      "put": {
+        "summary": "Count All Tasks",
+        "operationId": "count_all_tasks_count_all_put",
+        "parameters": [
+          {
+            "required": false,
+            "schema": {
+              "title": "Page",
+              "type": "integer",
+              "default": 1
+            },
+            "name": "page",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/count/due_date": {
+      "put": {
+        "summary": "Count Tasks By Due Date",
+        "operationId": "count_tasks_by_due_date_count_due_date_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DueDateArgs"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/count/project": {
+      "put": {
+        "summary": "Count Tasks By Project",
+        "operationId": "count_tasks_by_project_count_project_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectArgs"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/count/due_date_range": {
+      "put": {
+        "summary": "Count Tasks By Due Date Range",
+        "operationId": "count_tasks_by_due_date_range_count_due_date_range_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DueDateRangeArgs"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/count/label": {
+      "put": {
+        "summary": "Count Tasks By Label",
+        "operationId": "count_tasks_by_label_count_label_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LabelArgs"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/count/name": {
+      "put": {
+        "summary": "Count Tasks By Name",
+        "operationId": "count_tasks_by_name_count_name_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NameArgs"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reschedule/": {
+      "put": {
+        "summary": "Reschedule",
+        "operationId": "reschedule_reschedule__put",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AddArgs": {
+        "title": "AddArgs",
+        "required": [
+          "name",
+          "label",
+          "project",
+          "due_date"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "project": {
+            "title": "Project",
+            "type": "string"
+          },
+          "due_date": {
+            "title": "Due Date",
+            "type": "string"
+          }
+        }
+      },
+      "CompleteArgs": {
+        "title": "CompleteArgs",
+        "required": [
+          "indexes",
+          "time_spent"
+        ],
+        "type": "object",
+        "properties": {
+          "indexes": {
+            "title": "Indexes",
+            "type": "array",
+            "items": {}
+          },
+          "time_spent": {
+            "title": "Time Spent",
+            "type": "number"
+          }
+        }
+      },
+      "DueDateArgs": {
+        "title": "DueDateArgs",
+        "required": [
+          "due_date"
+        ],
+        "type": "object",
+        "properties": {
+          "due_date": {
+            "title": "Due Date",
+            "type": "string"
+          },
+          "export": {
+            "title": "Export",
+            "type": "boolean",
+            "default": false
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer",
+            "default": 1
+          }
+        }
+      },
+      "DueDateRangeArgs": {
+        "title": "DueDateRangeArgs",
+        "required": [
+          "min_date",
+          "max_date"
+        ],
+        "type": "object",
+        "properties": {
+          "min_date": {
+            "title": "Min Date",
+            "type": "string"
+          },
+          "max_date": {
+            "title": "Max Date",
+            "type": "string"
+          },
+          "export": {
+            "title": "Export",
+            "type": "boolean",
+            "default": false
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer",
+            "default": 0
+          }
+        }
+      },
+      "EditArgs": {
+        "title": "EditArgs",
+        "required": [
+          "index"
+        ],
+        "type": "object",
+        "properties": {
+          "index": {
+            "title": "Index",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "project": {
+            "title": "Project",
+            "type": "string"
+          },
+          "due_date": {
+            "title": "Due Date",
+            "type": "string"
+          },
+          "time_spent": {
+            "title": "Time Spent",
+            "type": "number"
+          }
+        }
+      },
+      "HTTPValidationError": {
+        "title": "HTTPValidationError",
+        "type": "object",
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            }
+          }
+        }
+      },
+      "LabelArgs": {
+        "title": "LabelArgs",
+        "required": [
+          "label",
+          "page"
+        ],
+        "type": "object",
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "export": {
+            "title": "Export",
+            "type": "boolean",
+            "default": false
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          }
+        }
+      },
+      "ListArgs": {
+        "title": "ListArgs",
+        "required": [
+          "all",
+          "page"
+        ],
+        "type": "object",
+        "properties": {
+          "all": {
+            "title": "All",
+            "type": "boolean"
+          },
+          "export": {
+            "title": "Export",
+            "type": "boolean",
+            "default": false
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          }
+        }
+      },
+      "NameArgs": {
+        "title": "NameArgs",
+        "required": [
+          "name",
+          "page"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "export": {
+            "title": "Export",
+            "type": "boolean",
+            "default": false
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          }
+        }
+      },
+      "ProjectArgs": {
+        "title": "ProjectArgs",
+        "required": [
+          "project",
+          "page"
+        ],
+        "type": "object",
+        "properties": {
+          "project": {
+            "title": "Project",
+            "type": "string"
+          },
+          "export": {
+            "title": "Export",
+            "type": "boolean",
+            "default": false
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          }
+        }
+      },
+      "ResetArgs": {
+        "title": "ResetArgs",
+        "required": [
+          "indexes"
+        ],
+        "type": "object",
+        "properties": {
+          "indexes": {
+            "title": "Indexes",
+            "type": "array",
+            "items": {}
+          }
+        }
+      },
+      "StatusArgs": {
+        "title": "StatusArgs",
+        "required": [
+          "status",
+          "page"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "export": {
+            "title": "Export",
+            "type": "boolean",
+            "default": false
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          }
+        }
+      },
+      "ValidationError": {
+        "title": "ValidationError",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "loc": {
+            "title": "Location",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
