@@ -1,6 +1,3 @@
-import asyncio
-
-import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 

@@ -32,6 +32,17 @@ taskmgr is a simple python command-line tool for storing tasks in a redis databa
 * Added support for a redis database with the redisearch plugin installed. The database type can be configured using the default command.
 * Added rest api using FastApi library
 
+**Rest Api Instructions**
+pip install uvicorn[standard]
+uvicorn taskmgr:app
+
+**RediSearch Install**
+git clone https://github.com/RediSearch/RediSearch.git
+cd RediSearch
+make build
+cp RediSearch/bin/linux-x64-release/search/redisearch.so /etc/redis/modules/
+
+
 **The commands available in version 0.2.5.**
 
 
