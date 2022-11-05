@@ -52,7 +52,6 @@ class Snapshots:
             for index, due_date in enumerate(due_date_list, start=1):
                 task_list = self.__tasks.get_tasks_by_date(due_date)
                 snapshot = self.build_snapshot(task_list)
-                snapshot.index = index
                 snapshot_list.append(snapshot)
 
         return snapshot_list

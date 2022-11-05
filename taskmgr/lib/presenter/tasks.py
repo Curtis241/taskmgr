@@ -1,4 +1,5 @@
-from typing import List, Optional
+from copy import deepcopy
+from typing import List, Optional, Tuple
 
 from taskmgr.lib.database.tasks_db import TasksDatabase
 from taskmgr.lib.logger import AppLogger
@@ -199,37 +200,39 @@ class Tasks:
              label: str = None,
              project: str = None,
              date_expression: str = None,
-             time_spent: int = None) -> Optional[Task]:
+             time_spent: int = None) -> Optional[Tuple[Task, Task]]:
 
-        task = self.get_task_by_index(index)
-        if task is not None:
-            task.name = name
-            task.project = project
-            task.label = label
-            task.time_spent = time_spent
+        original_task = self.get_task_by_index(index)
+        if original_task is not None:
+            new_task = deepcopy(original_task)
+            new_task.name = name
+            new_task.project = project
+            new_task.label = label
+            new_task.time_spent = time_spent
 
             if date_expression is not None:
                 if self.__date_generator.validate_input(date_expression):
                     due_date = self.__date_generator.get_due_date(date_expression)
-                    task.due_date = due_date.date_string
-                    task.due_date_timestamp = due_date.to_timestamp()
+                    new_task.due_date = due_date.date_string
+                    new_task.due_date_timestamp = due_date.to_timestamp()
                 else:
                     self.logger.info(f"Provided due date {date_expression} is invalid")
 
-            return self.__db.replace_object(task)
+            return original_task, self.__db.replace_object(new_task)
         else:
             raise TaskKeyError()
 
     def reschedule(self) -> List[Task]:
+        """
+        Updates the date in tasks that are incomplete to today's date
+        """
         today = Today()
         task_list = list()
-        for task in self.get_task_list():
-            if self.__calendar.is_past(DueDate(task.due_date), today) and \
-                    task.completed is False and task.deleted is False:
+        for task in self.__db.get_filtered_objects("completed", "False"):
+            if self.__calendar.is_past(DueDate(task.due_date), today) and task.deleted is False:
                 task.due_date = today.to_date_string()
                 task.due_date_timestamp = today.to_timestamp()
                 task_list.append(task)
-                self.__db.replace_object(task)
 
         return task_list
 

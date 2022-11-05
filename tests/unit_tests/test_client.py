@@ -181,3 +181,24 @@ class TestClient(unittest.TestCase):
         self.client.add(AddArgs(name="task1", label="current", project="work", due_date="today"))
         snapshot_list = self.client.count_tasks_by_project(ProjectArgs(project="work2", page=0))
         self.assertTrue(len(snapshot_list) == 0)
+
+    def test_reschedule(self):
+        self.client.add(AddArgs(name="task1", label="current", project="work", due_date="yesterday"))
+        self.client.add(AddArgs(name="task2", label="current", project="work", due_date="yesterday"))
+        task2 = self.client.tasks.get_task_by_name("task2")
+        args = CompleteArgs(indexes=(task2.index,), time_spent=0)
+        self.client.complete(args)
+        self.client.add(AddArgs(name="task3", label="current", project="work", due_date="yesterday"))
+        self.client.reschedule_tasks()
+
+        snapshot_list = self.client.count_tasks_by_due_date(DueDateArgs(due_date="yesterday"))
+        self.assertTrue(len(snapshot_list) == 1)
+        snapshot = snapshot_list[0]
+        self.assertTrue(snapshot.task_count == 1)
+
+        snapshot_list = self.client.count_tasks_by_due_date(DueDateArgs(due_date="today"))
+        self.assertTrue(len(snapshot_list) == 1)
+        snapshot = snapshot_list[0]
+        self.assertTrue(snapshot.task_count == 2)
+
+

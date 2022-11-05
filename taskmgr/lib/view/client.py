@@ -31,16 +31,20 @@ class Client:
         self.__variables = CommonVariables()
 
     @abstractmethod
-    def display_tasks(self, task_list: list): pass
+    def display_tasks(self, task_list: list):
+        pass
 
     @abstractmethod
-    def display_snapshots(self, snapshot_list: list): pass
+    def display_snapshots(self, snapshot_list: list):
+        pass
 
     @abstractmethod
-    def display_invalid_index_error(self, index: int): pass
+    def display_invalid_index_error(self, index: int):
+        pass
 
     @abstractmethod
-    def display_attribute_error(self, param: str, message: str): pass
+    def display_attribute_error(self, param: str, message: str):
+        pass
 
     def get_task(self, args: GetArg) -> List[Task]:
         task = self.tasks.get_task_by_index(args.index)
@@ -140,8 +144,9 @@ class Client:
         return self.display_snapshots(snapshot_list)
 
     def reschedule_tasks(self):
-        task_list = self.tasks.reschedule()
-        self.snapshots.rebuild(task_list)
+        for task in self.tasks.reschedule():
+            original_task, new_task = self.tasks.edit(index=task.index, date_expression=task.due_date)
+            self.snapshots.update([original_task, new_task])
 
     def remove_all_tasks(self):
         self.tasks.clear()
@@ -195,12 +200,11 @@ class Client:
         :return: List of Task
         """
         try:
-            task = self.tasks.edit(args.index, args.name, args.label,
-                                   args.project, args.due_date, args.time_spent)
+            original_task, new_task = self.tasks.edit(args.index, args.name, args.label,
+                                                      args.project, args.due_date, args.time_spent)
 
-            task_list = [task]
-            self.snapshots.update(task_list)
-            return self.display_tasks(task_list)
+            self.snapshots.update([original_task, new_task])
+            return self.display_tasks([new_task])
         except TaskKeyError:
             return self.display_invalid_index_error(args.index)
 
