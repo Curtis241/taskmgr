@@ -22,20 +22,20 @@ def cli():
 
 @cli.command("add", help="Appends a task")
 @click.argument('name')
-@click.option('--label', '-l', help="label for task", default=variables.default_label, type=str, metavar='<label>')
-@click.option('--project', '-p', help="project for task", default=variables.default_project_name, type=str, metavar='<project>')
-@click.option('--due_date', '-d', help="due date for task", default="today", type=str, metavar='<due_date>')
+@click.option('--label', '-l', default=variables.default_label, type=str, metavar='<label>')
+@click.option('--project', '-p', default=variables.default_project_name, type=str, metavar='<project>')
+@click.option('--due_date', '-d', default="today", type=str, metavar='<due_date>')
 def add_task(**kwargs):
     cli_client.add(AddArgs.parse_obj(kwargs))
 
 
 @cli.command("edit", help="Replaces the task")
 @click.argument('index', type=int)
-@click.option('--name', '-n', help="title", type=str, default=None, metavar='<name>')
-@click.option('--label', '-l', help="label name", type=str, default=None, metavar='<label>')
-@click.option('--project', '-p', help="project name", type=str, default=None, metavar='<project>')
-@click.option('--time_spent', '-t', help="time spent", type=float, default=None, metavar='<time_spent>')
-@click.option('--due_date', '-d', help="due date for task", type=str, default=None, metavar='<due_date>')
+@click.option('--name', '-n', type=str, default=None, metavar='<name>')
+@click.option('--label', '-l', type=str, default=None, metavar='<label>')
+@click.option('--project', '-p', type=str, default=None, metavar='<project>')
+@click.option('--time_spent', '-t', type=float, default=None, metavar='<time_spent>')
+@click.option('--due_date', '-d', type=str, default=None, metavar='<due_date>')
 def edit_task(**kwargs):
     cli_client.edit(EditArgs.parse_obj(kwargs))
 
@@ -43,7 +43,7 @@ def edit_task(**kwargs):
 @cli.command("list", help="Lists all tasks")
 @click.option('--export', is_flag=True, help="Outputs to csv file")
 @click.option('--page', type=int, default=0)
-@click.option('--all', is_flag=True, help="Shows deleted tasks")
+@click.option('--all', is_flag=True)
 def list_tasks(**kwargs):
     args = ListArgs.parse_obj(kwargs)
     task_list = cli_client.list_all_tasks(args)
@@ -83,10 +83,10 @@ def task_group(): pass
 
 @task_group.command("edit")
 @click.argument('indexes', nargs=-1, required=True, type=int)
-@click.option('--label', '-l', help="label name", type=str, default=None, metavar='<label>')
-@click.option('--project', '-p', help="project name", type=str, default=None, metavar='<project>')
-@click.option('--time_spent', '-t', help="time spent", type=float, default=None, metavar='<time_spent>')
-@click.option('--due_date', '-d', help="due date for task", type=str, default=None, metavar='<due_date>')
+@click.option('--label', '-l', type=str, default=None, metavar='<label>')
+@click.option('--project', '-p', type=str, default=None, metavar='<project>')
+@click.option('--time_spent', '-t', type=float, default=None, metavar='<time_spent>')
+@click.option('--due_date', '-d', type=str, default=None, metavar='<due_date>')
 def group_edit(**kwargs):
     cli_client.group_edit(GroupEditArgs.parse_obj(kwargs))
 
@@ -164,8 +164,8 @@ def filter_tasks_by_label(**kwargs):
 
 
 @task_filter.command("date_range")
-@click.option('--min_date', required=True, help='Minimum date', type=str)
-@click.option('--max_date', required=True, help='Maximum date', type=str)
+@click.option('--min_date', required=True, type=str)
+@click.option('--max_date', required=True, type=str)
 @click.option('--page', type=int, default=0)
 @click.option('--export', is_flag=True, help="Outputs to csv file")
 def filter_tasks_by_date_range(**kwargs):
@@ -259,7 +259,7 @@ def reschedule():
 
 @cli.command("complete", help="Marks the task as done")
 @click.argument('indexes', nargs=-1, required=True, type=int)
-@click.option('--time_spent', '-t', help="time spent", type=float, default=0, metavar='<time_spent>')
+@click.option('--time_spent', '-t', type=float, default=0, metavar='<time_spent>')
 def complete_task(**kwargs):
     cli_client.complete(CompleteArgs.parse_obj(kwargs))
 
@@ -282,8 +282,6 @@ def import_tasks(**kwargs):
 @click.option('--default_label', help="Sets the default label", type=str, default=None)
 @click.option('--default_name_field_length', help="Sets the default name field length", type=str, default=None)
 @click.option('--recurring_month_limit', help="Sets the recurring month limit", type=int, default=None)
-@click.option('--enable_redis', help="Enables connection to the local redis database",
-              type=click.Choice(['True', 'False']))
 @click.option('--redis_port', help="Port for redis database", type=int, default=None)
 @click.option('--redis_host', help="IPv4 address for redis database", type=str, default=None)
 @click.option('--max_rows', help="Max number of rows to display on page", type=int, default=None)

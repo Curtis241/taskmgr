@@ -37,6 +37,7 @@ pip install uvicorn[standard]
 uvicorn taskmgr:app
 
 **RediSearch Install**
+sudo apt install redis
 git clone https://github.com/RediSearch/RediSearch.git
 cd RediSearch
 make build
