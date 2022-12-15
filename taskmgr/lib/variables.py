@@ -1,6 +1,6 @@
 import os
 import re
-from configparser import RawConfigParser, NoSectionError
+from configparser import RawConfigParser, NoSectionError, NoOptionError
 from pathlib import Path
 
 
@@ -17,23 +17,23 @@ class CommonVariables:
             self.ini_file = ini_file_name
 
         self.cfg = RawConfigParser()
+        self.cfg['DEFAULT'] = {'recurring_month_limit': 2,
+                               'default_name_field_length': 50,
+                               'date_format': '%Y-%m-%d',
+                               'date_time_format': '%Y-%m-%d %H:%M:%S',
+                               'time_format': '%H:%M:%S',
+                               'rfc3339_date_time_format': '%Y-%m-%dT%H:%M:%S.%fZ',
+                               'file_name_timestamp': '%Y%m%d_%H%M%S',
+                               'default_project_name': '',
+                               'default_label': '',
+                               'default_name': '',
+                               'redis_host': 'localhost',
+                               'redis_port': 6379,
+                               'max_rows': 10}
         self.create_file()
 
     def create_file(self):
         if not Path(self.__get_file_path()).exists():
-            self.cfg['DEFAULT'] = {'recurring_month_limit': 2,
-                                   'default_name_field_length': 50,
-                                   'date_format': '%Y-%m-%d',
-                                   'date_time_format': '%Y-%m-%d %H:%M:%S',
-                                   'time_format': '%H:%M:%S',
-                                   'rfc3339_date_time_format': '%Y-%m-%dT%H:%M:%S.%fZ',
-                                   'file_name_timestamp': '%Y%m%d_%H%M%S',
-                                   'default_project_name': '',
-                                   'default_label': '',
-                                   'default_name': '',
-                                   'redis_host': 'localhost',
-                                   'redis_port': 6379,
-                                   'max_rows': 10}
             os.makedirs(self.resources_dir, exist_ok=True)
             self.__save()
 
@@ -49,14 +49,18 @@ class CommonVariables:
         self.__read_file()
         try:
             return self.cfg.get(section, key)
-        except NoSectionError:
+        except NoSectionError or NoOptionError:
+            self.__delete()
+            self.create_file()
             return self.cfg.get(self.default_section, key)
 
     def __getint(self, key, section):
         self.__read_file()
         try:
             return self.cfg.getint(section, key)
-        except NoSectionError:
+        except NoSectionError or NoOptionError:
+            self.__delete()
+            self.create_file()
             return self.cfg.getint(self.default_section, key)
 
     def __set(self, key, value, section):
@@ -70,6 +74,12 @@ class CommonVariables:
         path = self.__get_file_path()
         with open(path, 'w') as configfile:
             self.cfg.write(configfile)
+
+    def __delete(self):
+        try:
+            os.remove(self.__get_file_path())
+        except FileExistsError:
+            pass
 
     def reset(self):
         self.cfg.clear()

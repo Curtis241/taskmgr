@@ -1,19 +1,54 @@
 import uuid
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import List, Optional, TypeVar
+from typing import List, Optional, TypeVar, Tuple
 
 from redis import Redis, ResponseError
 from redisearch.client import Client
 from redisearch.query import Query
 
-from taskmgr.lib.database.pager import Pager
+from taskmgr.lib.database.pager import Pager, Page
 from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.model.snapshot import Snapshot
 from taskmgr.lib.model.task import Task
 from taskmgr.lib.variables import CommonVariables
 
 T = TypeVar("T", Snapshot, Task)
+
+
+class QueryResult:
+    def __init__(self, obj_list: list = None, page: Page = None):
+
+        if obj_list is not None:
+            self.__object_list = obj_list
+            self.item_count = len(self.__object_list)
+        else:
+            self.__object_list = []
+            self.item_count = 0
+
+        if page is not None:
+            self.__page = page
+        else:
+            page = Page()
+            page.pager_disabled = True
+            self.__page = page
+
+    def get_page(self):
+        return self.__page
+
+    def append(self, obj):
+        self.__object_list.append(obj)
+        self.item_count = len(self.__object_list)
+
+    def extend(self, obj_list: list):
+        self.__object_list.extend(obj_list)
+        self.item_count = len(self.__object_list)
+
+    def to_list(self):
+        return self.__object_list
+
+    def has_data(self) -> bool:
+        return self.item_count > 0
 
 
 class QueryParams:
@@ -35,8 +70,7 @@ class GenericDatabase(ABC):
     """Generic base class to support redis databases."""
     logger = AppLogger("generic_database").get_logger()
 
-    def __init__(self):
-        self.__page_number = 0
+    def __init__(self): pass
 
     @abstractmethod
     def deserialize(self, documents):
@@ -53,18 +87,15 @@ class GenericDatabase(ABC):
     @abstractmethod
     def set_page_number(self, page: int): pass
 
-    def calc_limits(self, item_count: int, page_number: int) -> tuple:
-        if page_number > 0:
-            row_count = CommonVariables().max_rows
-            pager = Pager(item_count, row_count).assemble_pages()
-            page = pager.get_page(page_number)
-            if page is not None:
-                self.logger.info(f"Displaying {row_count} items on page {page_number} of {pager.page_count}")
-                return page.offset, page.row_limit
-            else:
-                raise IndexError
-        else:
-            return 0, self.get_key_count()
+    @staticmethod
+    def calc_limits(item_count: int, page_number: int) -> Page:
+        row_count = CommonVariables().max_rows
+        pager = Pager(item_count, row_count)
+        page = pager.get_page(page_number)
+        if page is None:
+            raise IndexError
+
+        return page
 
     @abstractmethod
     def replace_object(self, obj: T, index: int = 0) -> T:
@@ -130,14 +161,14 @@ class GenericDatabase(ABC):
             return None
 
     @abstractmethod
-    def get_object_list(self) -> List:
+    def get_all(self) -> QueryResult:
         pass
 
-    def _get_object_list(self, db: Redis, client: Client, query: Query) -> List[T]:
+    def _get_object_list(self, db: Redis, client: Client, query: Query) -> Tuple[int, List[T]]:
         if self._exists(db):
             try:
-                documents = client.search(query).docs
-                return self.deserialize(documents)
+                result = client.search(query)
+                return int(result.total), self.deserialize(result.docs)
             except ResponseError as ex:
                 self.logger.error(ex)
 
@@ -163,7 +194,7 @@ class GenericDatabase(ABC):
             return obj_list
 
     @abstractmethod
-    def get_filtered_objects(self, key: str, value1, value2=None) -> List[T]:
+    def get_selected(self, key: str, value1, value2=None) -> QueryResult:
         pass
 
     @abstractmethod

@@ -1,9 +1,8 @@
 import unittest
 from datetime import datetime
 
-from pydantic.error_wrappers import ValidationError
-
 from taskmgr.lib.database.db_manager import DatabaseManager
+from taskmgr.lib.database.generic_db import QueryResult
 from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.model.calendar import Today
 from taskmgr.lib.model.day import Day
@@ -14,16 +13,21 @@ from taskmgr.lib.view.client_args import *
 
 
 class UnitTestClient(Client):
+
     logger = AppLogger("unit_test_client").get_logger()
 
     def __init__(self, db_manager):
         super().__init__(db_manager)
 
-    def display_tasks(self, task_list: list):
-        return task_list
+    def display_attribute_error(self, param: str, message: str):
+        pass
 
-    def display_snapshots(self, snapshot_list: list):
-        return snapshot_list
+    def display_tasks(self, result: QueryResult):
+        return result.to_list()
+
+    def display_snapshots(self, result: QueryResult):
+        return result.to_list()
+
 
     def display_due_date_error(self, message: str):
         self.logger.info(message)
@@ -157,6 +161,13 @@ class TestClient(unittest.TestCase):
         snapshot = snapshot_list[0]
         self.assertTrue(snapshot.task_count == 1)
 
+    def test_count_with_date_expression(self):
+        self.client.add(AddArgs(name="task1", label="label1", project="project1", due_date="today"))
+        snapshot_list = self.client.count_tasks_by_due_date(DueDateArgs(due_date="this week"))
+        self.assertTrue(len(snapshot_list) == 1)
+        snapshot = snapshot_list[0]
+        self.assertTrue(snapshot.task_count == 1)
+
     def test_count_by_due_date_range(self):
         june4_date_string = self.june4.to_date_string()
         june9_date_string = self.june9.to_date_string()
@@ -200,5 +211,21 @@ class TestClient(unittest.TestCase):
         self.assertTrue(len(snapshot_list) == 1)
         snapshot = snapshot_list[0]
         self.assertTrue(snapshot.task_count == 2)
+
+    def test_group_edit(self):
+        self.client.add(AddArgs(name="task1", label="current", project="work", due_date="yesterday"))
+        t1 = self.client.tasks.get_task_by_name("task1")
+        self.client.add(AddArgs(name="task2", label="current", project="work", due_date="yesterday"))
+        t2 = self.client.tasks.get_task_by_name("task2")
+        args = GroupEditArgs(indexes=(t1.index, t2.index,), label="l1")
+
+        task_list = self.client.group_edit(args)
+        self.assertEqual(len(task_list), 2)
+        self.assertEqual(task_list[0].label, "l1")
+        self.assertEqual(task_list[1].label, "l1")
+
+
+
+
 
 

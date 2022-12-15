@@ -1,11 +1,11 @@
 from datetime import datetime
 
+from taskmgr.lib.database.generic_db import QueryResult
 from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.presenter.file_manager import FileManager
 from taskmgr.lib.presenter.task_sync import CsvFileImporter
 from taskmgr.lib.view.client import Client
 from taskmgr.lib.view.snapshot_list_console_table import SnapshotListConsoleTable
-from taskmgr.lib.view.snapshot_summary_console_table import SnapshotSummaryConsoleTable
 from taskmgr.lib.view.task_console_table import TaskConsoleTable
 from taskmgr.lib.view.variable_console_table import VariableConsoleTable
 
@@ -24,35 +24,43 @@ class CliClient(Client):
 
         self.task_table = TaskConsoleTable()
         self.snapshot_list_table = SnapshotListConsoleTable()
-        self.snapshot_summary_table = SnapshotSummaryConsoleTable()
         self.variables_table = VariableConsoleTable()
 
-    def display_tasks(self, task_list):
-        assert type(task_list) is list
+    @staticmethod
+    def print_message(result: QueryResult):
+        page = result.get_page()
+        if page.pager_disabled:
+            CliClient.logger.info(f"Displaying {result.item_count} row(s)")
+        else:
+            CliClient.logger.info(f"Displaying {result.item_count} row(s) on page {page.page_number} of {page.page_count}")
 
-        self.task_table.clear()
-        for task in task_list:
-            self.task_table.add_row(task)
+    def display_tasks(self, result: QueryResult):
+        assert isinstance(result, QueryResult)
 
-        return self.task_table.print()
+        if result.has_data():
+            self.print_message(result)
 
-    def display_snapshots(self, snapshot_list: list):
-        assert type(snapshot_list) is list
+            self.task_table.clear()
+            for task in result.to_list():
+                self.task_table.add_row(task)
 
-        if snapshot_list:
-            if snapshot_list[-1].is_summary:
-                self.snapshot_summary_table.clear()
-                self.snapshot_summary_table.add_row(snapshot_list.pop())
-                self.snapshot_summary_table.print()
-
-            self.snapshot_list_table.clear()
-            for snapshot in snapshot_list:
-                self.snapshot_list_table.add_row(snapshot)
-            self.snapshot_list_table.print()
+            return self.task_table.print()
         else:
             self.logger.info("No rows to display")
 
-        return snapshot_list
+    def display_snapshots(self, result: QueryResult):
+        assert isinstance(result, QueryResult)
+
+        if result.has_data():
+            self.print_message(result)
+
+            self.snapshot_list_table.clear()
+            for snapshot in result.to_list():
+                self.snapshot_list_table.add_row(snapshot)
+
+            return self.snapshot_list_table.print()
+        else:
+            self.logger.info("No rows to display")
 
     def display_attribute_error(self, param: str, message: str):
         self.logger.info(f"Invalid value. {message}")

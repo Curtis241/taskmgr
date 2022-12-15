@@ -1,6 +1,7 @@
 from copy import deepcopy
 from typing import List, Optional, Tuple
 
+from taskmgr.lib.database.generic_db import QueryResult
 from taskmgr.lib.database.tasks_db import TasksDatabase
 from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.model.calendar import Calendar, Today
@@ -58,14 +59,14 @@ class Tasks:
 
         return task_list
 
-    def get_task_list(self, page: int = 0) -> List[Task]:
+    def get_all(self, page: int = 0) -> QueryResult:
         self.__db.set_page_number(page)
-        return self.__db.get_object_list()
+        return self.__db.get_all()
 
-    def get_tasks_containing_name(self, value: str, page: int = 0) -> List[Task]:
+    def get_tasks_containing_name(self, value: str, page: int = 0) -> QueryResult:
         assert type(value) is str
         self.__db.set_page_number(page)
-        return self.__db.get_filtered_objects("name", str(value).lower())
+        return self.__db.get_selected("name", str(value).lower())
 
     def get_task_by_index(self, index: int) -> Task:
         assert type(index) is int
@@ -79,39 +80,44 @@ class Tasks:
         assert type(task_name) is str
         return self.__db.get_object("name", task_name)
 
-    def get_tasks_by_date(self, date_expression: str) -> List[Task]:
+    def get_tasks_by_date(self, date_expression: str) -> QueryResult:
         assert type(date_expression) is str
-        task_list = list()
+        result = QueryResult()
         for due_date in self.__date_generator.get_due_dates(date_expression):
-            task_list.extend(self.__db.get_filtered_objects("due_date_timestamp", due_date.to_timestamp()))
-        return task_list
+            selection = self.__db.get_selected("due_date_timestamp", due_date.to_timestamp())
+            result.extend(selection.to_list())
+        return result
 
-    def get_tasks_within_date_range(self, min_date_expression: str, max_date_expression: str, page: int) -> List[Task]:
+    def get_tasks_within_date_range(self, min_date_expression: str, max_date_expression: str, page: int) -> QueryResult:
         assert type(min_date_expression) is str
         assert type(max_date_expression) is str
 
         min_date = self.__date_generator.get_due_date(min_date_expression)
         max_date = self.__date_generator.get_due_date(max_date_expression)
         self.__db.set_page_number(page)
-        return self.__db.get_filtered_objects("due_date_timestamp", min_date.to_timestamp(), max_date.to_timestamp())
+        return self.__db.get_selected("due_date_timestamp", min_date.to_timestamp(), max_date.to_timestamp())
 
-    def get_tasks_by_status(self, is_completed: bool, page: int) -> List[Task]:
+    def get_tasks_by_status(self, is_completed: bool, page: int) -> QueryResult:
         assert type(is_completed) is bool
         self.__db.set_page_number(page)
         if is_completed:
-            return self.__db.get_filtered_objects("completed", "True")
+            return self.__db.get_selected("completed", "True")
         else:
-            return self.__db.get_filtered_objects("completed", "False")
+            return self.__db.get_selected("completed", "False")
 
-    def get_tasks_by_project(self, project: str, page: int = 0) -> List[Task]:
+    def get_tasks_by_project(self, project: str, page: int = 0) -> QueryResult:
         assert type(project) is str
         self.__db.set_page_number(page)
-        return self.__db.get_filtered_objects("project", project)
+        return self.__db.get_selected("project", project)
 
-    def get_tasks_by_label(self, label: str, page: int = 0) -> List[Task]:
+    def get_tasks_by_label(self, label: str, page: int = 0) -> QueryResult:
         assert type(label) is str
         self.__db.set_page_number(page)
-        return self.__db.get_filtered_objects("label", label)
+        return self.__db.get_selected("label", label)
+
+    def get_undeleted_tasks(self, page: int = 0) -> QueryResult:
+        self.__db.set_page_number(page)
+        return self.__db.get_selected("deleted", "False")
 
     def delete(self, task: Task, save: bool = True) -> Optional[Task]:
         """
@@ -228,7 +234,7 @@ class Tasks:
         """
         today = Today()
         task_list = list()
-        for task in self.__db.get_filtered_objects("completed", "False"):
+        for task in self.__db.get_selected("completed", "False").to_list():
             if self.__calendar.is_past(DueDate(task.due_date), today) and task.deleted is False:
                 task.due_date = today.to_date_string()
                 task.due_date_timestamp = today.to_timestamp()

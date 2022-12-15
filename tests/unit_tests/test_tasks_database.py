@@ -38,8 +38,8 @@ class TestTasksDatabase(unittest.TestCase):
     def test_insert_should_create_object(self):
         self.db.append_object(self.t1)
         self.db.replace_object(self.t1)
-        obj_list = self.db.get_object_list()
-        self.assertEqual(len(obj_list), 1)
+        result = self.db.get_all()
+        self.assertEqual(result.item_count, 1)
 
     def test_get_task(self):
         self.db.append_object(self.t1)
@@ -106,9 +106,10 @@ class TestTasksDatabase(unittest.TestCase):
 
     def test_object_serialization(self):
         self.db.append_object(self.t1)
-        task_list = self.db.get_object_list()
-        self.assertTrue(len(task_list) == 1)
+        result = self.db.get_all()
+        self.assertTrue(result.item_count == 1)
 
+        task_list = result.to_list()
         task = task_list[0]
         self.assertEqual(self.t1.name, task.name)
         self.assertEqual(self.t1.label, task.label)

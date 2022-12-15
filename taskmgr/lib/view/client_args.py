@@ -67,19 +67,19 @@ class StatusArgs(BaseModel):
 class ProjectArgs(BaseModel):
     project: str
     export: bool = False
-    page: int
+    page: int = 0
 
 
 class LabelArgs(BaseModel):
     label: str
     export: bool = False
-    page: int
+    page: int = 0
 
 
 class NameArgs(BaseModel):
     name: str
     export: bool = False
-    page: int
+    page: int = 0
 
 
 class DueDateRangeArgs(BaseModel):

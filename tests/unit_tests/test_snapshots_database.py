@@ -51,17 +51,18 @@ class TestSnapshotsDatabase(unittest.TestCase):
     def test_insert_should_create_object(self):
         self.db.append_object(self.s1)
         self.db.replace_object(self.s1)
-        obj_list = self.db.get_object_list()
-        self.assertEqual(len(obj_list), 1)
+        result = self.db.get_all()
+        self.assertEqual(result.item_count, 1)
 
     def test_get_snapshot(self):
         self.db.append_object(self.s1)
-        snapshot_list = self.db.get_filtered_objects("due_date_timestamp",
-                                                     self.s1.due_date_timestamp,
-                                                     self.s1.due_date_timestamp)
-        self.assertTrue(len(snapshot_list) == 1)
-        snapshot = snapshot_list[0]
-        self.assertEqual(snapshot.due_date, "2022-08-21")
+        result = self.db.get_selected("due_date_timestamp",
+                                      self.s1.due_date_timestamp,
+                                      self.s1.due_date_timestamp)
+        self.assertEqual(result.item_count, 1)
+        task_list = result.to_list()
+        task = task_list[0]
+        self.assertEqual(task.due_date, "2022-08-21")
 
     def test_get_snapshots_by_index(self):
         self.db.append_objects([self.s1, self.s2, self.s3])
@@ -75,9 +76,10 @@ class TestSnapshotsDatabase(unittest.TestCase):
 
     def test_object_serialization(self):
         self.db.append_object(self.s1)
-        snapshot_list = self.db.get_object_list()
-        self.assertTrue(len(snapshot_list) == 1)
+        result = self.db.get_all()
+        self.assertEqual(result.item_count, 1)
 
+        snapshot_list = result.to_list()
         snapshot = snapshot_list[0]
         self.assertEqual(self.s1.index, snapshot.index)
         self.assertEqual(self.s1.due_date, snapshot.due_date)

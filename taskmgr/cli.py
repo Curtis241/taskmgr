@@ -229,7 +229,6 @@ def count_tasks_by_date_range(**kwargs):
 
 
 @task_count.command("project")
-@click.option('--page', type=int, default=1)
 @click.argument('project', type=str, required=True, metavar="<project>")
 def count_tasks_by_project(**kwargs):
     args = ProjectArgs.parse_obj(kwargs)
@@ -238,7 +237,6 @@ def count_tasks_by_project(**kwargs):
 
 @task_count.command("label")
 @click.argument('label', type=str, required=True, metavar="<label>")
-@click.option('--page', type=int, default=1)
 def count_tasks_by_label(**kwargs):
     args = LabelArgs.parse_obj(kwargs)
     cli_client.count_tasks_by_label(args)
@@ -246,7 +244,6 @@ def count_tasks_by_label(**kwargs):
 
 @task_count.command("name")
 @click.argument('name', type=str, required=True, metavar="<name>")
-@click.option('--page', type=int, default=1)
 def count_tasks_by_name(**kwargs):
     args = NameArgs.parse_obj(kwargs)
     cli_client.count_tasks_by_name(args)

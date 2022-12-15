@@ -32,19 +32,20 @@ class TestTasks(unittest.TestCase):
         self.tasks.add("Task8", "call", "work", "may 9")
         self.tasks.add("Task9", "office", "work", "may 10")
         self.tasks.add("Task10", "default", "default", "may 12")
-        task_list = self.tasks.get_task_list()
+        result = self.tasks.get_all()
+        task_list = result.to_list()
         self.assertTrue(len(task_list) == 10)
 
     def test_edit_label_task(self):
         self.tasks.add("Task1", "waiting", "work", "may 2")
         original_task = self.tasks.get_task_by_name("Task1")
-        modified_task = self.tasks.edit(original_task.index, label="waiting2")
+        original_task, modified_task = self.tasks.edit(original_task.index, label="waiting2")
         self.assertEqual(modified_task.label, "waiting2")
 
     def test_edit_project_task(self):
         self.tasks.add("Task1", "waiting", "work", "may 2")
         original_task = self.tasks.get_task_by_name("Task1")
-        modified_task = self.tasks.edit(original_task.index, project="work2")
+        original_task, modified_task = self.tasks.edit(original_task.index, project="work2")
         self.assertEqual(modified_task.project, "work2")
 
     def test_deleted_task(self):
@@ -58,7 +59,8 @@ class TestTasks(unittest.TestCase):
     def test_complete_task(self):
         due_date_list = DateGenerator().get_due_dates("every sa")
         self.tasks.add("RepetitiveTask", "current", "home", "every sa")
-        task_list = self.tasks.get_tasks_containing_name("RepetitiveTask")
+        result = self.tasks.get_tasks_containing_name("RepetitiveTask")
+        task_list = result.to_list()
 
         self.assertTrue(len(due_date_list) == len(task_list))
 
@@ -80,7 +82,8 @@ class TestTasks(unittest.TestCase):
         self.tasks.add("Task1", "call", "work", "may 7")
         self.tasks.add("Task2", "call", "work", "may 9")
 
-        task_list = self.tasks.get_tasks_by_label("call")
+        result = self.tasks.get_tasks_by_label("call")
+        task_list = result.to_list()
         self.assertTrue(type(task_list), list)
         self.assertTrue(len(task_list) == 2)
         first_task = task_list[0]
@@ -96,7 +99,8 @@ class TestTasks(unittest.TestCase):
 
     def test_get_list_by_date_expression(self):
         self.tasks.add("FutureTask", "waiting", "work", "tomorrow")
-        task_list = self.tasks.get_tasks_by_date("tomorrow")
+        result = self.tasks.get_tasks_by_date("tomorrow")
+        task_list = result.to_list()
         self.assertTrue(len(task_list) == 1)
         task = task_list[0]
         self.assertTrue(task.name == "FutureTask")
@@ -144,7 +148,8 @@ class TestTasks(unittest.TestCase):
 
         self.tasks.reschedule()
 
-        task_list = self.tasks.get_tasks_by_date(Today().to_date_string())
+        result = self.tasks.get_tasks_by_date(Today().to_date_string())
+        task_list = result.to_list()
         self.assertTrue(len(task_list) == 1)
         rescheduled_task = task_list[0]
         self.assertEqual(rescheduled_task.name, "CurrentTask")
@@ -156,7 +161,8 @@ class TestTasks(unittest.TestCase):
         self.tasks.add("ABC\-1344\: Task2", "project", "work", "may 3")
         self.tasks.add("ABC\-1344\: Task3", "project", "work", "may 4")
         self.tasks.add("ABC\-1422\: Task4", "project", "work", "may 5")
-        task_list = self.tasks.get_tasks_containing_name("ABC\-1344\:")
+        result = self.tasks.get_tasks_containing_name("ABC\-1344\:")
+        task_list = result.to_list()
         self.assertEqual(len(task_list), 2)
 
 

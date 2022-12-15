@@ -32,9 +32,10 @@ class TestSnapshots(unittest.TestCase):
         t4_list = self.tasks.add("task4", "label1", "project1", "today")
         self.snapshots.update(t4_list)
 
-        snapshot_list = self.snapshots.get_all()
-        self.assertEqual(len(snapshot_list), 1)
-        summary = snapshot_list[0]
+        result = self.snapshots.get_all()
+        self.assertEqual(result.item_count, 1)
+        summary_list = result.to_list()
+        summary = summary_list[0]
 
         self.assertIsNotNone(summary)
         self.assertTrue(summary.task_count == 4)
@@ -52,8 +53,37 @@ class TestSnapshots(unittest.TestCase):
         t4_list = self.tasks.add("task4", "label1", "project1", "2021-11-01")
         self.snapshots.update(t4_list)
 
-        snapshot_list = self.snapshots.get_by_due_date_range("2021-07-13", "2021-11-02")
-        self.assertEqual(len(snapshot_list), 3)
+        result = self.snapshots.get_by_due_date_range("2021-07-13", "2021-11-02")
+        self.assertEqual(result.item_count, 3)
+
+    def test_summarize(self):
+        self.tasks.add("task1", "label1", "project1", "2021-07-12")
+        self.tasks.add("task2", "label1", "project1", "2021-07-13")
+        self.tasks.add("task3", "label1", "project1", "2021-07-14")
+        self.tasks.add("task4", "label1", "project1", "2021-07-15")
+        result = self.tasks.get_all()
+        snapshot_list = self.snapshots.summarize(result.to_list())
+
+        self.assertEqual(len(snapshot_list), 4)
+        self.assertEqual(snapshot_list[0].task_count, 1)
+        self.assertEqual(snapshot_list[0].due_date, "2021-07-12")
+        self.assertEqual(snapshot_list[1].task_count, 1)
+        self.assertEqual(snapshot_list[1].due_date, "2021-07-13")
+        self.assertEqual(snapshot_list[2].task_count, 1)
+        self.assertEqual(snapshot_list[2].due_date, "2021-07-14")
+        self.assertEqual(snapshot_list[3].task_count, 1)
+        self.assertEqual(snapshot_list[3].due_date, "2021-07-15")
+
+    def test_summarize_and_fill(self):
+        t1_list = self.tasks.add("task1", "label1", "project1", "2021-07-12")
+        self.tasks.add("task2", "label1", "project1", "2021-07-12")
+        self.tasks.add("task3", "label1", "project1", "2021-07-12")
+        self.tasks.add("task4", "label1", "project1", "2021-07-12")
+
+        snapshot_list = self.snapshots.summarize_and_fill(t1_list)
+        self.assertEqual(len(snapshot_list), 1)
+        self.assertEqual(snapshot_list[0].task_count, 4)
+        self.assertEqual(snapshot_list[0].due_date, "2021-07-12")
 
 
 

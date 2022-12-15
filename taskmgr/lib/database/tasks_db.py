@@ -6,7 +6,7 @@ from redisearch.aggregation import AggregateRequest
 from redisearch.client import Client
 from redisearch.query import Query
 
-from taskmgr.lib.database.generic_db import GenericDatabase, QueryParams
+from taskmgr.lib.database.generic_db import GenericDatabase, QueryParams, QueryResult
 from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.model.task import Task
 
@@ -40,18 +40,23 @@ class TasksDatabase(GenericDatabase):
     def append_objects(self, obj_list: List[Task]) -> List[Task]:
         return self._append_objects(self.__db, obj_list)
 
-    def get_filtered_objects(self, key: str, value1, value2=None) -> List[Task]:
+    def get_selected(self, key: str, value1, value2=None) -> QueryResult:
         query = QueryParams(key, value1, value2).build()
         if query is None:
-            return []
+            return QueryResult()
+
         try:
             key_count = self.get_key_count()
-            offset, max_limit = self.calc_limits(key_count, self.__page_number)
-            query.paging(offset, max_limit)
+            page = self.calc_limits(key_count, self.__page_number)
+            query.paging(page.offset, page.row_limit)
             query.sort_by("due_date_timestamp", asc=False)
-            return self._get_object_list(self.__db, self.__client, query)
+
+            total, object_list = self._get_object_list(self.__db, self.__client, query)
+            page = self.calc_limits(total, self.__page_number)
+
+            return QueryResult(obj_list=object_list, page=page)
         except IndexError:
-            return []
+            return QueryResult()
 
     def get_key_count(self) -> int:
         return len(self.__db.keys("Task:*"))
@@ -59,14 +64,16 @@ class TasksDatabase(GenericDatabase):
     def replace_object(self, obj: Task, index: int = 0) -> Task:
         return self._replace_object(self.__db, obj, index)
 
-    def get_object_list(self) -> List[Task]:
+    def get_all(self) -> QueryResult:
+
         try:
             key_count = self.get_key_count()
-            offset, max_limit = self.calc_limits(key_count, self.__page_number)
-            query = Query("*").paging(offset, max_limit).sort_by("due_date_timestamp", asc=False)
-            return self._get_object_list(self.__db, self.__client, query)
+            page = self.calc_limits(key_count, self.__page_number)
+            query = Query("*").paging(page.offset, page.row_limit).sort_by("due_date_timestamp", asc=False)
+            _, object_list = self._get_object_list(self.__db, self.__client, query)
+            return QueryResult(obj_list=object_list, page=page)
         except IndexError:
-            return []
+            return QueryResult()
 
     def unique(self, key: str) -> List[str]:
         if self.exists():
