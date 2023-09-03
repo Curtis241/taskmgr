@@ -14,14 +14,10 @@ class Snapshot(DatabaseObject):
         self.__incomplete_count = 0
         self.__delete_count = 0
         self.__total_time = 0
-        self.__average_time = 0
+        self.__actual_time = str()
         self.__due_date = str()
         self.__due_date_timestamp = 0
-        self.__is_summary = is_summary
 
-    @property
-    def is_summary(self):
-        return self.__is_summary
 
     @property
     def due_date(self):
@@ -80,32 +76,23 @@ class Snapshot(DatabaseObject):
         self.__total_time = float(value)
 
     @property
-    def average_time(self):
-        return self.__average_time
+    def actual_time(self):
+        return self.__actual_time
 
-    @average_time.setter
-    def average_time(self, value):
-        self.__average_time = float(value)
+    @actual_time.setter
+    def actual_time(self, value):
+        self.__actual_time = value
 
     def deserialize(self, obj_dict):
         for key, value in obj_dict.items():
             setattr(self, key, value)
         return self
 
-    def compose_summary(self):
-        return {"task_count": self.__task_count,
-                "complete_count": self.__complete_count,
-                "incomplete_count": self.__incomplete_count,
-                "delete_count": self.__delete_count,
-                "average_time": self.__average_time,
-                "total_time": self.__total_time}
-
     def update(self, snapshot):
         self.__task_count = snapshot.task_count
         self.__complete_count = snapshot.complete_count
         self.__incomplete_count = snapshot.incomplete_count
         self.__delete_count = snapshot.delete_count
-        self.__average_time = snapshot.average_time
         self.__total_time = snapshot.total_time
 
     def __iter__(self):
@@ -117,5 +104,5 @@ class Snapshot(DatabaseObject):
         yield 'complete_count', self.__complete_count
         yield 'incomplete_count', self.__incomplete_count
         yield 'delete_count', self.__delete_count
-        yield 'average_time', self.__average_time
         yield 'total_time', self.__total_time
+        yield 'actual_time', self.__actual_time

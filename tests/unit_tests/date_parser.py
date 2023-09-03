@@ -3,15 +3,18 @@ from datetime import datetime
 from taskmgr.lib.variables import CommonVariables
 
 
-class DueDate:
-    """The DueDate object"""
+class DateParser:
+    """The DateParser object"""
 
     def __init__(self, date_string: str):
         assert type(date_string) is str
-        assert len(date_string) > 0, "Date string is empty"
+        assert len(date_string) > 0, "DateParser string is empty"
 
         self.__date_string = date_string
         self.vars = CommonVariables()
+
+    def has_date_string(self) -> bool:
+        return len(self.__date_string) > 0
 
     def to_date_time(self) -> datetime:
         return datetime.strptime(self.__date_string, self.vars.date_format)

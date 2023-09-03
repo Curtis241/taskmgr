@@ -5,8 +5,8 @@ from taskmgr.lib.view.console_table import ConsoleTable
 class SnapshotListConsoleTable(ConsoleTable):
 
     def __init__(self):
-        super().__init__(["Due Date", "Count", "Completed", "Incomplete",
-                          "Deleted", "Total Time", "Average Time"])
+        super().__init__(["Date", "Count", "Completed", "Incomplete",
+                          "Deleted", "Total Time"])
         self.__snapshot_list = list()
 
     def add_row(self, obj):
@@ -29,4 +29,4 @@ class SnapshotListConsoleTable(ConsoleTable):
     def format_row(self, obj):
         assert type(obj) is Snapshot
         return [obj.due_date, obj.task_count, obj.complete_count, obj.incomplete_count,
-                obj.delete_count, obj.total_time, obj.average_time]
+                obj.delete_count, obj.total_time]

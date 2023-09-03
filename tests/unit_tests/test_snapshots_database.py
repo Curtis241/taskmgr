@@ -1,14 +1,16 @@
 import unittest
 
 from taskmgr.lib.database.db_manager import DatabaseManager
-from taskmgr.lib.model.due_date import DueDate
 from taskmgr.lib.model.snapshot import Snapshot
+from taskmgr.lib.variables import CommonVariables
+from unit_tests.date_parser import DateParser
 
 
 class TestSnapshotsDatabase(unittest.TestCase):
 
     def setUp(self) -> None:
-        self.mgr = DatabaseManager()
+        self.vars = CommonVariables('test_variables.ini')
+        self.mgr = DatabaseManager(self.vars)
         self.db = self.mgr.get_snapshots_db()
         self.db.clear()
 
@@ -17,10 +19,9 @@ class TestSnapshotsDatabase(unittest.TestCase):
         self.s1.incomplete_count = 2
         self.s1.delete_count = 1
         self.s1.complete_count = 9
-        self.s1.average_time = 0.62
         self.s1.total_time = 8.0
         self.s1.due_date = "2022-08-21"
-        self.s1.due_date_timestamp = DueDate(self.s1.due_date).to_timestamp()
+        self.s1.due_date_timestamp = DateParser(self.s1.due_date).to_timestamp()
         self.s1.unique_id = self.db.get_unique_id()
 
         self.s2 = Snapshot()
@@ -28,10 +29,9 @@ class TestSnapshotsDatabase(unittest.TestCase):
         self.s2.incomplete_count = 2
         self.s2.delete_count = 1
         self.s2.complete_count = 5
-        self.s2.average_time = 0.83
         self.s2.total_time = 8.0
         self.s2.due_date = "2022-08-22"
-        self.s2.due_date_timestamp = DueDate(self.s2.due_date).to_timestamp()
+        self.s2.due_date_timestamp = DateParser(self.s2.due_date).to_timestamp()
         self.s2.unique_id = self.db.get_unique_id()
 
         self.s3 = Snapshot()
@@ -39,10 +39,9 @@ class TestSnapshotsDatabase(unittest.TestCase):
         self.s3.incomplete_count = 0
         self.s3.delete_count = 0
         self.s3.complete_count = 7
-        self.s3.average_time = 0.83
         self.s3.total_time = 8.0
         self.s3.due_date = "2022-08-23"
-        self.s3.due_date_timestamp = DueDate(self.s3.due_date).to_timestamp()
+        self.s3.due_date_timestamp = DateParser(self.s3.due_date).to_timestamp()
         self.s3.unique_id = self.db.get_unique_id()
 
     def tearDown(self) -> None:
@@ -88,4 +87,3 @@ class TestSnapshotsDatabase(unittest.TestCase):
         self.assertEqual(int(self.s1.complete_count), int(snapshot.complete_count))
         self.assertEqual(int(self.s1.delete_count), int(snapshot.delete_count))
         self.assertEqual(float(self.s1.total_time), float(snapshot.total_time))
-        self.assertEqual(float(self.s1.average_time), float(snapshot.average_time))

@@ -11,9 +11,10 @@ from taskmgr.lib.database.pager import Pager, Page
 from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.model.snapshot import Snapshot
 from taskmgr.lib.model.task import Task
+from taskmgr.lib.model.time_card import TimeCard
 from taskmgr.lib.variables import CommonVariables
 
-T = TypeVar("T", Snapshot, Task)
+T = TypeVar("T", Snapshot, Task, TimeCard)
 
 
 class QueryResult:

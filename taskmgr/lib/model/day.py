@@ -5,38 +5,58 @@ from taskmgr.lib.variables import CommonVariables
 
 
 class Day:
-    def __init__(self, dt):
+    def __init__(self, dt: datetime):
         assert type(dt) is datetime
-        self.dt = dt
+        self.__dt = dt
         self.day_number = dt.day
         self.month = dt.month
         self.year = dt.year
-        self.timestamp = dt.timestamp()
+        self.timestamp = int(dt.timestamp())
         self.weekday_number = dt.weekday()
         self.week = self.get_week(self.day_number, self.weekday_number, self.month, self.year)
         self.vars = CommonVariables()
 
+
+    def to_datetime(self):
+        return self.__dt
+
     def to_timestamp(self):
+        """
+        Returns the timestamp as integer from the internal datetime object
+        """
         return int(self.timestamp)
 
     def to_date_list(self):
+        """
+        Provides list of date strings in format YYYY-MM-DD
+        """
         return [self.to_date_string()]
 
-    def to_date_expression(self):
-        return f"{self.month} {self.day_number}"
-
     def to_date_string(self):
-        month = Day.pad(self.month)
-        day = Day.pad(self.day_number)
-        return f"{self.year}-{month}-{day}"
-
-    def to_date_time_string(self):
-        return datetime.strftime(self.dt, self.vars.date_time_format)
-
-    def to_date_time(self):
+        """
+        Creates single date string in the format YYYY-MM-DD
+        """
         month = self.pad(self.month)
         day = self.pad(self.day_number)
-        return datetime.strptime(f"{self.year}-{month}-{day}", self.vars.date_format)
+        return f"{self.year}-{month}-{day}"
+
+    def to_date_object(self):
+        """
+        Returns datetime object for YYYY-MM-DD
+        """
+        return datetime.strptime(self.to_date_string(), self.vars.date_format)
+
+    def to_date_timestamp(self):
+        """
+        Provides timestamp representing YYYY-MM-DD only.
+        """
+        return int(self.to_date_object().timestamp())
+
+    def to_date_time_string(self):
+        """
+        Gets string in format YYYY-MM-DD HH:MM:SS
+        """
+        return datetime.strftime(self.__dt, self.vars.date_time_format)
 
     @staticmethod
     def pad(value):

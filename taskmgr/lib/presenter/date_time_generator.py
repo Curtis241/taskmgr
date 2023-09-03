@@ -1,15 +1,15 @@
 from abc import ABC, abstractmethod
 from collections import deque
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 from taskmgr.lib.model.calendar import Calendar
 from taskmgr.lib.model.day import Day
-from taskmgr.lib.model.due_date import DueDate
+from taskmgr.lib.model.time import Time
 from taskmgr.lib.variables import CommonVariables
 
 
-class DateParser:
+class DateContainer:
 
     def __init__(self, expression, day):
         assert type(expression) is str
@@ -168,7 +168,7 @@ class ShortDateHandler(Handler):
             super(ShortDateHandler, self).handle(parser)
 
     def parse_expression(self, parser):
-        parser.day_list = [self.calendar.parse_date(parser.expression)]
+        parser.day_list = [self.calendar.parse_date_time(parser.expression)]
 
     def validate(self, expression):
         return self.calendar.is_short_date(expression)
@@ -187,7 +187,7 @@ class YearMonthDateHandler(Handler):
 
     def parse_expression(self, parser):
         parser.handler_name = YearMonthDateHandler.__name__
-        parser.day_list = [self.calendar.parse_date(parser.expression)]
+        parser.day_list = [self.calendar.parse_date_time(parser.expression)]
 
     def handle(self, parser):
         if self.validate(parser.expression):
@@ -208,7 +208,7 @@ class ErrorHandler(Handler):
         print("Invalid request: expression {}".format(parser.expression))
 
 
-class DateGenerator(object):
+class DateTimeGenerator(object):
 
     def __init__(self):
         self.vars = CommonVariables()
@@ -219,8 +219,16 @@ class DateGenerator(object):
         self.handler_4 = ShortDateHandler()
         self.handler_5 = YearMonthDateHandler()
         self.handler_6 = DateRangeHandler()
-        self.handler_list = [self.handler_1, self.handler_2, self.handler_3, self.handler_4,
-                             self.handler_5, self.handler_6]
+        self.multiple_date_handler_list = [self.handler_1,
+                                           self.handler_2,
+                                           self.handler_3,
+                                           self.handler_4,
+                                           self.handler_5,
+                                           self.handler_6]
+        self.single_date_handler_list = [self.handler_1,
+                                         self.handler_2,
+                                         self.handler_4,
+                                         self.handler_5]
 
     @property
     def current_day(self):
@@ -233,9 +241,15 @@ class DateGenerator(object):
     def current_day(self, current_day):
         self.__current_day = current_day
 
-    def get_due_date(self, expression: str) -> Optional[DueDate]:
+    @staticmethod
+    def get_time(expression: str) -> Optional[Time]:
         assert type(expression) is str
-        parser = DateParser(expression, self.current_day)
+        day = Calendar().parse_date_time(expression)
+        return Time(day.to_datetime())
+
+    def get_day(self, expression: str) -> Optional[Day]:
+        assert type(expression) is str
+        parser = DateContainer(expression, self.current_day)
 
         self.handler_1.next_handler = self.handler_2
         self.handler_2.next_handler = self.handler_4
@@ -244,13 +258,12 @@ class DateGenerator(object):
         self.handler_1.handle(parser)
 
         if len(parser.day_list) == 1:
-            day = deque(parser.day_list).popleft()
-            return DueDate(day.to_date_string())
+            return deque(parser.day_list).popleft()
         return None
 
-    def get_due_dates(self, expression: str) -> Optional[list]:
+    def get_days(self, expression: str) -> List[Day]:
         assert type(expression) is str
-        parser = DateParser(expression, self.current_day)
+        parser = DateContainer(expression, self.current_day)
 
         self.handler_1.next_handler = self.handler_2
         self.handler_2.next_handler = self.handler_3
@@ -259,17 +272,20 @@ class DateGenerator(object):
         self.handler_5.next_handler = self.handler_6
         self.handler_6.next_handler = ErrorHandler()
         self.handler_1.handle(parser)
+        return parser.day_list
 
-        if len(parser.day_list) != 0:
-            return [DueDate(day.to_date_string()) for day in parser.day_list]
-        return list()
-
-    def validate_input(self, date_expression: str) -> bool:
+    def validate_input(self, date_expression: str,
+                       single_date: bool = False) -> bool:
 
         if date_expression is None:
             return False
 
-        for handler in self.handler_list:
+        if single_date:
+            handler_list = self.single_date_handler_list
+        else:
+            handler_list = self.multiple_date_handler_list
+
+        for handler in handler_list:
             if handler.validate(date_expression):
                 return True
         return False

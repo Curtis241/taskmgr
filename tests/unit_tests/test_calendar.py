@@ -2,9 +2,9 @@ import unittest
 from datetime import datetime
 
 from taskmgr.lib.model.calendar import Calendar
-from taskmgr.lib.model.due_date import DueDate
 from taskmgr.lib.model.day import Day
 from taskmgr.lib.variables import CommonVariables
+from unit_tests.date_parser import DateParser
 
 
 class TestCalendar(unittest.TestCase):
@@ -15,8 +15,7 @@ class TestCalendar(unittest.TestCase):
         if type(date_string_list) is list and len(date_string_list) > 0:
             for date_string in date_string_list:
                 if type(date_string) is str:
-                    dd = DueDate()
-                    dd.date_string = date_string
+                    dd = DateParser(date_string)
                     dd.completed = False
                     due_date_list.append(dd)
         return due_date_list
@@ -51,13 +50,19 @@ class TestCalendar(unittest.TestCase):
         self.assertTrue(len(day_list) == 90)
 
     def test_contains_week(self):
-        day = Day(datetime.strptime("2022-04-14", self.vars.date_format))
-        result = self.calendar.contains_week([DueDate("2022-04-14"), DueDate("2022-04-21")], day)
+        today = Day(datetime.strptime("2022-04-14", self.vars.date_format))
+        day1 = Day(datetime.strptime("2022-04-14", self.vars.date_format))
+        day2 = Day(datetime.strptime("2022-04-21", self.vars.date_format))
+
+        result = self.calendar.contains_week([day1, day2], today)
         self.assertTrue(result)
 
     def test_contains_day(self):
-        day = Day(datetime.strptime("2022-04-14", self.vars.date_format))
-        result = self.calendar.contains_month([DueDate("2022-04-14"), DueDate("2022-04-21")], day)
+        today = Day(datetime.strptime("2022-04-14", self.vars.date_format))
+        day1 = Day(datetime.strptime("2022-04-14", self.vars.date_format))
+        day2 = Day(datetime.strptime("2022-04-21", self.vars.date_format))
+
+        result = self.calendar.contains_month([day1, day2], today)
         self.assertTrue(result)
 
     def test_get_day_using_abbrev(self):
@@ -103,8 +108,8 @@ class TestCalendar(unittest.TestCase):
         self.assertFalse(self.calendar.is_short_date("April 1"))
 
     def test_parse_short_date(self):
-        day = self.calendar.parse_date("May 21")
-        self.assertEqual(day.to_date_string(), "2022-05-21")
+        day = self.calendar.parse_date_time("May 21")
+        self.assertEqual(day.to_date_string(), "2023-05-21")
 
     def test_parse_recurring_abbrev(self):
         day_list = self.calendar.parse_recurring_abbrev(self.june11, "every m", 3)

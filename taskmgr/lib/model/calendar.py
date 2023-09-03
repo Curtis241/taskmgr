@@ -7,7 +7,7 @@ from dateutil.relativedelta import *
 from dateutil.rrule import *
 from dateutil.parser import *
 from taskmgr.lib.model.day import Day
-from taskmgr.lib.model.due_date import DueDate
+
 
 from taskmgr.lib.variables import CommonVariables
 
@@ -42,52 +42,50 @@ class Calendar:
         return len(calendar.monthcalendar(year, month))
 
     @staticmethod
-    def is_past(due_date: DueDate, current_day=Today()) -> bool:
-        timedelta1 = due_date.to_date_time() - current_day.to_date_time()
+    def is_past(selected_day: Day, current_day: Day = Today()) -> bool:
+        timedelta1 = selected_day.to_date_object() - current_day.to_date_object()
         if timedelta1.days < 0:
             return True
         return False
 
     @staticmethod
-    def contains(due_dates: List[DueDate], is_matched: Callable) -> bool:
-        return len([due_date for due_date in due_dates if is_matched(due_date)]) >= 1
+    def contains(day_list: List[Day], is_matched: Callable) -> bool:
+        return len([day for day in day_list if is_matched(day)]) >= 1
 
     @staticmethod
-    def contains_month(due_dates: List[DueDate], selected_day=Today()) -> bool:
-        return Calendar.contains(due_dates, lambda due_date: Day(due_date.to_date_time()).month == selected_day.month)
+    def contains_month(day_list: List[Day], selected_day=Today()) -> bool:
+        return Calendar.contains(day_list, lambda day: day.month == selected_day.month)
 
     @staticmethod
-    def contains_week(due_dates: List[DueDate], selected_day=Today()) -> bool:
-        return Calendar.contains(due_dates, lambda due_date: Day(due_date.to_date_time()).week == selected_day.week)
+    def contains_week(day_list: List[Day], selected_day=Today()) -> bool:
+        return Calendar.contains(day_list, lambda day: day.week == selected_day.week)
 
     def get_weekday_number(self, day_abbrev: str) -> int:
         for obj in self.weekday_abbrev_list:
             if obj["key"] == str(day_abbrev).lower():
                 return obj["value"]
 
-    def get_closest_due_date(self, due_dates: List[DueDate], current_day=None) -> DueDate:
+    @staticmethod
+    def get_closest_date(day_list: List[Day], current_day=None) -> Day:
         """
         Returns a future date string that is the closest to the current day
-        :param due_dates: list of due_date objects with the format yyyy-mm-dd
+        :param day_list: list of Day objects
         :param current_day: Day object
-        :return:
-        Date string
+        :return: Day object
         """
         if current_day is None:
             current_day = Today()
 
         diff_list = []
         # calculate the difference between current day and date string
-        for due_date in due_dates:
-            if len(due_date.date_string) > 0:
-                day = Day(datetime.strptime(due_date.date_string, self.vars.date_format))
-                timedelta1 = day.to_date_time() - current_day.to_date_time()
-                diff_list.append(timedelta1.days)
+        for day in day_list:
+            timedelta1 = day.to_date_object() - current_day.to_date_object()
+            diff_list.append(timedelta1.days)
 
         # return the date string using the smallest difference
         for index, diff_num in enumerate(diff_list):
             if diff_num >= 0:
-                return due_dates[index]
+                return day_list[index]
 
     @staticmethod
     def get_days(start_day, month_count: int = 1) -> List[Day]:
@@ -101,7 +99,7 @@ class Calendar:
         assert type(start_day) is Day
         assert type(month_count) is int
 
-        start = start_day.to_date_time()
+        start = start_day.to_date_object()
         days = list(rrule(MONTHLY, count=month_count * 2, bymonthday=(-1, 1,), dtstart=start))
         return Calendar.fill(Day(days[0]), Day(days[-1]))
 
@@ -118,7 +116,7 @@ class Calendar:
         assert type(weekday_number) is int
         assert type(month_count) is int
 
-        start = start_day.to_date_time()
+        start = start_day.to_date_object()
         end = start + relativedelta(months=month_count)
         days = list(rrule(DAILY, wkst=MO, byweekday=weekday_number, dtstart=start, until=end))
 
@@ -135,7 +133,7 @@ class Calendar:
         assert type(start_day) is Day
         assert type(month_count) is int
 
-        start = start_day.to_date_time()
+        start = start_day.to_date_object()
         end = start + relativedelta(months=month_count)
         days = list(rrule(DAILY, wkst=MO, byweekday=(MO, TU, WE, TH, FR), dtstart=start, until=end))
 
@@ -153,7 +151,7 @@ class Calendar:
         assert type(today) is Day
         assert type(weekday_number) is int
 
-        today = today.to_date_time()
+        today = today.to_date_object()
         date_list = list(rrule(DAILY, count=1, wkst=MO, byweekday=weekday_number, dtstart=today))
         if date_list:
             return Day(date_list[0])
@@ -173,34 +171,34 @@ class Calendar:
 
     @staticmethod
     def get_first_day_in_week(day: Day) -> Day:
-        return Day(day.to_date_time() - timedelta(days=day.weekday_number))
+        return Day(day.to_date_object() - timedelta(days=day.weekday_number))
 
     @staticmethod
     def get_last_day_in_week(day: Day) -> Day:
-        return Day(day.to_date_time() + timedelta(days=(6 - day.weekday_number)))
+        return Day(day.to_date_object() + timedelta(days=(6 - day.weekday_number)))
 
     @staticmethod
     def get_yesterday(day: Day) -> Day:
-        return Day(day.to_date_time() - timedelta(days=1))
+        return Day(day.to_date_object() - timedelta(days=1))
 
     @staticmethod
     def get_tomorrow(day: Day) -> Day:
-        return Day(day.to_date_time() + timedelta(days=1))
+        return Day(day.to_date_object() + timedelta(days=1))
 
     @staticmethod
     def fill(start_day: Day, end_day: Day) -> List[Day]:
-        days = list(rrule(freq=DAILY, dtstart=start_day.to_date_time(), until=end_day.to_date_time()))
+        days = list(rrule(freq=DAILY, dtstart=start_day.to_date_object(), until=end_day.to_date_object()))
         return [Day(dt) for dt in days]
 
     def get_this_week(self, day: Day) -> List[Day]:
         return self.fill(self.get_first_day_in_week(deepcopy(day)), self.get_last_day_in_week(deepcopy(day)))
 
     def get_last_week(self, day: Day) -> List[Day]:
-        past_day = Day(day.to_date_time() - timedelta(days=7))
+        past_day = Day(day.to_date_object() - timedelta(days=7))
         return self.fill(self.get_first_day_in_week(deepcopy(past_day)), self.get_last_day_in_week(deepcopy(past_day)))
 
     def get_next_week(self, day: Day) -> List[Day]:
-        future_day = Day(day.to_date_time() + timedelta(days=7))
+        future_day = Day(day.to_date_object() + timedelta(days=7))
         return self.fill(self.get_first_day_in_week(deepcopy(future_day)), self.get_last_day_in_week(deepcopy(future_day)))
 
     def get_this_month(self, day: Day) -> List[Day]:
@@ -208,12 +206,12 @@ class Calendar:
 
     def get_last_month(self, day: Day) -> List[Day]:
         first_day = self.get_first_day_in_month(day)
-        past_day = Day(first_day.to_date_time() - timedelta(days=1))
+        past_day = Day(first_day.to_date_object() - timedelta(days=1))
         return self.fill(self.get_first_day_in_month(deepcopy(past_day)), past_day)
 
     def get_next_month(self, day: Day) -> List[Day]:
         last_day = self.get_last_day_in_month(day)
-        future_day = Day(last_day.to_date_time() + timedelta(days=1))
+        future_day = Day(last_day.to_date_object() + timedelta(days=1))
         return self.fill(future_day, self.get_last_day_in_month(deepcopy(future_day)))
 
     @staticmethod
@@ -233,7 +231,7 @@ class Calendar:
             return False
 
     @staticmethod
-    def parse_date(expression: str) -> Day:
+    def parse_date_time(expression: str) -> Day:
         return Day(parse(expression))
 
     def parse_recurring_abbrev(self, day: Day, expression: str, month_count: int) -> List[Day]:

@@ -32,7 +32,8 @@ setup(
     description="Task Manager",
     entry_points='''
         [console_scripts]
-        taskmgr=taskmgr.cli:cli
+        taskmgr=taskmgr.cli:task
+        timecardmgr=taskmgr.cli:time_card
     ''',
     packages=['taskmgr', 'taskmgr.lib'],
     install_requires=requirements,
@@ -45,6 +46,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/Curtis241/taskmgr',
-    version='0.2.5',
+    version='0.2.6',
     zip_safe=False,
 )

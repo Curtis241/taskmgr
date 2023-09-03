@@ -3,15 +3,15 @@ import unittest
 from taskmgr.lib.database.db_manager import DatabaseManager
 from taskmgr.lib.model.calendar import Today
 from taskmgr.lib.model.task import Task
-from taskmgr.lib.presenter.date_generator import DateGenerator
+from taskmgr.lib.presenter.date_time_generator import DateTimeGenerator
 from taskmgr.lib.variables import CommonVariables
 
 
 class TestTasks(unittest.TestCase):
 
     def setUp(self):
-        self.vars = CommonVariables()
-        self.tasks = DatabaseManager().get_tasks_model()
+        self.vars = CommonVariables('test_variables.ini')
+        self.tasks = DatabaseManager(self.vars).get_tasks_model()
 
     def tearDown(self):
         self.tasks.clear()
@@ -57,12 +57,12 @@ class TestTasks(unittest.TestCase):
         self.assertTrue(deleted_task.deleted)
 
     def test_complete_task(self):
-        due_date_list = DateGenerator().get_due_dates("every sa")
+        day_list = DateTimeGenerator().get_days("every sa")
         self.tasks.add("RepetitiveTask", "current", "home", "every sa")
         result = self.tasks.get_tasks_containing_name("RepetitiveTask")
         task_list = result.to_list()
 
-        self.assertTrue(len(due_date_list) == len(task_list))
+        self.assertTrue(len(day_list) == len(task_list))
 
         for task in task_list:
             task.completed = True

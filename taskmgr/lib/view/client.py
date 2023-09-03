@@ -8,7 +8,8 @@ from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.model.calendar import Today
 from taskmgr.lib.model.snapshot import Snapshot
 from taskmgr.lib.model.task import Task
-from taskmgr.lib.presenter.date_generator import DateGenerator
+from taskmgr.lib.model.time_card import TimeCard
+from taskmgr.lib.presenter.date_time_generator import DateTimeGenerator
 from taskmgr.lib.presenter.tasks import TaskKeyError, DueDateError
 from taskmgr.lib.variables import CommonVariables
 from taskmgr.lib.view.client_args import *
@@ -28,7 +29,8 @@ class Client:
 
         self.tasks = db_manager.get_tasks_model()
         self.snapshots = db_manager.get_snapshots_model()
-        self.__date_generator = DateGenerator()
+        self.time_cards = db_manager.get_time_cards_model()
+        self.__date_generator = DateTimeGenerator()
         self.__variables = CommonVariables()
 
     @abstractmethod
@@ -37,6 +39,10 @@ class Client:
 
     @abstractmethod
     def display_snapshots(self, result: QueryResult):
+        pass
+
+    @abstractmethod
+    def display_time_cards(self, result: QueryResult):
         pass
 
     @abstractmethod
@@ -131,17 +137,17 @@ class Client:
 
     def count_tasks_by_project(self, args: ProjectArgs) -> List[Snapshot]:
         task_list = self.tasks.get_tasks_by_project(args.project, args.page).to_list()
-        snapshot_list = self.snapshots.summarize(task_list)
+        snapshot_list = self.snapshots.summarize_tasks(task_list)
         return self.display_snapshots(QueryResult(snapshot_list))
 
     def count_tasks_by_label(self, args: LabelArgs) -> List[Snapshot]:
         task_list = self.tasks.get_tasks_by_label(args.label, args.page).to_list()
-        snapshot_list = self.snapshots.summarize(task_list)
+        snapshot_list = self.snapshots.summarize_tasks(task_list)
         return self.display_snapshots(QueryResult(snapshot_list))
 
     def count_tasks_by_name(self, args: NameArgs) -> List[Snapshot]:
         task_list = self.tasks.get_tasks_containing_name(args.name).to_list()
-        snapshot_list = self.snapshots.summarize(task_list)
+        snapshot_list = self.snapshots.summarize_tasks(task_list)
         return self.display_snapshots(QueryResult(snapshot_list))
 
     def reschedule_tasks(self):
@@ -193,7 +199,7 @@ class Client:
         self.snapshots.update(task_list)
         return self.display_tasks(QueryResult(task_list))
 
-    def edit(self, args: EditArgs) -> List[Task]:
+    def edit_task(self, args: EditArgs) -> List[Task]:
         """
         Edits an existing task by replacing string values. None are allowed
         and handled by the Task object.
@@ -209,7 +215,7 @@ class Client:
         except TaskKeyError:
             return self.display_invalid_index_error(args.index)
 
-    def add(self, args: AddArgs) -> List[Task]:
+    def add_task(self, args: AddArgs) -> List[Task]:
         try:
             if not args.name:
                 return self.display_attribute_error("name", f"Empty name parameter")
@@ -220,7 +226,7 @@ class Client:
         except DueDateError as ex:
             return self.display_attribute_error("due_date", str(ex))
 
-    def delete(self, args: DeleteArgs) -> List[Task]:
+    def delete_task(self, args: DeleteArgs) -> List[Task]:
         task_list = list()
         for index in args.indexes:
             task = self.tasks.get_task_by_index(index)
@@ -232,7 +238,7 @@ class Client:
         self.snapshots.update(task_list)
         return self.display_tasks(QueryResult(task_list))
 
-    def complete(self, args: CompleteArgs) -> List[Task]:
+    def complete_task(self, args: CompleteArgs) -> List[Task]:
         task_list = list()
         for index in args.indexes:
             task = self.tasks.get_task_by_index(index)
@@ -247,7 +253,7 @@ class Client:
         self.snapshots.update(task_list)
         return self.display_tasks(QueryResult(task_list))
 
-    def undelete(self, args: UndeleteArgs) -> List[Task]:
+    def undelete_task(self, args: UndeleteArgs) -> List[Task]:
         task_list = list()
         for index in args.indexes:
             task = self.tasks.get_task_by_index(index)
@@ -259,7 +265,7 @@ class Client:
         self.snapshots.update(task_list)
         return self.display_tasks(QueryResult(task_list))
 
-    def reset(self, args: ResetArgs) -> List[Task]:
+    def reset_task(self, args: ResetArgs) -> List[Task]:
         task_list = list()
         for index in args.indexes:
             task = self.tasks.get_task_by_index(index)
@@ -277,3 +283,70 @@ class Client:
         else:
             result = self.tasks.get_undeleted_tasks(args.page)
         return self.display_tasks(result)
+
+    def clear_tasks(self):
+        self.tasks.clear()
+
+
+    # TimeCards
+    def add_time_card(self, args: AddTimeCardArgs):
+        try:
+            time_card = self.time_cards.add(args.time_in, args.time_out, args.date)
+            return self.display_time_cards(QueryResult([time_card]))
+        except DueDateError as ex:
+            return self.display_attribute_error("due_date", str(ex))
+
+    def delete_time_card(self, args: DeleteArgs):
+        time_card_list = list()
+        for index in args.indexes:
+            time_card = self.time_cards.get_time_card_by_index(index)
+            if time_card is not None:
+                time_card_list.append(self.time_cards.delete(time_card))
+            else:
+                return self.display_invalid_index_error(index)
+
+        return self.display_time_cards(QueryResult(time_card_list))
+
+    def undelete_time_card(self, args: UndeleteArgs) -> List[Task]:
+        time_card_list = list()
+        for index in args.indexes:
+            time_card = self.time_cards.get_time_card_by_index(index)
+            if time_card is not None:
+                time_card_list.append(self.time_cards.undelete(time_card))
+            else:
+                return self.display_invalid_index_error(index)
+
+        return self.display_time_cards(QueryResult(time_card_list))
+
+    def edit_time_card(self, args: EditTimeCardArgs) -> List[TimeCard]:
+        try:
+            original_time_card, new_time_card = \
+                self.time_cards.edit(args.index, args.time_in, args.time_out, args.date)
+
+            return self.display_time_cards(QueryResult([new_time_card]))
+        except TaskKeyError:
+            return self.display_invalid_index_error(args.index)
+
+    def list_all_time_cards(self, args: ListArgs) -> List[TimeCard]:
+        if args.all:
+            result = self.time_cards.get_all()
+        else:
+            result = self.time_cards.get_all(args.page)
+        return self.display_time_cards(result)
+
+    def filter_time_cards_by_date_range(self, args: DateRangeArgs) -> List[TimeCard]:
+        result = self.time_cards.get_time_cards_within_date_range(args.min_date, args.max_date, args.page)
+        return self.display_time_cards(result)
+
+    def filter_time_cards_by_date(self, args: DateArgs) -> List[TimeCard]:
+        result = self.time_cards.get_time_cards_by_date(args.date, add_total=True)
+        return self.display_time_cards(result)
+
+    def filter_time_cards_by_today(self) -> List[TimeCard]:
+        date_string = Today().to_date_string()
+        result = self.time_cards.get_time_cards_by_date(date_string, add_total=True)
+        return self.display_time_cards(result)
+
+    def clear_time_cards(self):
+        self.time_cards.clear()
+

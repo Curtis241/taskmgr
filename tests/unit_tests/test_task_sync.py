@@ -1,7 +1,7 @@
 import unittest
 
 from taskmgr.lib.model.task import Task
-from taskmgr.lib.presenter.task_sync import ImportAction
+from taskmgr.lib.presenter.sync import ImportActions
 
 
 class TestTaskSync(unittest.TestCase):
@@ -11,7 +11,7 @@ class TestTaskSync(unittest.TestCase):
     def tearDown(self) -> None: pass
 
     def test_import_action_can_insert(self):
-        action = ImportAction(None, Task("Task1"))
+        action = ImportActions(None, Task("Task1"))
         self.assertTrue(action.can_insert())
         self.assertFalse(action.can_update())
         self.assertFalse(action.can_delete())
@@ -26,7 +26,7 @@ class TestTaskSync(unittest.TestCase):
         local_task.external_id = "100"
         local_task.deleted = False
 
-        action = ImportAction(local_task, remote_task)
+        action = ImportActions(local_task, remote_task)
         self.assertTrue(action.can_delete())
         self.assertFalse(action.can_update())
         self.assertFalse(action.can_insert())

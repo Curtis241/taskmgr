@@ -2,6 +2,16 @@ from typing import Optional
 
 from pydantic.main import BaseModel
 
+class EditTimeCardArgs(BaseModel):
+    index: int
+    time_in: Optional[str] = None
+    time_out: Optional[str] = None
+    date: Optional[str] = None
+
+class AddTimeCardArgs(BaseModel):
+    time_in: str
+    time_out: str
+    date: str
 
 class AddArgs(BaseModel):
     name: str
@@ -91,5 +101,16 @@ class DueDateRangeArgs(BaseModel):
 
 class DueDateArgs(BaseModel):
     due_date: str
+    export: bool = False
+    page: int = 1
+
+class DateRangeArgs(BaseModel):
+    min_date: str
+    max_date: str
+    export: bool = False
+    page: int = 0
+
+class DateArgs(BaseModel):
+    date: str
     export: bool = False
     page: int = 1

@@ -2,12 +2,14 @@ import unittest
 
 from taskmgr.lib.database.db_manager import DatabaseManager
 from taskmgr.lib.model.task import Task
+from taskmgr.lib.variables import CommonVariables
 
 
 class TestTasksDatabase(unittest.TestCase):
 
     def setUp(self) -> None:
-        self.mgr = DatabaseManager()
+        self.vars = CommonVariables('test_variables.ini')
+        self.mgr = DatabaseManager(self.vars)
         self.db = self.mgr.get_tasks_db()
         self.db.clear()
 

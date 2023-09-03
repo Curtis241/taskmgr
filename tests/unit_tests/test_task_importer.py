@@ -2,15 +2,18 @@ import unittest
 
 from taskmgr.lib.database.db_manager import DatabaseManager
 from taskmgr.lib.model.task import Task
-from taskmgr.lib.presenter.task_sync import CsvFileImporter, SyncAction
+from taskmgr.lib.presenter.sync import SyncAction
+from taskmgr.lib.presenter.task_sync import TaskImporter
+from taskmgr.lib.variables import CommonVariables
 
 
-class TestCsvFileImporter(unittest.TestCase):
+class TestTaskImporter(unittest.TestCase):
 
     def setUp(self):
-        self.tasks = DatabaseManager().get_tasks_model()
+        self.vars = CommonVariables('test_variables.ini')
+        self.tasks = DatabaseManager(self.vars).get_tasks_model()
         self.tasks.clear()
-        self.importer = CsvFileImporter(self.tasks)
+        self.importer = TaskImporter(self.tasks)
 
     def tearDown(self):
         self.tasks.clear()
@@ -46,7 +49,7 @@ class TestCsvFileImporter(unittest.TestCase):
 
         tasks_list = [task100, task101, task102]
 
-        sync_results = self.importer.import_tasks(tasks_list)
+        sync_results = self.importer.import_objects(tasks_list)
         sync_results_list = sync_results.get_list()
         self.assertTrue(len(sync_results_list) == 3)
 

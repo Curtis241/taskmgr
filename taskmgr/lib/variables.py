@@ -29,6 +29,9 @@ class CommonVariables:
                                'default_name': '',
                                'redis_host': 'localhost',
                                'redis_port': 6379,
+                               'redis_username': 'Unset',
+                               'redis_password': 'Unset',
+                               'export_dir': '',
                                'max_rows': 10}
         self.create_file()
 
@@ -190,6 +193,33 @@ class CommonVariables:
         if value is not None:
             self.__set("redis_port", int(value), self.database_section)
 
+    @property
+    def redis_username(self):
+        return self.__get("redis_username", self.database_section)
+
+    @redis_username.setter
+    def redis_username(self, value):
+        if value is not None:
+            self.__set("redis_username", str(value), self.database_section)
+
+    @property
+    def redis_password(self):
+        return self.__get("redis_password", self.database_section)
+
+    @redis_password.setter
+    def redis_password(self, value):
+        if value is not None:
+            self.__set("redis_password", str(value), self.database_section)
+
+    @property
+    def export_dir(self):
+        return self.__get("export_dir", self.default_section)
+
+    @export_dir.setter
+    def export_dir(self, value):
+        if value is not None:
+            self.__set("export_dir", str(value), self.default_section)
+
     def __iter__(self):
         yield 'default_name_field_length', self.default_name_field_length
         yield 'default_project_name', self.default_project_name
@@ -197,4 +227,8 @@ class CommonVariables:
         yield 'recurring_month_limit', self.recurring_month_limit
         yield 'redis_host', self.redis_host
         yield 'redis_port', self.redis_port
+        yield 'redis_username', self.redis_username
+        yield 'redis_password', "***********"
+        yield 'export_dir', self.export_dir
         yield 'max_rows', self.max_rows
+

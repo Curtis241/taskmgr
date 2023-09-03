@@ -53,6 +53,15 @@ class TaskConsoleTable(ConsoleTable):
 
         if task.deleted:
             name = fg('red') + str(name)
+            project = fg('red') + str(task.project)
+            label = fg('red') + str(task.label)
+            time_spent = fg('red') + str(task.time_spent)
+            due_date = fg('red') + str(task.due_date)
+        else:
+            project = task.project
+            label = task.label
+            time_spent = task.time_spent
+            due_date = task.due_date
 
-        return [task.index, completed_text, name, task.project,
-                task.label, task.time_spent, task.due_date]
+        return [task.index, completed_text, name, project,
+                label, time_spent, due_date]

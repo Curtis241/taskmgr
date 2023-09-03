@@ -1,5 +1,4 @@
 from taskmgr.lib.database.db_object import DatabaseObject
-from taskmgr.lib.model.due_date import DueDate
 from taskmgr.lib.variables import CommonVariables
 
 
@@ -29,7 +28,6 @@ class Task(DatabaseObject):
     def due_date(self, due_date: str):
         if due_date and due_date is not None:
             self.__due_date = due_date
-            self.__due_date_timestamp = DueDate(due_date).to_timestamp()
 
     @property
     def due_date_timestamp(self) -> int:
@@ -37,7 +35,7 @@ class Task(DatabaseObject):
 
     @due_date_timestamp.setter
     def due_date_timestamp(self, value: int):
-        self.__due_date_timestamp = value
+        self.__due_date_timestamp = int(value)
 
     @property
     def completed(self) -> bool:

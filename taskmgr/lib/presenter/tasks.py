@@ -5,9 +5,8 @@ from taskmgr.lib.database.generic_db import QueryResult
 from taskmgr.lib.database.tasks_db import TasksDatabase
 from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.model.calendar import Calendar, Today
-from taskmgr.lib.model.due_date import DueDate
 from taskmgr.lib.model.task import Task
-from taskmgr.lib.presenter.date_generator import DateGenerator
+from taskmgr.lib.presenter.date_time_generator import DateTimeGenerator
 from taskmgr.lib.variables import CommonVariables
 
 
@@ -36,7 +35,7 @@ class Tasks:
         self.__db = database
         self.__calendar = Calendar()
         self.__vars = CommonVariables()
-        self.__date_generator = DateGenerator()
+        self.__date_generator = DateTimeGenerator()
 
     def add(self, name: str, label: str, project: str, date_expression: str) -> List[Task]:
 
@@ -45,12 +44,12 @@ class Tasks:
 
         task_list = list()
         if self.__date_generator.validate_input(date_expression):
-            for due_date in self.__date_generator.get_due_dates(date_expression):
+            for day in self.__date_generator.get_days(date_expression):
                 task = Task(name)
                 task.label = label
                 task.project = project
-                task.due_date = due_date.date_string
-                task.due_date_timestamp = due_date.to_timestamp()
+                task.due_date = day.to_date_string()
+                task.due_date_timestamp = day.to_date_timestamp()
                 task.completed = False
                 self.__db.append_object(task)
                 task_list.append(task)
@@ -83,19 +82,23 @@ class Tasks:
     def get_tasks_by_date(self, date_expression: str) -> QueryResult:
         assert type(date_expression) is str
         result = QueryResult()
-        for due_date in self.__date_generator.get_due_dates(date_expression):
-            selection = self.__db.get_selected("due_date_timestamp", due_date.to_timestamp())
+        days = self.__date_generator.get_days(date_expression)
+        for day in days:
+            selection = self.__db.get_selected("due_date_timestamp", day.to_date_timestamp())
             result.extend(selection.to_list())
         return result
 
-    def get_tasks_within_date_range(self, min_date_expression: str, max_date_expression: str, page: int) -> QueryResult:
-        assert type(min_date_expression) is str
-        assert type(max_date_expression) is str
+    def get_tasks_within_date_range(self, min_date: str, max_date: str, page: int) -> QueryResult:
+        assert type(min_date) is str
+        assert type(max_date) is str
 
-        min_date = self.__date_generator.get_due_date(min_date_expression)
-        max_date = self.__date_generator.get_due_date(max_date_expression)
+        min_day = self.__date_generator.get_day(min_date)
+        max_day = self.__date_generator.get_day(max_date)
+
         self.__db.set_page_number(page)
-        return self.__db.get_selected("due_date_timestamp", min_date.to_timestamp(), max_date.to_timestamp())
+        return self.__db.get_selected("due_date_timestamp",
+                                      min_day.to_date_timestamp(),
+                                      max_day.to_date_timestamp())
 
     def get_tasks_by_status(self, is_completed: bool, page: int) -> QueryResult:
         assert type(is_completed) is bool
@@ -139,8 +142,6 @@ class Tasks:
     def undelete(self, task: Task) -> Optional[Task]:
         """
         Changes the deleted state to False
-        :param task: Task object
-        :return: Task object
         """
         assert isinstance(task, Task)
         if task is not None:
@@ -152,8 +153,6 @@ class Tasks:
     def complete(self, task: Task) -> Optional[Task]:
         """
         Changes the completed state to True
-        :param task: Task object
-        :return: Task object
         """
         assert isinstance(task, Task)
         if task is not None:
@@ -165,15 +164,13 @@ class Tasks:
     def reset(self, task: Task) -> Optional[Task]:
         """
         Resets the due date to today on the selected task
-        :param task: Task object
-        :return: Task object
         """
         assert isinstance(task, Task)
         if task is not None:
             today = Today()
             task.completed = False
             task.due_date = today.to_date_string()
-            task.due_date_timestamp = today.to_timestamp()
+            task.due_date_timestamp = today.to_date_timestamp()
             return self.__db.replace_object(task)
         else:
             raise TaskKeyError()
@@ -218,9 +215,9 @@ class Tasks:
 
             if date_expression is not None:
                 if self.__date_generator.validate_input(date_expression):
-                    due_date = self.__date_generator.get_due_date(date_expression)
-                    new_task.due_date = due_date.date_string
-                    new_task.due_date_timestamp = due_date.to_timestamp()
+                    day = self.__date_generator.get_day(date_expression)
+                    new_task.due_date = day.to_date_string()
+                    new_task.due_date_timestamp = day.to_date_timestamp()
                 else:
                     self.logger.info(f"Provided due date {date_expression} is invalid")
 
@@ -235,9 +232,10 @@ class Tasks:
         today = Today()
         task_list = list()
         for task in self.__db.get_selected("completed", "False").to_list():
-            if self.__calendar.is_past(DueDate(task.due_date), today) and task.deleted is False:
+            selected_day = self.__date_generator.get_day(task.due_date)
+            if self.__calendar.is_past(selected_day, today) and task.deleted is False:
                 task.due_date = today.to_date_string()
-                task.due_date_timestamp = today.to_timestamp()
+                task.due_date_timestamp = today.to_date_timestamp()
                 task_list.append(task)
 
         return task_list

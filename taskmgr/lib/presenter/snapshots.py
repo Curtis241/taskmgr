@@ -5,23 +5,27 @@ from taskmgr.lib.database.snapshots_db import SnapshotsDatabase
 from taskmgr.lib.logger import AppLogger
 from taskmgr.lib.model.snapshot import Snapshot
 from taskmgr.lib.model.task import Task
-from taskmgr.lib.presenter.date_generator import DateGenerator
+from taskmgr.lib.model.time_card import TimeCard
+from taskmgr.lib.presenter.date_time_generator import DateTimeGenerator
 from taskmgr.lib.presenter.tasks import Tasks
+from taskmgr.lib.presenter.time_cards import TimeCards
 
 
 class Snapshots:
     logger = AppLogger("snapshots").get_logger()
 
-    def __init__(self, tasks: Tasks, database: SnapshotsDatabase):
+    def __init__(self, tasks: Tasks, time_cards: TimeCards, database: SnapshotsDatabase):
         assert isinstance(tasks, Tasks)
         assert isinstance(database, SnapshotsDatabase)
+        assert isinstance(time_cards, TimeCards)
 
         self.__tasks = tasks
+        self.__time_cards = time_cards
         self.__db = database
-        self.__date_generator = DateGenerator()
+        self.__date_generator = DateTimeGenerator()
 
-    @staticmethod
-    def build_snapshot(task_list: List[Task]) -> Snapshot:
+    def build_snapshot(self, task_list: List[Task],
+                       time_card_list: List[TimeCard] = None) -> Snapshot:
         """
         Creates a single snapshot when all tasks have the same due_date.
         """
@@ -41,17 +45,17 @@ class Snapshots:
                 snapshot.due_date = task.due_date
                 snapshot.due_date_timestamp = task.due_date_timestamp
 
-                try:
-                    snapshot.average_time = round(float(snapshot.total_time / snapshot.task_count), 2)
-                except ZeroDivisionError:
-                    snapshot.average_time = 0
+        if time_card_list is not None and len(time_card_list) > 0:
+            snapshot.actual_time = self.__time_cards.sum_total_times(time_card_list)
 
         return snapshot
 
-    def summarize(self, task_list: list) -> List[Snapshot]:
+    def summarize_tasks(self, task_list: List[Task]) -> List[Snapshot]:
         """
-        Creates many snapshots when using the due_date in each task. Only
-        the tasks provided will be summarized.
+        Creates one snapshot for each due_date. Only
+        the tasks provided will be summarized and are not expected to be
+        persisted to redis. Typically used for analyzing tasks that are
+        filtered based on name, label, or project.
         """
         snapshot_list = list()
         if len(task_list) > 0:
@@ -65,19 +69,21 @@ class Snapshots:
 
         return snapshot_list
 
-    def summarize_and_fill(self, task_list: list) -> List[Snapshot]:
+    def summarize_and_fill(self, task_list: List[Task]) -> List[Snapshot]:
         """
-        Creates many snapshots when using the due_date in each task
+        Creates one snapshot for each due_date. The due_date is used
         to fetch all tasks for each day. Only one task is needed from
-        each due_date.
+        each due_date because other tasks may already exist.
         """
         snapshot_list = list()
         if len(task_list) > 0:
             snapshot_list = []
             due_date_list = list(set([task.due_date for task in task_list]))
-            for index, due_date in enumerate(due_date_list, start=1):
-                result = self.__tasks.get_tasks_by_date(due_date)
-                snapshot = self.build_snapshot(result.to_list())
+            for index, due_date_string in enumerate(due_date_list, start=1):
+                task_query_result = self.__tasks.get_tasks_by_date(due_date_string)
+                time_card_query_result = self.__time_cards.get_time_cards_by_date(due_date_string)
+                snapshot = self.build_snapshot(task_query_result.to_list(),
+                                               time_card_query_result.to_list())
                 snapshot_list.append(snapshot)
 
         return snapshot_list
@@ -106,26 +112,27 @@ class Snapshots:
         assert type(min_date) is str
         assert type(max_date) is str
 
-        min_date = self.__date_generator.get_due_date(min_date)
-        max_date = self.__date_generator.get_due_date(max_date)
+        min_date = self.__date_generator.get_day(min_date)
+        max_date = self.__date_generator.get_day(max_date)
+
         if min_date is not None and max_date is not None:
             self.__db.set_page_number(page)
             result = self.__db.get_selected("due_date_timestamp",
-                                            min_date.to_timestamp(),
-                                            max_date.to_timestamp())
+                                            min_date.to_date_timestamp(),
+                                            max_date.to_date_timestamp())
             return result
         else:
             return QueryResult()
 
-    def get_by_due_date(self, due_date: str) -> QueryResult:
+    def get_by_due_date(self, date_expression: str) -> QueryResult:
         snapshot_list = list()
-        due_dates = self.__date_generator.get_due_dates(due_date)
-        for due_date in due_dates:
-            snapshot = self.__db.get_object("due_date_timestamp", due_date.to_timestamp())
+        days = self.__date_generator.get_days(date_expression)
+        for day in days:
+            snapshot = self.__db.get_object("due_date_timestamp", day.to_date_timestamp())
             if snapshot is not None:
                 snapshot_list.append(snapshot)
-                return QueryResult(snapshot_list)
-        return QueryResult()
+
+        return QueryResult(snapshot_list)
 
     def clear(self):
         self.__db.clear()
