@@ -139,14 +139,11 @@ def edit_task(**kwargs):
 
 
 @task.command("list", help="Lists all tasks")
-@click.option('--export', is_flag=True, help="Outputs to csv file")
 @click.option('--page', type=int, default=0)
 @click.option('--all', is_flag=True)
 def list_tasks(**kwargs):
     args = ListArgs.parse_obj(kwargs)
-    task_list = cli_client.list_all_tasks(args)
-    if args.export:
-        cli_client.export_tasks(task_list)
+    cli_client.list_all_tasks(args)
 
 
 @task.command("delete", help="Soft delete")
@@ -363,6 +360,11 @@ def complete_task(**kwargs):
 @click.argument('indexes', nargs=-1, required=True, type=int)
 def reset_task(**kwargs):
     cli_client.reset_task(ResetArgs.parse_obj(kwargs))
+
+@task.command("export", help="Exports tasks to csv file")
+def export_tasks(**kwargs):
+    result = cli_client.tasks.get_all()
+    cli_client.export_tasks(result.to_list())
 
 
 @task.command("import", help="Imports tasks from csv file")
