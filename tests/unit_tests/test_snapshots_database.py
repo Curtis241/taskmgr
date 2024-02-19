@@ -3,7 +3,7 @@ import unittest
 from taskmgr.lib.database.db_manager import DatabaseManager
 from taskmgr.lib.model.snapshot import Snapshot
 from taskmgr.lib.variables import CommonVariables
-from unit_tests.date_parser import DateParser
+from tests.unit_tests.date_parser import DateParser
 
 
 class TestSnapshotsDatabase(unittest.TestCase):

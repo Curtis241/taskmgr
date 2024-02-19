@@ -51,10 +51,6 @@ class UndeleteArgs(BaseModel):
     indexes: tuple
 
 
-class ResetArgs(BaseModel):
-    indexes: tuple
-
-
 class GetArg(BaseModel):
     index: int
 

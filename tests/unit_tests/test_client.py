@@ -121,7 +121,7 @@ class TestClient(unittest.TestCase):
         self.assertEqual(task.label, "current")
         self.assertEqual(task.deleted, False)
         self.assertEqual(task.project, 'work')
-        self.assertEqual(task.due_date, '2023-04-14')
+        self.assertEqual(task.due_date, '2024-04-14')
         self.assertEqual(task.completed, False)
 
     def test_today(self):

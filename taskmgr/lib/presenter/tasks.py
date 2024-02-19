@@ -161,16 +161,13 @@ class Tasks:
         else:
             raise TaskKeyError()
 
-    def reset(self, task: Task) -> Optional[Task]:
+    def incomplete(self, task: Task) -> Optional[Task]:
         """
-        Resets the due date to today on the selected task
+        Changes the completed status to False
         """
         assert isinstance(task, Task)
         if task is not None:
-            today = Today()
             task.completed = False
-            task.due_date = today.to_date_string()
-            task.due_date_timestamp = today.to_date_timestamp()
             return self.__db.replace_object(task)
         else:
             raise TaskKeyError()

@@ -70,6 +70,7 @@ taskmgr is a simple python command-line tool for storing tasks in a redis databa
           edit        Replaces the task parameters with the provided parameters
           filter      Filters tasks
           group       Groups tasks
+          export      Exports tasks to csv file
           import      Imports tasks from csv file
           incomplete  Marks the task as not done
           list        Lists all tasks

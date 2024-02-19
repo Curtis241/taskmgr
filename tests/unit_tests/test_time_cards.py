@@ -50,8 +50,7 @@ class TestTimeCards(unittest.TestCase):
         t1.total = "4:15"
         t2 = TimeCard()
         t2.total = "3:45"
-        time_card_list = [t1, t2]
-        total_time = self.time_cards.sum_total_times(time_card_list)
+        total_time = self.time_cards.sum_total_times([t1, t2])
         self.assertEqual(total_time, "8:00")
 
         total_time = self.time_cards.sum_total_times([])

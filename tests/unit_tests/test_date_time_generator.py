@@ -113,7 +113,7 @@ class TestDateTimeGenerator(unittest.TestCase):
     def test_short_date(self):
         day_list = self.date_time_generator.get_days("apr 14")
         self.assertTrue(len(day_list) == 1)
-        self.assertTrue(day_list[0].to_date_string() == '2023-04-14')
+        self.assertTrue(day_list[0].to_date_string() == '2024-04-14')
 
     def test_validate_input(self):
         self.assertTrue(self.date_time_generator.validate_input("every weekday"))

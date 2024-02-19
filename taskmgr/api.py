@@ -73,8 +73,8 @@ async def complete_task(task_index: int, time_spent: float = 0.0):
 
 @app.put("/task/incomplete/{task_index}")
 async def incomplete_task(task_index: int):
-    args = ResetArgs(indexes=(task_index,))
-    return api_client.reset_task(args)
+    args = IncompleteArgs(indexes=(task_index,))
+    return api_client.incomplete_task(args)
 
 
 @app.put("/task/unique/{unique_type}")

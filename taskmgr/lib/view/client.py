@@ -253,24 +253,24 @@ class Client:
         self.snapshots.update(task_list)
         return self.display_tasks(QueryResult(task_list))
 
-    def undelete_task(self, args: UndeleteArgs) -> List[Task]:
+    def incomplete_task(self, args: IncompleteArgs) -> List[Task]:
         task_list = list()
         for index in args.indexes:
             task = self.tasks.get_task_by_index(index)
             if task is not None:
-                task_list.append(self.tasks.undelete(task))
+                task_list.append(self.tasks.incomplete(task))
             else:
                 return self.display_invalid_index_error(index)
 
         self.snapshots.update(task_list)
         return self.display_tasks(QueryResult(task_list))
 
-    def reset_task(self, args: ResetArgs) -> List[Task]:
+    def undelete_task(self, args: UndeleteArgs) -> List[Task]:
         task_list = list()
         for index in args.indexes:
             task = self.tasks.get_task_by_index(index)
             if task is not None:
-                task_list.append(self.tasks.reset(task))
+                task_list.append(self.tasks.undelete(task))
             else:
                 return self.display_invalid_index_error(index)
 

@@ -200,7 +200,7 @@ class TimeCards:
         """
         time_list = list()
         for time_card in time_cards:
-            hours, minutes = str(time_card.elapsed_time).split(":", maxsplit=1)
+            hours, minutes = str(time_card.total).split(":", maxsplit=1)
             time_list.append(timedelta(hours=int(hours), minutes=int(minutes)))
 
         delta = sum(time_list, start=timedelta())

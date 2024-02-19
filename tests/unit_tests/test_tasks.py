@@ -78,6 +78,16 @@ class TestTasks(unittest.TestCase):
         completed_task = self.tasks.complete(task)
         self.assertTrue(completed_task.completed)
 
+    def test_task_is_incomplete(self):
+        self.tasks.add("InitialTask", "current", "home", "2020-05-11")
+        initial_task = self.tasks.get_task_by_name("InitialTask")
+        self.tasks.complete(initial_task)
+
+        self.assertEqual(initial_task.due_date, "2020-05-11")
+        modified_task = self.tasks.incomplete(initial_task)
+
+        self.assertEqual(modified_task.due_date, "2020-05-11")
+
     def test_sorting_by_label(self):
         self.tasks.add("Task1", "call", "work", "may 7")
         self.tasks.add("Task2", "call", "work", "may 9")
@@ -118,16 +128,6 @@ class TestTasks(unittest.TestCase):
         replaced_task = self.tasks.replace(local_task, remote_task)
         self.assertTrue(replaced_task.deleted)
         self.assertEqual(replaced_task.name, "Task1")
-
-    def test_reset(self):
-        self.tasks.add("InitialTask", "current", "home", "2020-05-11")
-
-        initial_task = self.tasks.get_task_by_name("InitialTask")
-        self.assertEqual(initial_task.due_date, "2020-05-11")
-        modified_task = self.tasks.reset(initial_task)
-
-        current_date_string = Today().to_date_string()
-        self.assertTrue(modified_task.due_date == current_date_string)
 
     def test_reschedule_tasks(self):
         self.tasks.add("CurrentTask", "waiting", "work", "today")

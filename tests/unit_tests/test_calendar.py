@@ -4,7 +4,7 @@ from datetime import datetime
 from taskmgr.lib.model.calendar import Calendar
 from taskmgr.lib.model.day import Day
 from taskmgr.lib.variables import CommonVariables
-from unit_tests.date_parser import DateParser
+from tests.unit_tests.date_parser import DateParser
 
 
 class TestCalendar(unittest.TestCase):
@@ -109,7 +109,7 @@ class TestCalendar(unittest.TestCase):
 
     def test_parse_short_date(self):
         day = self.calendar.parse_date_time("May 21")
-        self.assertEqual(day.to_date_string(), "2023-05-21")
+        self.assertEqual(day.to_date_string(), "2024-05-21")
 
     def test_parse_recurring_abbrev(self):
         day_list = self.calendar.parse_recurring_abbrev(self.june11, "every m", 3)

@@ -358,8 +358,9 @@ def complete_task(**kwargs):
 
 @task.command("incomplete", help="Marks the task as not done")
 @click.argument('indexes', nargs=-1, required=True, type=int)
-def reset_task(**kwargs):
-    cli_client.reset_task(ResetArgs.parse_obj(kwargs))
+def incomplete_task(**kwargs):
+    cli_client.incomplete_task(IncompleteArgs.parse_obj(kwargs))
+
 
 @task.command("export", help="Exports tasks to csv file")
 def export_tasks(**kwargs):
