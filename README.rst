@@ -44,11 +44,10 @@ taskmgr is a simple python command-line tool for storing tasks in a redis databa
 
 ::
 
-  sudo apt install redis
-  git clone https://github.com/RediSearch/RediSearch.git
-  cd RediSearch
-  make build
-  cp RediSearch/bin/linux-x64-release/search/redisearch.so /etc/redis/modules/
+  sudo apt install redis-tools
+  wget https://packages.redis.io/redis-stack/redis-stack-server-7.4.0-v2.x86_64.snap
+  sudo snap install --dangerous --classic redis-stack-server-7.4.0-v2.x86_64.snap
+  sudo snap run redis-stack-server
 
 
 **The commands available in version 0.2.6.**
